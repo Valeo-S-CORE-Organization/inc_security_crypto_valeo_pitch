@@ -10,7 +10,7 @@ Cryptoki is a **software HSM** — a shared library (`.so` / `.dylib`) that spea
 
 A few things worth highlighting:
 
-* **All 92 functions.** Every `C_*` in the OASIS PKCS#11 v3.0 (2020) spec is implemented — not stubbed, not returning `CKR_FUNCTION_NOT_SUPPORTED`.
+* **Complete PKCS#11 surface.** All v2.40 + v3.0 entry points are exported, with unsupported flows returning spec-appropriate codes (`CKR_FUNCTION_NOT_SUPPORTED`, etc.).
 * **Both dispatch tables.** We expose the v2.40 `CK_FUNCTION_LIST` (68 slots) and the v3.0 `CK_FUNCTION_LIST_3_0` (24 extra slots), plus `C_GetInterface` / `C_GetInterfaceList` for clients that do capability discovery.
 * **Fork-safe.** A `pthread_atfork` child handler closes inherited lock FDs and reseeds the CSPRNG — no parent/child RNG state sharing.
 * **Pluggable backend.** The `CryptoProvider` trait is the only interface the PKCS#11 layer talks to. It doesn't know or care what's underneath — a software library, a TPM, an HSM, whatever. The included OpenSSL implementation is a working reference, not a dependency.
@@ -29,7 +29,51 @@ Stable Rust toolchain. If you're using the bundled OpenSSL reference backend, yo
 cargo build --release
 ```
 
-Output lands at `target/release/libcryptoki.so` (Linux) or `target/release/libcryptoki.dylib` (macOS).
+### Bazel workflow
+
+The repository builds fully with native `rules_rust`.
+
+#### Build targets
+
+```bash
+# Rust library
+bazel build //src:cryptoki_lib
+
+# Both example binaries
+bazel build //examples:pkcs11_demo
+bazel build //examples:pkcs11_business_demo
+```
+
+#### Test
+
+```bash
+# All 22 Rust integration tests (native rust_test, sandboxed, cached)
+bazel test //tests:integration_tests
+
+# Single test
+bazel test //tests:pkcs11_integration
+
+# C++ Google Test conformance suite
+bazel test //tests/cpp:cpp_tests
+```
+
+#### Layout
+
+| Path | Contents |
+| --- | --- |
+| `MODULE.bazel` | `rules_rust` + `crate_universe` (`crate.from_cargo(...)`) |
+| `src/BUILD` | `rust_library` → `//src:cryptoki_lib` |
+| `examples/BUILD` | `rust_binary` per example |
+| `tests/BUILD` | 22 native `rust_test` targets + `integration_tests` suite |
+| `tests/rust/BUILD` | Smoke test |
+| `tests/cpp/BUILD` | C++ `cc_test` via gtest |
+
+#### Notes
+
+* Dependencies resolved through `crate_universe`; `package_name = ""` refers to the workspace root crate.
+* Tests that use `mod common` include `tests/common/mod.rs` explicitly in `srcs`.
+* `serial_test` proc-macro (used by `always_authenticate`, `persistence_integration`, `pkcs11_v3_integration`) is pulled via `proc_macro_deps`.
+* Each test target is independently cacheable — Bazel only reruns tests whose inputs changed.
 
 ### Run the tests
 
@@ -124,7 +168,7 @@ Transfer the compiled test binaries from `target/aarch64-unknown-nto-qnx800/rele
 
 ## Architecture
 
-The library is strictly layered. The idea is that each layer only knows about the layer below it — the FFI boundary doesn't do crypto, the crypto layer doesn't know about sessions, and so on.
+The PKCS#11 layer is organized as small operation-focused modules with thin hubs:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -133,7 +177,7 @@ The library is strictly layered. The idea is that each layer only knows about th
                              │  C ABI  (unsafe extern "C")
                              ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  src/pkcs11/mod.rs  —  FFI boundary + orchestrator                   │
+│  src/pkcs11/ffi_api_*  —  FFI boundary + orchestrators               │
 │                                                                      │
 │  GlobalState: OnceLock<RwLock<Option<GlobalState>>>                  │
 │    None → Some on C_Initialize, Some → None on C_Finalize            │
@@ -145,8 +189,8 @@ The library is strictly layered. The idea is that each layer only knows about th
 │    3. session.rs     — op context lookup, auth checks                │
 │    4. attribute_policy.rs — ratchets, immutability, access control   │
 │    5. object_store.rs — handle → KeyObject resolution                │
-│    6. backend.rs     — crypto dispatch  (crypto ops only)            │
-│    7. storage.rs     — persist if token object  (mutating ops only)  │
+│    6. backend/       — crypto dispatch  (crypto ops only)            │
+│    7. storage/       — persist if token object  (mutating ops only)  │
 └──┬──────────┬────────────┬──────────────┬────────────┬──────────────┬┘
    │          │            │              │            │              │
    ▼          ▼            ▼              ▼            ▼              │
@@ -167,7 +211,7 @@ The library is strictly layered. The idea is that each layer only knows about th
 │auth      │ │  counters│ │            │ │                          │        │
 └──────────┘ └──────────┘ └────────────┘ └──────────────────────────┘        │
                                                                              │
-                                                       (mod.rs → object_store)
+                                                  (ffi_api_* → object_store)
                                                                              │
                                                                              ▼
                                     ┌───────────────────────────────────────────────────┐
@@ -191,7 +235,7 @@ The library is strictly layered. The idea is that each layer only knows about th
                                     │                             │
                                     ▼                             ▼
                      ┌──────────────────────────┐    ┌───────────────────────────────────┐
-                     │ storage.rs               │    │ backend.rs                        │
+                     │ storage/                 │    │ backend/                          │
                      │                          │    │                                   │
                      │ JSON persistence:        │    │ Crypto dispatch (no OpenSSL):     │
                      │  • NamedTempFile → fsync │    │  sign / verify / digest           │
@@ -238,22 +282,96 @@ The library is strictly layered. The idea is that each layer only knows about th
                                                    └─────────────────────────────────┘
 ```
 
-### Layer Dependency Rules
 
-Hard rules — nothing reaches up or sideways:
+```text
+src/pkcs11/
+├── mod.rs                         # top-level exports + function tables + shared state/helpers
+├── ffi_api_core/                  # hub
+│   ├── lifecycle_and_slot_token.rs
+│   ├── session_and_login.rs
+│   └── keys_objects_attributes_find.rs
+├── ffi_api_crypto/                # hub
+│   ├── sign_verify.rs
+│   ├── encrypt_decrypt.rs
+│   ├── digest.rs
+│   ├── key_wrap_derive.rs
+│   ├── misc_v240.rs
+│   └── helpers.rs
+├── ffi_api_v3/                    # hub
+│   ├── session_user.rs
+│   ├── message_encrypt_decrypt.rs
+│   ├── message_sign_verify.rs
+│   └── interface_discovery.rs
+├── attribute_policy.rs            # ratchets / immutability / access checks
+├── backend/                       # hub
+│   ├── keygen.rs
+│   ├── sign_verify.rs
+│   ├── symmetric.rs
+│   ├── message_aead.rs
+│   ├── digest_random.rs
+│   ├── rsa_wrap_derive.rs
+│   └── attributes.rs
+├── object_store.rs                # object model + handles + persistence hooks
+├── session.rs                     # session contexts and login state
+├── storage/                       # hub
+│   ├── models.rs
+│   ├── path.rs
+│   ├── locks.rs
+│   ├── io.rs
+│   └── helpers.rs
+├── token.rs                       # token metadata + PIN state
+└── mechanisms.rs                  # mechanism allow/block policy
+```
 
-| Layer | May call | Must NOT call |
-| --- | --- | --- |
-| `mod.rs` | All layers | — |
-| `session.rs` | — | backend, storage, object_store, registry |
-| `token.rs` | — | backend, storage, object_store, registry |
-| `mechanisms.rs` | — | all others |
-| `attribute_policy.rs` | `object_store` types only | backend, storage, registry |
-| `object_store.rs` | `storage`, `registry`, `token` | `backend` |
-| `backend.rs` | `registry`, `traits` | `storage`, `session`, `object_store` |
-| `storage.rs` | `traits` (Provider param only) | `backend`, `session`, `registry` |
-| `registry.rs` | `traits` | all PKCS#11 layers |
-| `your_backend.rs` | its own crypto deps | all PKCS#11 layers |
+Operational flow for most `C_*` functions:
+
+1. Validate init/session state in the FFI API module (`check_init`, `require_rw_session`, session lookup).
+2. Enforce mechanism and attribute policy (`mechanisms.rs`, `attribute_policy.rs`).
+3. Resolve object handles (`object_store.rs`).
+4. Dispatch crypto to the provider (`backend/*` + `traits.rs`).
+5. Persist token-object mutations (`storage/io.rs` through `object_store.rs`).
+
+This keeps each file focused while preserving one consistent ABI surface.
+
+## Contributor Map
+
+Use this table to decide where new code should go:
+
+| Concern | Primary module |
+| --- | --- |
+| Init/finalize, slots, token info | `ffi_api_core/lifecycle_and_slot_token.rs` |
+| Session open/close, login state | `ffi_api_core/session_and_login.rs` |
+| Key/object create/destroy/attributes/find | `ffi_api_core/keys_objects_attributes_find.rs` |
+| Sign/verify C APIs | `ffi_api_crypto/sign_verify.rs` |
+| Encrypt/decrypt C APIs | `ffi_api_crypto/encrypt_decrypt.rs` |
+| Digest C APIs | `ffi_api_crypto/digest.rs` |
+| Wrap/unwrap/derive C APIs | `ffi_api_crypto/key_wrap_derive.rs` |
+| v2.40 misc/unsupported C APIs | `ffi_api_crypto/misc_v240.rs` |
+| v3 session/user extensions | `ffi_api_v3/session_user.rs` |
+| v3 message encrypt/decrypt | `ffi_api_v3/message_encrypt_decrypt.rs` |
+| v3 message sign/verify | `ffi_api_v3/message_sign_verify.rs` |
+| v3 interface discovery | `ffi_api_v3/interface_discovery.rs` |
+| Provider key generation adapters | `backend/keygen.rs` |
+| Provider sign/verify adapters | `backend/sign_verify.rs` |
+| Provider symmetric cipher adapters | `backend/symmetric.rs` |
+| Provider message AEAD adapters | `backend/message_aead.rs` |
+| Provider digest/random adapters | `backend/digest_random.rs` |
+| Provider RSA/wrap/derive adapters | `backend/rsa_wrap_derive.rs` |
+| Provider attribute fallback | `backend/attributes.rs` |
+| Persistent storage models | `storage/models.rs` |
+| Persistent storage I/O + atomic writes | `storage/io.rs` |
+| Storage lock/fork helpers | `storage/locks.rs` |
+| Storage path config | `storage/path.rs` |
+
+## Development Guidelines
+
+To preserve the architecture and readability:
+
+1. **Size Limits:** Prefer adding a new focused module over growing an existing file past ~500-600 LOC.
+2. **Thin Hubs:** Keep hub modules (`ffi_api_*`, `backend/`, `storage/`) thin. Re-export through the relevant hub module instead of importing deep internals externally.
+3. **Documentation:** Add a short module-level `//!` ownership header for every new module.
+4. **Dependencies:** Keep cross-module dependencies one-directional where possible.
+5. **CI Checks:** Keep `cargo clippy --all-targets --all-features -- -D warnings` and full `cargo test` green for every structural change.
 
 ---
 
@@ -263,7 +381,7 @@ Key material handling was a first-class concern from the start, not an afterthou
 
 ### 1. The PKCS#11 layer never sees key bytes
 
-All key material is an opaque `EngineKeyRef` (`Zeroizing<Vec<u8>>`). The orchestration code in `mod.rs` passes handles around without ever interpreting them — only the Provider (`openssl_provider.rs`) knows what the bytes mean. If a backend can't digest an opaque handle, `key_value_for_digest` fails closed with `CKR_MECHANISM_INVALID`.
+All key material is an opaque `EngineKeyRef` (`Zeroizing<Vec<u8>>`). The PKCS#11 FFI/API modules pass handles around without interpreting key internals — only the Provider (`openssl_provider.rs`) knows what the bytes mean. If a backend can't digest an opaque handle, `key_value_for_digest` fails closed with `CKR_MECHANISM_INVALID`.
 
 ### 2. Buffers are zeroed on drop
 
@@ -341,7 +459,7 @@ Keys with `CKA_ALWAYS_AUTHENTICATE=TRUE` need a fresh `C_Login(CKU_CONTEXT_SPECI
 
 ## PKCS#11 v3.0 Compliance
 
-All 92 functions are implemented. RW session enforcement is strict — anything that mutates persistent state requires a session opened with `CKF_RW_SESSION`.
+All PKCS#11 v2.40 + v3.0 entry points are present. Some flows are intentionally not implemented yet and return standard PKCS#11 status codes (for example `CKR_FUNCTION_NOT_SUPPORTED`). RW session enforcement is strict — anything that mutates persistent state requires a session opened with `CKF_RW_SESSION`.
 
 A few honest deviations:
 
@@ -404,7 +522,7 @@ impl CryptoProvider for MyProvider {
 }
 ```
 
-Register it in `src/pkcs11/mod.rs`:
+Register it in `C_Initialize` (currently wired in `src/pkcs11/ffi_api_core/lifecycle_and_slot_token.rs`):
 
 ```rust
 let _ = crate::registry::register_engine(MyEngine::new());
@@ -420,7 +538,7 @@ Multiple engines coexist fine — each gets sequential global slot IDs.
 
 Every test goes through the C ABI function pointers (`fn_list()` / `fn_list_3_0()`) — the same path a real PKCS#11 consumer would take. No shortcuts.
 
-Current Status: 197 tests — 0 failures
+Current Status: 198 tests — 0 failures (last verified on April 30, 2026 via `cargo test`)
 
 ```text
 [████████████████████]  197 / 197  100%
