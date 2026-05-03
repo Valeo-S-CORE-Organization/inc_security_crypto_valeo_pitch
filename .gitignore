@@ -54,3 +54,10 @@ styles/
 .venv
 __pycache__/
 /.coverage
+
+# Ignore C++ native build directory
+/cpp/build/*
+
+# Rust
+target/
+**/*.rs.bk

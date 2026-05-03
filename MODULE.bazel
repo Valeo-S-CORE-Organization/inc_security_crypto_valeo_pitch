@@ -1,5 +1,5 @@
 # *******************************************************************************
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -11,56 +11,31 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 module(
-    name = "cpp_rust_template_repository",
-    version = "1.0",
+    name = "cryptoki",
+    version = "0.1.0",
 )
 
-bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
+# ==========================================
+# 1. C++ & RUST SETUP
+# ==========================================
+bazel_dep(name = "rules_cc", version = "0.2.18")
+bazel_dep(name = "rules_python", version = "2.0.0")
+bazel_dep(name = "rules_rust", version = "0.70.0")
 
-# Python 3.12: Required for testing infrastructure and code generation tools
-PYTHON_VERSION = "3.12"
-
-python = use_extension(
-    "@rules_python//python/extensions:python.bzl",
-    "python",
-    dev_dependency = True,
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//:Cargo.toml"],
 )
-python.toolchain(
-    is_default = True,
-    python_version = PYTHON_VERSION,
+use_repo(crate, "crates")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.85.0"],
 )
-use_repo(python)
+use_repo(rust, "rust_toolchains")
 
-# Add GoogleTest dependency
-bazel_dep(name = "googletest", version = "1.17.0", dev_dependency = True)
-
-# Rust rules for Bazel
-bazel_dep(name = "rules_rust", version = "0.63.0")
-
-# C/C++ rules for Bazel
-bazel_dep(name = "rules_cc", version = "0.2.14")
-
-# LLVM Toolchains Rules - host configuration
-bazel_dep(name = "toolchains_llvm", version = "1.5.0", dev_dependency = True)
-
-llvm = use_extension(
-    "@toolchains_llvm//toolchain/extensions:llvm.bzl",
-    "llvm",
-    dev_dependency = True,
-)
-llvm.toolchain(
-    cxx_standard = {"": "c++17"},
-    llvm_version = "19.1.0",
-)
-use_repo(llvm, "llvm_toolchain")
-use_repo(llvm, "llvm_toolchain_llvm")
-
-register_toolchains("@llvm_toolchain//:all")
-
-# tooling
-bazel_dep(name = "score_tooling", version = "1.0.4", dev_dependency = True)
-bazel_dep(name = "aspect_rules_lint", version = "1.10.2", dev_dependency = True)
-bazel_dep(name = "buildifier_prebuilt", version = "8.2.0.2", dev_dependency = True)
-
-#docs-as-code
-bazel_dep(name = "score_docs_as_code", version = "2.3.0", dev_dependency = True)
+# Register the Rust toolchains
+register_toolchains("@rust_toolchains//:all")
