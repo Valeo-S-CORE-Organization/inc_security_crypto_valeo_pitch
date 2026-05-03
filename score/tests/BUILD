@@ -3,6 +3,11 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "rust_test_sources",
+    srcs = glob(["**/*.rs"]),
+)
+
 _COMMON_DEPS = ["//src:cryptoki_lib"]
 
 _TESTS_WITH_COMMON = [

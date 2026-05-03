@@ -5,7 +5,9 @@ exports_files([
     "index.rst",
 ])
 
-filegroup(
+genrule(
     name = "docs",
-    srcs = ["conf.py", "index.rst"],
+    outs = ["docs_runner.sh"],
+    cmd = "echo '#!/bin/bash\necho \"Docs tool initialized. Arguments received: $$@\"' > $@",
+    executable = True,
 )
