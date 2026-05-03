@@ -52,10 +52,63 @@ copyright_checker(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "rust_srcs",
+    srcs = [
+        "Cargo.toml",
+        "Cargo.lock",
+        "//src:src",
+        "//examples:examples",
+        "//tests:rust_test_sources",
+        "//cpp:cpp_srcs",
+    ],
+)
+
+sh_binary(
+    name = "cargo_test",
+    srcs = ["//tests/rust:run_rust_tests.sh"],
+    data = [":rust_srcs"],
+)
+
 # Top-level aliases for ergonomic `bazel build/test //:foo` invocations
 alias(
     name = "docs",
     actual = "//docs:docs",
 )
 
+alias(
+    name = "rust_lib",
+    actual = "//src:cryptoki_lib",
+)
+
+alias(
+    name = "rust_unit_smoke",
+    actual = "//tests/rust:rust_unit_smoke",
+)
+
+alias(
+    name = "tests_rust",
+    actual = "//tests:integration_tests",
+)
+
+alias(
+    name = "tests_cpp",
+    actual = "//tests/cpp:test_cpp",
+)
+
+alias(
+    name = "example_pkcs11_demo",
+    actual = "//examples:pkcs11_demo",
+)
+
+alias(
+    name = "example_pkcs11_business_demo",
+    actual = "//examples:pkcs11_business_demo",
+)
+
 use_format_targets()
+
+alias(
+    name = "cpp_srcs",
+    actual = "//cpp:cpp_srcs",
+)
