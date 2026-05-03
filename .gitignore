@@ -78,3 +78,9 @@ compile_commands.json
 
 # Devcontainer
 .devcontainer/devcontainer-lock.json
+# Ignore C++ native build directory
+/cpp/build/*
+
+# Rust
+target/
+**/*.rs.bk
