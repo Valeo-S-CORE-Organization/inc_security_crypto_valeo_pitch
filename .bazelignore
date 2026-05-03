@@ -1,0 +1,8 @@
+# Ignore the submodule
+cpp/pkcs11test
+
+# ignore Bazel's own output symlinks
+bazel-inc_security_crypto
+bazel-bin
+bazel-out
+bazel-testlogs

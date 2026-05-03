@@ -5,6 +5,7 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["test_main.rs"])
+exports_files(["run_rust_tests.sh"])
 
 rust_test(
     name = "rust_unit_smoke",

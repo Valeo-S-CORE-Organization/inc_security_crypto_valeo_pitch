@@ -50,6 +50,7 @@
 #include <utility>
 #include <cstring>
 #include <dlfcn.h>
+#include <iostream>
 
 namespace pkcs11 {
 
@@ -126,7 +127,10 @@ public:
 
         for (int i = 0; paths[i]; i++) {
             dlHandle_ = dlopen(paths[i], RTLD_NOW);
-            if (dlHandle_) break;
+            if (dlHandle_) {
+                std::cout << "Successfully loaded: " << paths[i] << std::endl;
+                break;
+            }
         }
         if (!dlHandle_) {
             throw std::runtime_error(

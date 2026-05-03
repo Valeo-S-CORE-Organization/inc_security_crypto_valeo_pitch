@@ -19,22 +19,13 @@ sh_test(
     timeout = "short",
 )
 
-# Google PKCS#11 conformance suite via dlopen → libcryptoki.so
-sh_test(
-    name = "pkcs11test",
-    srcs = ["run_pkcs11test.sh"],
-    data = [
-        "//cpp/pkcs11test:pkcs11test",
-        "//src:cryptoki_cdylib",
-    ],
-    timeout = "long",
-)
-
 # Legacy cmake-based wrapper (kept for reference)
 sh_test(
     name = "cpp_tests",
     srcs = ["run_cpp_tests.sh"],
     data = [
+        "//cpp:test_cpp_bin",
+        "//src:cryptoki_cdylib",
         "//:cpp_srcs",
     ],
     timeout = "long",

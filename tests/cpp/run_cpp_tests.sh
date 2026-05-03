@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
-build_dir="$repo_root/cpp/build"
+BASE_PATH="$TEST_SRCDIR/_main"
+LIB_DIR="$BASE_PATH/src"
+BINARY="$BASE_PATH/cpp/test_cpp_bin"
 
-if [[ ! -f "$repo_root/cpp/CMakeLists.txt" ]]; then
-  echo "cpp/CMakeLists.txt not found"
-  exit 1
-fi
+export LD_LIBRARY_PATH="${LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
-mkdir -p "$build_dir"
-cd "$build_dir"
-cmake .. >/dev/null
-cmake --build . >/dev/null
+echo "Running test binary: $BINARY"
+echo "Looking for library in: $LIB_DIR"
 
-if [[ -x "$build_dir/test_cpp" ]]; then
-  "$build_dir/test_cpp"
+if [[ -x "$BINARY" ]]; then
+    "$BINARY"
+else
+    echo "ERROR: Binary not found or not executable at $BINARY"
+    # Debug: show what IS in the sandbox if we fail
+    find "$TEST_SRCDIR" -name "*.so"
+    exit 1
 fi

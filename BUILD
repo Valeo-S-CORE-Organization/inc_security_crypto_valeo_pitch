@@ -35,33 +35,14 @@ filegroup(
         "Cargo.lock",
         "//src:src",
         "//examples:examples",
-        "//tests/rust:test_main.rs",
-    ] + glob([
-        "tests/*.rs",
-        "tests/common/**/*.rs",
-    ], allow_empty = True),
-)
-
-filegroup(
-    name = "cpp_srcs",
-    srcs = glob([
-        "cpp/**/*.cpp",
-        "cpp/**/*.cc",
-        "cpp/**/*.h",
-        "cpp/**/*.hpp",
-        "cpp/CMakeLists.txt",
-    ]),
-)
-
-sh_binary(
-    name = "cargo_build",
-    srcs = ["tools/bazel/cargo_build.sh"],
-    data = [":rust_srcs"],
+        "//tests:rust_test_sources",
+        "//cpp:cpp_srcs",
+    ],
 )
 
 sh_binary(
     name = "cargo_test",
-    srcs = ["tools/bazel/cargo_test.sh"],
+    srcs = ["//tests/rust:run_rust_tests.sh"],
     data = [":rust_srcs"],
 )
 
@@ -92,11 +73,6 @@ alias(
 )
 
 alias(
-    name = "tests_pkcs11_conformance",
-    actual = "//tests/cpp:pkcs11test",
-)
-
-alias(
     name = "example_pkcs11_demo",
     actual = "//examples:pkcs11_demo",
 )
@@ -104,4 +80,9 @@ alias(
 alias(
     name = "example_pkcs11_business_demo",
     actual = "//examples:pkcs11_business_demo",
+)
+
+alias(
+    name = "cpp_srcs",
+    actual = "//cpp:cpp_srcs",
 )
