@@ -5,9 +5,12 @@ exports_files([
     "index.rst",
 ])
 
-genrule(
+sh_binary(
     name = "docs",
-    outs = ["docs_runner.sh"],
-    cmd = "echo '#!/bin/bash\necho \"Docs tool initialized. Arguments received: $$@\"' > $@",
-    executable = True,
+    srcs = ["docs_runner.sh"],
+    data = [
+        "conf.py",
+        "index.rst",
+        "//:rust_srcs",
+    ],
 )
