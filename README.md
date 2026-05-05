@@ -1,12 +1,12 @@
 # Cryptoki
 
-A PKCS#11 v3.0 software token written in Rust. Drop it in where you’d use a YubiKey or a Thales HSM — anything that speaks PKCS#11 will just work. The crypto operations are behind a trait, so the backend is whatever you plug in: a software library, a TPM, a real HSM. The repo ships an OpenSSL implementation to demo the layers, but that’s not the point.
+A PKCS#11 v3.0 software token written in Rust. Drop it in where you'd use a YubiKey or a Thales HSM — anything that speaks PKCS#11 will just work. The crypto operations are behind a trait, so the backend is whatever you plug in: a software library, a TPM, a real HSM. The repo ships an OpenSSL implementation to demo the layers, but that's not the point.
 
 ---
 
 ## What is this?
 
-Cryptoki is a **software HSM** — a shared library (`.so` / `.dylib`) that speaks the full PKCS#11 v3.0 C API. From the caller’s perspective it’s indistinguishable from a hardware token. From our perspective it’s a chance to do things the right way: safe Rust, auditable code, no surprises.
+Cryptoki is a **software HSM** — a shared library (`.so` / `.dylib`) that speaks the full PKCS#11 v3.0 C API. From the caller's perspective it's indistinguishable from a hardware token. From our perspective it's a chance to do things the right way: safe Rust, auditable code, no surprises.
 
 A few things worth highlighting:
 
@@ -93,76 +93,6 @@ cargo run --example pkcs11_demo
 
 * **Storage path:** defaults to `~/.cryptoki/token.json`. Override with `CRYPTOKI_STORE=/path/to/store.json`.
 * **Legacy algorithms:** MD5 and SHA-1 are hidden by default. Set `CRYPTOKI_LEGACY=1` to expose them — but don't do this in production.
-
----
-
-## Cross-Compilation (QNX SDP 8.0)
-
-This project supports cross-compilation for QNX SDP 8.0 (aarch64) while maintaining default compatibility with Linux x86_64 hosts.
-
-**Build Configuration:**
-QNX SDP 8.0 uses the `qcc` compiler wrapper, which interprets standard `gcc` flags differently (e.g., `-V`). The `.cargo/config.toml` is pre-configured to use the `qcc` linker, and a specialized `build_qnx.sh` script is provided to correctly invoke the QNX toolchain.
-
-### 1. Building the Rust Library
-To cross-compile the PKCS#11 library and Rust examples for QNX, use the provided helper script:
-```bash
-# Build library for QNX
-./build_qnx.sh build
-
-# Build tests for QNX
-./build_qnx.sh test --no-run
-
-# Build demos for QNX
-./build_qnx.sh examples <example-name>
-```
-*Artifacts:* `target/aarch64-unknown-nto-qnx800/release/libcryptoki.so` and `target/aarch64-unknown-nto-qnx800/release/examples/pkcs11_demo`
-
-### 2. Building the C++ Tests and Demo
-The C++ frontend (tests and demo) interacts with the compiled library via `dlopen`.
-```bash
-mkdir -p cpp/build_qnx && cd cpp/build_qnx
-source ~/qnx800/qnxsdp-env.sh # Source the QNX environment
-
-cmake .. \
-  -DCMAKE_SYSTEM_NAME=QNX \
-  -DCMAKE_SYSTEM_VERSION=8.0.0 \
-  -DCMAKE_C_COMPILER=qcc \
-  -DCMAKE_C_COMPILER_TARGET=gcc_ntoaarch64le \
-  -DCMAKE_CXX_COMPILER=qcc \
-  -DCMAKE_CXX_COMPILER_TARGET=gcc_ntoaarch64le_cxx
-
-make
-```
-*Artifacts:* `cpp/build_qnx/demo` and `cpp/build_qnx/test_cpp`
-
-### 3. Deployment and Execution
-Transfer the compiled artifacts (`libcryptoki.so`, `pkcs11_demo`, and `demo`) to your QNX target (e.g., `/tmp/pkcs11`).
-
-Configure the environment and run:
-```bash
-# Set the library search path
-export LD_LIBRARY_PATH=/tmp/pkcs11:$LD_LIBRARY_PATH
-
-# Optional configurations
-export CRYPTOKI_STORE=/tmp/pkcs11/token.json
-export CRYPTOKI_LEGACY=1
-
-# Run the demos
-chmod +x pkcs11_demo demo
-./pkcs11_demo
-./demo
-```
-
-### 4. Testing on QNX
-Since `cargo test` cannot automatically run binaries on the QNX target, you must compile them on the host and run them manually on the target.
-
-```bash
-# 1. Compile test binaries without running them
-./build_qnx.sh test --no-run
-```
-Transfer the compiled test binaries from `target/aarch64-unknown-nto-qnx800/release/deps/` (e.g., `signing-<hash>`) to your QNX target and execute them directly, ensuring `LD_LIBRARY_PATH` is set.
-
-> **Note:** The default Cargo target remains the host. Always use `--target aarch64-unknown-nto-qnx800` or the provided `build_qnx.sh` script when targeting QNX. If you add C library dependencies, update the `rustflags` in `.cargo/config.toml` or your `build.rs` accordingly.
 
 ---
 
@@ -333,45 +263,380 @@ Operational flow for most `C_*` functions:
 
 This keeps each file focused while preserving one consistent ABI surface.
 
-## Contributor Map
+---
 
-Use this table to decide where new code should go:
+## Cryptographic Mechanisms Supported
 
-| Concern | Primary module |
+| Mechanism | `CKM_*` constant | Key type | Tier |
+| --- | --- | --- | --- |
+| RSA key pair generation | `CKM_RSA_PKCS_KEY_PAIR_GEN` | RSA ≥ 1024 bits | Standard |
+| EC key pair generation | `CKM_EC_KEY_PAIR_GEN` | P-256 | Standard |
+| EdDSA key pair generation | `CKM_EC_EDWARDS_KEY_PAIR_GEN` | Ed25519 | Standard |
+| AES key generation | `CKM_AES_KEY_GEN` | AES 128/192/256 | Standard |
+| ChaCha20 key generation | `CKM_CHACHA20_KEY_GEN` | ChaCha20 256 bit | Standard |
+| RSA PKCS#1 v1.5 encrypt/decrypt | `CKM_RSA_PKCS` | RSA | Standard |
+| RSA OAEP encrypt/decrypt | `CKM_RSA_PKCS_OAEP` | RSA | Standard |
+| AES-CBC with PKCS#7 padding | `CKM_AES_CBC_PAD` | AES | Standard |
+| AES-GCM | `CKM_AES_GCM` | AES | Standard |
+| AES-CTR | `CKM_AES_CTR` | AES | Standard |
+| ChaCha20-Poly1305 | `CKM_CHACHA20_POLY1305` | ChaCha20 | Standard |
+| RSA PKCS#1 v1.5 sign/verify (SHA-256/384/512) | `CKM_SHA***_RSA_PKCS` | RSA | Standard |
+| RSA-PSS sign/verify (SHA-256/384/512) | `CKM_SHA***_RSA_PKCS_PSS` | RSA | Standard |
+| ECDSA (prehashed, SHA256/384/512) | `CKM_ECDSA_*` | EC | Standard |
+| EdDSA (Ed25519) | `CKM_EDDSA` | EdDSA | Standard |
+| SHA-2 / SHA-3 digests | `CKM_SHA***` / `CKM_SHA3_***` | — | Standard |
+| HKDF key derivation | `CKM_HKDF_DERIVE` | AES/generic | Standard |
+| AES Key Wrap (RFC 3394) | `CKM_AES_KEY_WRAP` | AES | Standard |
+| MD5 / SHA-1 digest | `CKM_MD5` / `CKM_SHA_1` | — | Legacy |
+| RSA PKCS#1 v1.5 / PSS sign/verify (SHA-1) | `CKM_SHA1_RSA_*` | RSA | Legacy |
+| RSA keygen < 1024 bits | — | RSA | Rejected (`CKR_KEY_SIZE_RANGE`) |
+
+---
+
+## Adding a Backend
+
+This is the whole point of the architecture. Implement the `CryptoProvider` trait in `src/traits.rs` and the entire PKCS#11 stack works on top of it — sessions, objects, attribute policy, PIN management, all of it. Nothing else needs to change.
+
+```rust
+struct MyProvider { /* internal state */ }
+
+impl CryptoProvider for MyProvider {
+    // 1. Slot metadata
+    fn slot_count(&self) -> u32 { 1 }
+    fn slot_description(&self, _slot: u32) -> String { "My Provider".into() }
+    fn token_model(&self, _slot: u32) -> String { "v1.0".into() }
+    fn supported_mechanisms(&self, _slot: u32) -> Vec<CK_MECHANISM_TYPE> { vec![…] }
+
+    // 2. Key serialization
+    fn serialize_key(&self, key_ref: &EngineKeyRef) -> Result<Vec<u8>, CryptoError> { … }
+    fn deserialize_key(&self, bytes: &[u8]) -> Result<EngineKeyRef, CryptoError> { … }
+
+    // 3. Crypto operations (sign, verify, etc.)
+    fn sign(&self, …) -> Result<Vec<u8>, CryptoError> { … }
+    // ...
+}
+```
+
+Register it in `C_Initialize` (currently wired in `src/pkcs11/ffi_api_core/lifecycle_and_slot_token.rs`):
+
+```rust
+let _ = crate::registry::register_engine(MyEngine::new());
+```
+
+Multiple engines coexist fine — each gets sequential global slot IDs.
+
+---
+
+## Parsec Integration
+
+[Parsec](https://parallaxsecond.github.io/parsec-book/) is a platform-agnostic API for hardware security features. This repo ships a ready-made Parsec integration: the compiled `libcryptoki.so` acts as the PKCS#11 backend for the Parsec daemon, and a CLI client (`parsec_client`) talks to it over a Unix socket using the [parsec-client](https://crates.io/crates/parsec-client) Rust crate.
+
+```text
+ your app
+    │  parsec-client (Rust crate)
+    ▼
+ parsec daemon  ──── libcryptoki.so  (this repo)
+    │
+ Unix socket
+```
+
+### Obtaining the Parsec daemon
+
+Install with the features required for this setup:
+
+```bash
+cargo install parsec-service \
+  --features 'pkcs11-provider,unix-peer-credentials-authenticator' \
+  --locked
+```
+
+The binary lands at `~/.cargo/bin/parsec`.
+
+### Daemon Configuration
+
+`parsec/config.toml` is the ready-to-use config. It points the daemon at the compiled library and uses UID-based auth — no passwords.
+
+Key fields:
+
+```toml
+[listener]
+socket_path = "/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+
+[[provider]]
+provider_type = "Pkcs11"
+library_path  = ".../target/release/libcryptoki.so"   # absolute path
+slot_number   = 0
+user_pin      = "1234"
+```
+
+See [`parsec/config.toml.example`](parsec/config.toml.example) for the full annotated reference covering every supported provider (MbedCrypto, PKCS#11, TPM, CryptoAuthLib, Trusted Service) and every tunable.
+
+### Building libcryptoki.so
+
+The daemon loads the library at runtime, so build it first:
+
+```bash
+# Cargo
+cargo build --release          # → target/release/libcryptoki.so
+
+# Bazel
+bazel build //src:cryptoki_cdylib
+```
+
+### Running the daemon
+
+```bash
+# With the bundled config
+parsec/scripts/start_parsec.sh
+
+# With a custom config
+parsec -c /path/to/your/config.toml
+
+# Custom socket path — override in the config [listener] section, then:
+PARSEC_BIN=/path/to/parsec parsec -c /path/to/config.toml
+```
+
+The socket path is set in `[listener] socket_path`. Clients pick it up via the `PARSEC_SERVICE_ENDPOINT` environment variable:
+
+```bash
+export PARSEC_SERVICE_ENDPOINT="unix:/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+```
+
+### Files in `parsec/`
+
+The `parsec/` directory contains three distinct Rust files serving different purposes:
+
+| File | Role | Build target |
+| --- | --- | --- |
+| [`parsec/client.rs`](parsec/client.rs) | CLI test harness — 7 subcommands to exercise every Parsec operation interactively | `cargo build --bin parsec_client` / `bazel build //parsec:parsec_client` |
+| [`parsec/client_demo.rs`](parsec/client_demo.rs) | Minimal app example — the reference starting point for a client application | `cargo run --example parsec_client_demo` |
+| [`parsec/basic_client.rs`](parsec/basic_client.rs) | Full `BasicClient` API reference with doc-comments for every operation | (library reference, not a runnable binary) |
+
+**`client.rs` — CLI test harness**
+
+A self-contained binary that exposes the full Parsec operation set as subcommands. Use it to verify the daemon is working correctly end-to-end before integrating into an application:
+
+```bash
+# Cargo
+cargo build --bin parsec_client
+./target/debug/parsec_client keygen mykey
+./target/debug/parsec_client list
+./target/debug/parsec_client sign   mykey "hello"
+./target/debug/parsec_client verify mykey "hello" <hex-sig>
+./target/debug/parsec_client export mykey
+./target/debug/parsec_client random 32
+./target/debug/parsec_client destroy mykey
+
+# Bazel
+bazel build //parsec:parsec_client
+./bazel-bin/parsec/parsec_client keygen mykey
+
+# Or use the wrapper script (resolves binary and sets PARSEC_SERVICE_ENDPOINT automatically)
+parsec/scripts/start_client.sh keygen mykey
+```
+
+**`client_demo.rs` — minimal app example**
+
+The reference starting point for building a Parsec client application. Covers the typical flow: connect → generate P-256 key → sign → verify → export public key → random bytes → destroy. Start here when writing your own client.
+
+### Writing your own client
+
+[`parsec/basic_client.rs`](parsec/basic_client.rs) is the full `BasicClient` source — the complete API surface with doc-comments and examples for every operation: key generation, import, export, sign/verify (hash and message variants), asymmetric and symmetric encrypt/decrypt, AEAD, hashing, key derivation, raw key agreement, and random generation.
+
+The essential pattern:
+
+```rust
+use parsec_client::core::basic_client::BasicClient;
+use parsec_client::core::interface::operations::psa_algorithm::{
+    Algorithm, AsymmetricSignature, Hash, SignHash,
+};
+use parsec_client::core::interface::operations::psa_key_attributes::{
+    Attributes, EccFamily, Lifetime, Policy, Type, UsageFlags,
+};
+
+// PARSEC_SERVICE_ENDPOINT must be set in the environment
+let client = BasicClient::new(Some("my-app".to_string()))?;
+
+let mut flags = UsageFlags::default();
+flags.set_sign_hash().set_verify_hash();
+
+client.psa_generate_key("my-key", Attributes {
+    lifetime: Lifetime::Persistent,
+    key_type: Type::EccKeyPair { curve_family: EccFamily::SecpR1 },
+    bits: 256,
+    policy: Policy {
+        usage_flags: flags,
+        permitted_algorithms: Algorithm::AsymmetricSignature(
+            AsymmetricSignature::Ecdsa {
+                hash_alg: SignHash::Specific(Hash::Sha256),
+            }
+        ),
+    },
+})?;
+```
+
+Add to `Cargo.toml`:
+
+```toml
+[dependencies]
+parsec-client = "0.16"
+openssl       = "0.10"   # for pre-hashing with MessageDigest::sha256()
+```
+
+---
+
+## Cross-Compilation (QNX SDP 8.0)
+
+This project supports cross-compilation for QNX SDP 8.0 (aarch64) while maintaining default compatibility with Linux x86_64 hosts.
+
+**Build Configuration:**
+QNX SDP 8.0 uses the `qcc` compiler wrapper, which interprets standard `gcc` flags differently (e.g., `-V`). The `.cargo/config.toml` is pre-configured to use the `qcc` linker, and a specialized `build_qnx.sh` script is provided to correctly invoke the QNX toolchain.
+
+### 1. Building the Rust Library
+To cross-compile the PKCS#11 library and Rust examples for QNX, use the provided helper script:
+```bash
+# Build library for QNX
+./build_qnx.sh build
+
+# Build tests for QNX
+./build_qnx.sh test --no-run
+
+# Build demos for QNX
+./build_qnx.sh examples <example-name>
+```
+*Artifacts:* `target/aarch64-unknown-nto-qnx800/release/libcryptoki.so` and `target/aarch64-unknown-nto-qnx800/release/examples/pkcs11_demo`
+
+### 2. Building the C++ Tests and Demo
+The C++ frontend (tests and demo) interacts with the compiled library via `dlopen`.
+```bash
+mkdir -p cpp/build_qnx && cd cpp/build_qnx
+source ~/qnx800/qnxsdp-env.sh # Source the QNX environment
+
+cmake .. \
+  -DCMAKE_SYSTEM_NAME=QNX \
+  -DCMAKE_SYSTEM_VERSION=8.0.0 \
+  -DCMAKE_C_COMPILER=qcc \
+  -DCMAKE_C_COMPILER_TARGET=gcc_ntoaarch64le \
+  -DCMAKE_CXX_COMPILER=qcc \
+  -DCMAKE_CXX_COMPILER_TARGET=gcc_ntoaarch64le_cxx
+
+make
+```
+*Artifacts:* `cpp/build_qnx/demo` and `cpp/build_qnx/test_cpp`
+
+### 3. Deployment and Execution
+Transfer the compiled artifacts (`libcryptoki.so`, `pkcs11_demo`, and `demo`) to your QNX target (e.g., `/tmp/pkcs11`).
+
+Configure the environment and run:
+```bash
+# Set the library search path
+export LD_LIBRARY_PATH=/tmp/pkcs11:$LD_LIBRARY_PATH
+
+# Optional configurations
+export CRYPTOKI_STORE=/tmp/pkcs11/token.json
+export CRYPTOKI_LEGACY=1
+
+# Run the demos
+chmod +x pkcs11_demo demo
+./pkcs11_demo
+./demo
+```
+
+### 4. Testing on QNX
+Since `cargo test` cannot automatically run binaries on the QNX target, you must compile them on the host and run them manually on the target.
+
+```bash
+# 1. Compile test binaries without running them
+./build_qnx.sh test --no-run
+```
+Transfer the compiled test binaries from `target/aarch64-unknown-nto-qnx800/release/deps/` (e.g., `signing-<hash>`) to your QNX target and execute them directly, ensuring `LD_LIBRARY_PATH` is set.
+
+> **Note:** The default Cargo target remains the host. Always use `--target aarch64-unknown-nto-qnx800` or the provided `build_qnx.sh` script when targeting QNX. If you add C library dependencies, update the `rustflags` in `.cargo/config.toml` or your `build.rs` accordingly.
+
+---
+
+## Test Coverage
+
+### Rust Integration Tests
+
+Every test goes through the C ABI function pointers (`fn_list()` / `fn_list_3_0()`) — the same path a real PKCS#11 consumer would take. No shortcuts.
+
+Current Status: 198 tests — 0 failures (last verified on April 30, 2026 via `cargo test`)
+
+```text
+[████████████████████]  197 / 197  100%
+```
+
+| Suite | Focus Area |
 | --- | --- |
-| Init/finalize, slots, token info | `ffi_api_core/lifecycle_and_slot_token.rs` |
-| Session open/close, login state | `ffi_api_core/session_and_login.rs` |
-| Key/object create/destroy/attributes/find | `ffi_api_core/keys_objects_attributes_find.rs` |
-| Sign/verify C APIs | `ffi_api_crypto/sign_verify.rs` |
-| Encrypt/decrypt C APIs | `ffi_api_crypto/encrypt_decrypt.rs` |
-| Digest C APIs | `ffi_api_crypto/digest.rs` |
-| Wrap/unwrap/derive C APIs | `ffi_api_crypto/key_wrap_derive.rs` |
-| v2.40 misc/unsupported C APIs | `ffi_api_crypto/misc_v240.rs` |
-| v3 session/user extensions | `ffi_api_v3/session_user.rs` |
-| v3 message encrypt/decrypt | `ffi_api_v3/message_encrypt_decrypt.rs` |
-| v3 message sign/verify | `ffi_api_v3/message_sign_verify.rs` |
-| v3 interface discovery | `ffi_api_v3/interface_discovery.rs` |
-| Provider key generation adapters | `backend/keygen.rs` |
-| Provider sign/verify adapters | `backend/sign_verify.rs` |
-| Provider symmetric cipher adapters | `backend/symmetric.rs` |
-| Provider message AEAD adapters | `backend/message_aead.rs` |
-| Provider digest/random adapters | `backend/digest_random.rs` |
-| Provider RSA/wrap/derive adapters | `backend/rsa_wrap_derive.rs` |
-| Provider attribute fallback | `backend/attributes.rs` |
-| Persistent storage models | `storage/models.rs` |
-| Persistent storage I/O + atomic writes | `storage/io.rs` |
-| Storage lock/fork helpers | `storage/locks.rs` |
-| Storage path config | `storage/path.rs` |
+| `pkcs11_integration` | Full `C_*` path, session lifecycle, key generation, fallback, error casing. |
+| `pkcs11_v3_integration` | v3.0 specific features (EdDSA, ChaCha20, SHA-3, discovery, session cancels). |
+| `attribute_policy` | Ratchet enforcement, immutable attributes, secure keygen defaults. |
+| `storage_atomic_writes` | Cross-process serialization, atomic temp-to-rename writes, permission sets. |
+| `ro_session` | Ensures mutating ops strictly return `CKR_SESSION_READ_ONLY` on read-only sessions. |
+| `engine_integration` | Direct `CryptoProvider` stress testing, tamper detection, error codes. |
+| `always_authenticate` | Validates per-operation context logins and auth ticket consumption. |
 
-## Development Guidelines
+*(For full coverage details, see the inline module docs within the test suite).*
 
-To preserve the architecture and readability:
+### Google Test Conformance Suite
 
-1. **Size Limits:** Prefer adding a new focused module over growing an existing file past ~500-600 LOC.
-2. **Thin Hubs:** Keep hub modules (`ffi_api_*`, `backend/`, `storage/`) thin. Re-export through the relevant hub module instead of importing deep internals externally.
-3. **Documentation:** Add a short module-level `//!` ownership header for every new module.
-4. **Dependencies:** Keep cross-module dependencies one-directional where possible.
-5. **CI Checks:** Keep `cargo clippy --all-targets --all-features -- -D warnings` and full `cargo test` green for every structural change.
+On top of the Rust tests, we run a C++ Google Test suite (`cpp/pkcs11test/`) that loads the compiled `.so` as a black box and drives it through the public C ABI — no Rust internals, just raw `C_*` calls. It's the closest thing to a third-party integration test we have.
+
+Current Status: 206 tests from 15 suites — 0 failures
+
+```text
+[████████████████████]  206 / 206  100%
+```
+
+| Suite | Count | Focus Area |
+| --- | --- | --- |
+| `PKCS11Test` | 32 | Token lifecycle: `C_InitToken`, `C_InitPIN`, `C_SetPIN`, `C_Login`/`C_Logout`. |
+| `ReadOnlySessionTest` | 23 | Session state machine, R/O vs R/W enforcement, `C_GetSessionInfo`. |
+| `ReadWriteSessionTest` | 21 | Object creation, copy, destroy, and attribute reads on R/W sessions. |
+| `Digests/DigestTest` | 75 | All supported hash algorithms via single and multi-part `C_Digest`. |
+| `Signatures/SignTest` | 18 | Sign/verify across RSA PKCS#1, RSA-PSS, ECDSA, and EdDSA. |
+| `ROUserSessionTest` | 6 | User-login gate: operations requiring `CKU_USER` on R/O sessions. |
+| `RWUserSessionTest` | 3 | User-login gate on R/W sessions. |
+| `DataObjectTest` | 7 | `CKO_DATA` objects: create, set attributes, retrieve, destroy. |
+| `RWSOSessionTest` | 2 | SO-login operations on R/W sessions. |
+| `Init` | 11 | `C_Initialize` / `C_Finalize` sequencing and error codes. |
+| `RNG` | 2 | `C_GenerateRandom` correctness and length contracts. |
+| `BERDecode` | 3 | ASN.1/BER decode helpers used internally by the test harness. |
+
+> The `Ciphers*`, `HMACs*`, `Duals*`, `DES`, `MD5-RSA`, and `SHA1-RSA` suites are excluded from the standard run — they cover operations not yet in scope for this release.
+
+#### Fetching and Running the Conformance Suite
+
+Follow these steps to initialize the submodule, compile the libraries, and execute the tests:
+
+```bash
+# 1. Fetch the Google Test Conformance Suite submodule
+git submodule update --init --recursive
+
+# 2. Build the Rust shared library
+cargo build
+
+# 3. Build the C++ test binary
+cd cpp && mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Debug && make
+
+# 4. Clear the token storage to start fresh
+rm -rf ~/.cryptoki/token.json
+
+# 5. Run the conformance suite against the Rust library
+./pkcs11test -m libcryptoki.so -l ../../target/debug -s 0 -u 1234 -o so-pin -I --gtest_filter=-Ciphers*:HMACs*:Duals*:*DES*:*MD5-RSA*:*SHA1-RSA*
+```
+
+Optional flags:
+
+| Flag | Description |
+| --- | --- |
+| `-u <pin>` | Override the User PIN (default: `1234`) |
+| `-o <pin>` | Override the SO PIN (default: `so-pin`) |
+| `-s <slot>` | Target a specific slot ID |
+| `-v` | Verbose output |
+| `-I` | Run `C_InitToken` at startup (reinitializes the token) |
 
 ---
 
@@ -470,150 +735,47 @@ A few honest deviations:
 
 ---
 
-## Cryptographic Mechanisms Supported
+## Development Guidelines
 
-| Mechanism | `CKM_*` constant | Key type | Tier |
-| --- | --- | --- | --- |
-| RSA key pair generation | `CKM_RSA_PKCS_KEY_PAIR_GEN` | RSA ≥ 1024 bits | Standard |
-| EC key pair generation | `CKM_EC_KEY_PAIR_GEN` | P-256 | Standard |
-| EdDSA key pair generation | `CKM_EC_EDWARDS_KEY_PAIR_GEN` | Ed25519 | Standard |
-| AES key generation | `CKM_AES_KEY_GEN` | AES 128/192/256 | Standard |
-| ChaCha20 key generation | `CKM_CHACHA20_KEY_GEN` | ChaCha20 256 bit | Standard |
-| RSA PKCS#1 v1.5 encrypt/decrypt | `CKM_RSA_PKCS` | RSA | Standard |
-| RSA OAEP encrypt/decrypt | `CKM_RSA_PKCS_OAEP` | RSA | Standard |
-| AES-CBC with PKCS#7 padding | `CKM_AES_CBC_PAD` | AES | Standard |
-| AES-GCM | `CKM_AES_GCM` | AES | Standard |
-| AES-CTR | `CKM_AES_CTR` | AES | Standard |
-| ChaCha20-Poly1305 | `CKM_CHACHA20_POLY1305` | ChaCha20 | Standard |
-| RSA PKCS#1 v1.5 sign/verify (SHA-256/384/512) | `CKM_SHA***_RSA_PKCS` | RSA | Standard |
-| RSA-PSS sign/verify (SHA-256/384/512) | `CKM_SHA***_RSA_PKCS_PSS` | RSA | Standard |
-| ECDSA (prehashed, SHA256/384/512) | `CKM_ECDSA_*` | EC | Standard |
-| EdDSA (Ed25519) | `CKM_EDDSA` | EdDSA | Standard |
-| SHA-2 / SHA-3 digests | `CKM_SHA***` / `CKM_SHA3_***` | — | Standard |
-| HKDF key derivation | `CKM_HKDF_DERIVE` | AES/generic | Standard |
-| AES Key Wrap (RFC 3394) | `CKM_AES_KEY_WRAP` | AES | Standard |
-| MD5 / SHA-1 digest | `CKM_MD5` / `CKM_SHA_1` | — | Legacy |
-| RSA PKCS#1 v1.5 / PSS sign/verify (SHA-1) | `CKM_SHA1_RSA_*` | RSA | Legacy |
-| RSA keygen < 1024 bits | — | RSA | Rejected (`CKR_KEY_SIZE_RANGE`) |
+To preserve the architecture and readability:
+
+1. **Size Limits:** Prefer adding a new focused module over growing an existing file past ~500-600 LOC.
+2. **Thin Hubs:** Keep hub modules (`ffi_api_*`, `backend/`, `storage/`) thin. Re-export through the relevant hub module instead of importing deep internals externally.
+3. **Documentation:** Add a short module-level `//!` ownership header for every new module.
+4. **Dependencies:** Keep cross-module dependencies one-directional where possible.
+5. **CI Checks:** Keep `cargo clippy --all-targets --all-features -- -D warnings` and full `cargo test` green for every structural change.
 
 ---
 
-## Adding a Backend
+## Contributor Map
 
-This is the whole point of the architecture. Implement the `CryptoProvider` trait in `src/traits.rs` and the entire PKCS#11 stack works on top of it — sessions, objects, attribute policy, PIN management, all of it. Nothing else needs to change.
+Use this table to decide where new code should go:
 
-```rust
-struct MyProvider { /* internal state */ }
-
-impl CryptoProvider for MyProvider {
-    // 1. Slot metadata
-    fn slot_count(&self) -> u32 { 1 }
-    fn slot_description(&self, _slot: u32) -> String { "My Provider".into() }
-    fn token_model(&self, _slot: u32) -> String { "v1.0".into() }
-    fn supported_mechanisms(&self, _slot: u32) -> Vec<CK_MECHANISM_TYPE> { vec![…] }
-
-    // 2. Key serialization
-    fn serialize_key(&self, key_ref: &EngineKeyRef) -> Result<Vec<u8>, CryptoError> { … }
-    fn deserialize_key(&self, bytes: &[u8]) -> Result<EngineKeyRef, CryptoError> { … }
-
-    // 3. Crypto operations (sign, verify, etc.)
-    fn sign(&self, …) -> Result<Vec<u8>, CryptoError> { … }
-    // ...
-}
-```
-
-Register it in `C_Initialize` (currently wired in `src/pkcs11/ffi_api_core/lifecycle_and_slot_token.rs`):
-
-```rust
-let _ = crate::registry::register_engine(MyEngine::new());
-```
-
-Multiple engines coexist fine — each gets sequential global slot IDs.
-
----
-
-## Test Coverage
-
-### Rust Integration Tests
-
-Every test goes through the C ABI function pointers (`fn_list()` / `fn_list_3_0()`) — the same path a real PKCS#11 consumer would take. No shortcuts.
-
-Current Status: 198 tests — 0 failures (last verified on April 30, 2026 via `cargo test`)
-
-```text
-[████████████████████]  197 / 197  100%
-```
-
-| Suite | Focus Area |
+| Concern | Primary module |
 | --- | --- |
-| `pkcs11_integration` | Full `C_*` path, session lifecycle, key generation, fallback, error casing. |
-| `pkcs11_v3_integration` | v3.0 specific features (EdDSA, ChaCha20, SHA-3, discovery, session cancels). |
-| `attribute_policy` | Ratchet enforcement, immutable attributes, secure keygen defaults. |
-| `storage_atomic_writes` | Cross-process serialization, atomic temp-to-rename writes, permission sets. |
-| `ro_session` | Ensures mutating ops strictly return `CKR_SESSION_READ_ONLY` on read-only sessions. |
-| `engine_integration` | Direct `CryptoProvider` stress testing, tamper detection, error codes. |
-| `always_authenticate` | Validates per-operation context logins and auth ticket consumption. |
-
-*(For full coverage details, see the inline module docs within the test suite).*
-
-### Google Test Conformance Suite
-
-On top of the Rust tests, we run a C++ Google Test suite (`cpp/pkcs11test/`) that loads the compiled `.so` as a black box and drives it through the public C ABI — no Rust internals, just raw `C_*` calls. It's the closest thing to a third-party integration test we have.
-
-Current Status: 206 tests from 15 suites — 0 failures
-
-```text
-[████████████████████]  206 / 206  100%
-```
-
-| Suite | Count | Focus Area |
-| --- | --- | --- |
-| `PKCS11Test` | 32 | Token lifecycle: `C_InitToken`, `C_InitPIN`, `C_SetPIN`, `C_Login`/`C_Logout`. |
-| `ReadOnlySessionTest` | 23 | Session state machine, R/O vs R/W enforcement, `C_GetSessionInfo`. |
-| `ReadWriteSessionTest` | 21 | Object creation, copy, destroy, and attribute reads on R/W sessions. |
-| `Digests/DigestTest` | 75 | All supported hash algorithms via single and multi-part `C_Digest`. |
-| `Signatures/SignTest` | 18 | Sign/verify across RSA PKCS#1, RSA-PSS, ECDSA, and EdDSA. |
-| `ROUserSessionTest` | 6 | User-login gate: operations requiring `CKU_USER` on R/O sessions. |
-| `RWUserSessionTest` | 3 | User-login gate on R/W sessions. |
-| `DataObjectTest` | 7 | `CKO_DATA` objects: create, set attributes, retrieve, destroy. |
-| `RWSOSessionTest` | 2 | SO-login operations on R/W sessions. |
-| `Init` | 11 | `C_Initialize` / `C_Finalize` sequencing and error codes. |
-| `RNG` | 2 | `C_GenerateRandom` correctness and length contracts. |
-| `BERDecode` | 3 | ASN.1/BER decode helpers used internally by the test harness. |
-
-> The `Ciphers*`, `HMACs*`, `Duals*`, `DES`, `MD5-RSA`, and `SHA1-RSA` suites are excluded from the standard run — they cover operations not yet in scope for this release.
-
-#### Fetching and Running the Conformance Suite
-
-Follow these steps to initialize the submodule, compile the libraries, and execute the tests:
-
-```bash
-# 1. Fetch the Google Test Conformance Suite submodule
-git submodule update --init --recursive
-
-# 2. Build the Rust shared library
-cargo build
-
-# 3. Build the C++ test binary
-cd cpp && mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug && make
-
-# 4. Clear the token storage to start fresh
-rm -rf ~/.cryptoki/token.json
-
-# 5. Run the conformance suite against the Rust library
-./pkcs11test -m libcryptoki.so -l ../../target/debug -s 0 -u 1234 -o so-pin -I --gtest_filter=-Ciphers*:HMACs*:Duals*:*DES*:*MD5-RSA*:*SHA1-RSA*
-```
-
-Optional flags:
-
-| Flag | Description |
-| --- | --- |
-| `-u <pin>` | Override the User PIN (default: `1234`) |
-| `-o <pin>` | Override the SO PIN (default: `so-pin`) |
-| `-s <slot>` | Target a specific slot ID |
-| `-v` | Verbose output |
-| `-I` | Run `C_InitToken` at startup (reinitializes the token) |
+| Init/finalize, slots, token info | `ffi_api_core/lifecycle_and_slot_token.rs` |
+| Session open/close, login state | `ffi_api_core/session_and_login.rs` |
+| Key/object create/destroy/attributes/find | `ffi_api_core/keys_objects_attributes_find.rs` |
+| Sign/verify C APIs | `ffi_api_crypto/sign_verify.rs` |
+| Encrypt/decrypt C APIs | `ffi_api_crypto/encrypt_decrypt.rs` |
+| Digest C APIs | `ffi_api_crypto/digest.rs` |
+| Wrap/unwrap/derive C APIs | `ffi_api_crypto/key_wrap_derive.rs` |
+| v2.40 misc/unsupported C APIs | `ffi_api_crypto/misc_v240.rs` |
+| v3 session/user extensions | `ffi_api_v3/session_user.rs` |
+| v3 message encrypt/decrypt | `ffi_api_v3/message_encrypt_decrypt.rs` |
+| v3 message sign/verify | `ffi_api_v3/message_sign_verify.rs` |
+| v3 interface discovery | `ffi_api_v3/interface_discovery.rs` |
+| Provider key generation adapters | `backend/keygen.rs` |
+| Provider sign/verify adapters | `backend/sign_verify.rs` |
+| Provider symmetric cipher adapters | `backend/symmetric.rs` |
+| Provider message AEAD adapters | `backend/message_aead.rs` |
+| Provider digest/random adapters | `backend/digest_random.rs` |
+| Provider RSA/wrap/derive adapters | `backend/rsa_wrap_derive.rs` |
+| Provider attribute fallback | `backend/attributes.rs` |
+| Persistent storage models | `storage/models.rs` |
+| Persistent storage I/O + atomic writes | `storage/io.rs` |
+| Storage lock/fork helpers | `storage/locks.rs` |
+| Storage path config | `storage/path.rs` |
 
 ---
 

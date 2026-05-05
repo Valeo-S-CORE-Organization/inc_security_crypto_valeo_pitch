@@ -86,3 +86,18 @@ alias(
     name = "cpp_srcs",
     actual = "//cpp:cpp_srcs",
 )
+
+alias(
+    name = "parsec_client",
+    actual = "//parsec:parsec_client",
+)
+
+alias(
+    name = "parsec_start",
+    actual = "//parsec:start_parsec",
+)
+
+alias(
+    name = "parsec_start_client",
+    actual = "//parsec:start_client",
+)

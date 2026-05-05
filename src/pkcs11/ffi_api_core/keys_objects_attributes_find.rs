@@ -92,8 +92,9 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
             *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
         }
         CKM_EC_KEY_PAIR_GEN => {
+            let curve = ec_curve_from_params(pub_attrs.get(&CKA_EC_PARAMS).map(|v| v.as_slice()));
             let (priv_gen, pub_gen) = ck_try!(backend::generate_ec_key_pair(
-                slot_id, crate::types::EcCurve::P256, pub_attrs, priv_attrs,
+                slot_id, curve, pub_attrs, priv_attrs,
             ));
             *ph_pub_key  = store_pub(pub_gen);
             *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
@@ -500,4 +501,19 @@ pub extern "C" fn C_FindObjectsFinal(h_session: CK_SESSION_HANDLE) -> CK_RV {
         Ok(())
     }));
     CKR_OK
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+// DER-encoded curve OIDs for CKA_EC_PARAMS
+const OID_P256: &[u8] = &[0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07];
+const OID_P384: &[u8] = &[0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x22];
+const OID_P521: &[u8] = &[0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x23];
+
+fn ec_curve_from_params(ec_params: Option<&[u8]>) -> crate::types::EcCurve {
+    match ec_params {
+        Some(OID_P384) => crate::types::EcCurve::P384,
+        Some(OID_P521) => crate::types::EcCurve::P521,
+        _              => crate::types::EcCurve::P256, // default / P256 OID
+    }
 }
