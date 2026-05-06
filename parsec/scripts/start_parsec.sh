@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CONFIG="$SCRIPT_DIR/../config.toml"
 PARSEC_BIN="${PARSEC_BIN:-$HOME/.cargo/bin/parsec}"
-SOCKET="/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+SOCKET="/tmp/parsec/run/parsec.sock"
 
 # Ensure runtime dirs exist
 mkdir -p "$(dirname "$SOCKET")"

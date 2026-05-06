@@ -14,7 +14,7 @@
 // Parsec client demo — connects to a live Parsec service.
 //
 // Start the service first (or use service_demo.rs which does it automatically):
-//   PARSEC_SERVICE_ENDPOINT=unix:/home/omar/.pkcs11-engine/parsec/run/parsec.sock \
+//   PARSEC_SERVICE_ENDPOINT=unix:/tmp/parsec/run/parsec.sock \
 //   cargo run --example parsec_client_demo
 
 use openssl::hash::{hash, MessageDigest};

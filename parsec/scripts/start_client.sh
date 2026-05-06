@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SOCKET="/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+SOCKET="/tmp/parsec/run/parsec.sock"
 
 # Resolve the client binary: Bazel output first, then Cargo
 if [[ -f "$REPO_ROOT/bazel-bin/parsec/parsec_client" ]]; then

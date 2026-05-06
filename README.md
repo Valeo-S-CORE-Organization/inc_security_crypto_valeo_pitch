@@ -346,7 +346,7 @@ Install with the features required for this setup:
 
 ```bash
 cargo install parsec-service \
-  --features 'pkcs11-provider,unix-peer-credentials-authenticator' \
+  --features 'all-authenticators,pkcs11-provider,tpm-provider,mbed-crypto-provider'\
   --locked
 ```
 
@@ -360,7 +360,7 @@ Key fields:
 
 ```toml
 [listener]
-socket_path = "/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+socket_path = "/tmp/parsec/run/parsec.sock" # example path
 
 [[provider]]
 provider_type = "Pkcs11"
@@ -399,7 +399,7 @@ PARSEC_BIN=/path/to/parsec parsec -c /path/to/config.toml
 The socket path is set in `[listener] socket_path`. Clients pick it up via the `PARSEC_SERVICE_ENDPOINT` environment variable:
 
 ```bash
-export PARSEC_SERVICE_ENDPOINT="unix:/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+export PARSEC_SERVICE_ENDPOINT="unix:/tmp/parsec/run/parsec.sock"
 ```
 
 ### Files in `parsec/`

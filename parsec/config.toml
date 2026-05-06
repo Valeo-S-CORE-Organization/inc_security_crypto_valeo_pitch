@@ -8,22 +8,22 @@ log_timestamp = true
 
 [listener]
 listener_type = "DomainSocket"
-socket_path   = "/home/omar/.pkcs11-engine/parsec/run/parsec.sock"
+socket_path   = "/tmp/parsec/run/parsec.sock"
 timeout       = 5000
 
 [authenticator]
-auth_type = "UnixPeerCredentials"
+auth_type = "Direct"
 
 [[key_manager]]
 name         = "on-disk-manager"
 manager_type = "OnDisk"
-store_path   = "/home/omar/.pkcs11-engine/parsec/mappings"
+store_path   = "/tmp/parsec/mappings"
 
 [[provider]]
 name                       = "pkcs11-provider"
 provider_type              = "Pkcs11"
 key_info_manager           = "on-disk-manager"
-library_path               = "/home/omar/Downloads/pkcs11-engine/target/release/libcryptoki.so"
+library_path               = "../target/release/libcryptoki.so"
 slot_number                = 0
 user_pin                   = "1234"
 software_public_operations = false
