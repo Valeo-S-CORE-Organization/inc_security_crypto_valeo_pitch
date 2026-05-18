@@ -64,3 +64,6 @@ target/
 
 # VSCode
 .vscode/
+
+# generated files
+qnx_local.bazelrc

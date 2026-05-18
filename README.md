@@ -487,26 +487,47 @@ openssl       = "0.10"   # for pre-hashing with MessageDigest::sha256()
 
 ## Cross-Compilation (QNX SDP 8.0)
 
-This project supports cross-compilation for QNX SDP 8.0 (aarch64) while maintaining default compatibility with Linux x86_64 hosts.
+This project uses Bazel to hermetically cross-compile for QNX SDP 8.0 (aarch64) while maintaining default compatibility with Linux x86_64 hosts.
 
-**Build Configuration:**
-QNX SDP 8.0 uses the `qcc` compiler wrapper, which interprets standard `gcc` flags differently (e.g., `-V`). The `.cargo/config.toml` is pre-configured to use the `qcc` linker, and a specialized `build_qnx.sh` script is provided to correctly invoke the QNX toolchain.
+The build system dynamically links against QNX's native C-bindings (like OpenSSL) and bypasses strict sandbox limitations to securely validate your local QNX developer license during compilation.
 
-### 1. Building the Rust Library
-To cross-compile the PKCS#11 library and Rust examples for QNX, use the provided helper script:
+### 1. Initial Setup
+Because QNX installations vary per machine, you must configure Bazel with your local toolchain paths before building. You only need to do this once.
+
 ```bash
-# Build library for QNX
-./build_qnx.sh build
+# 1. Activate your QNX SDP environment (adjust path to where QNX is installed)
+source ~/qnx800/qnxsdp-env.sh
 
-# Build tests for QNX
-./build_qnx.sh test --no-run
-
-# Build demos for QNX
-./build_qnx.sh examples <example-name>
+# 2. Generate your local Bazel overrides (creates a git-ignored qnx_local.bazelrc)
+./configure.sh
 ```
-*Artifacts:* `target/aarch64-unknown-nto-qnx800/release/libcryptoki.so` and `target/aarch64-unknown-nto-qnx800/release/examples/pkcs11_demo`
 
-### 2. Building the C++ Tests and Demo
+### 2. Building for QNX
+Once configured, you can use native Bazel commands. Simply append the `--config=per-arm64-qnx` flag to target the QNX AArch64 platform.
+
+Build everything:
+
+```bash
+bazel build //... --config=per-arm64-qnx
+```
+
+Build specific targets:
+
+```bash
+# Build the main dynamic library
+bazel build //src:cryptoki_cdylib --config=per-arm64-qnx
+
+# Build a specific demo
+bazel build //examples:pkcs11_demo --config=per-arm64-qnx
+```
+
+### 3. Artifact Locations
+Bazel outputs the compiled binaries into the `bazel-bin/` directory rather than a Cargo `target/` folder.
+
+* **Library:** `bazel-bin/src/libcryptoki.so`
+* **Examples:** `bazel-bin/examples/pkcs11_demo`
+
+### 4. Building the C++ Tests and Demo
 The C++ frontend (tests and demo) interacts with the compiled library via `dlopen`.
 ```bash
 mkdir -p cpp/build_qnx && cd cpp/build_qnx
@@ -524,7 +545,7 @@ make
 ```
 *Artifacts:* `cpp/build_qnx/demo` and `cpp/build_qnx/test_cpp`
 
-### 3. Deployment and Execution
+### 5. Deployment and Execution
 Transfer the compiled artifacts (`libcryptoki.so`, `pkcs11_demo`, and `demo`) to your QNX target (e.g., `/tmp/pkcs11`).
 
 Configure the environment and run:
@@ -542,16 +563,19 @@ chmod +x pkcs11_demo demo
 ./demo
 ```
 
-### 4. Testing on QNX
-Since `cargo test` cannot automatically run binaries on the QNX target, you must compile them on the host and run them manually on the target.
+### 6. Testing on QNX
+Since Bazel compiles the binaries on your host machine, it cannot automatically execute the resulting AArch64 test binaries on your QNX target board. You must compile the test executables first, then manually transfer and run them.
 
 ```bash
-# 1. Compile test binaries without running them
-./build_qnx.sh test --no-run
+# 1. Compile all test binaries for QNX without attempting to run them
+bazel build //tests/... --config=per-arm64-qnx
 ```
-Transfer the compiled test binaries from `target/aarch64-unknown-nto-qnx800/release/deps/` (e.g., `signing-<hash>`) to your QNX target and execute them directly, ensuring `LD_LIBRARY_PATH` is set.
 
-> **Note:** The default Cargo target remains the host. Always use `--target aarch64-unknown-nto-qnx800` or the provided `build_qnx.sh` script when targeting QNX. If you add C library dependencies, update the `rustflags` in `.cargo/config.toml` or your `build.rs` accordingly.
+**Transfer and Execute:**
+
+* Locate the compiled test executables in the `bazel-bin/tests/` directory (e.g., `bazel-bin/tests/integration_tests`).
+* Transfer the binaries to your QNX target board (via `scp`, `rsync`, etc.).
+* Execute them directly via the QNX shell. Ensure that `LD_LIBRARY_PATH` is set correctly on the target if your tests depend on specific shared libraries.
 
 ---
 

@@ -1,9 +1,81 @@
+# *******************************************************************************
+# Copyright (c) 2026 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# SPDX-License-Identifier: Apache-2.0
+# *******************************************************************************
+common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
+common --registry=https://bcr.bazel.build
+common --experimental_isolated_extension_usages
+
+# -------------------------------------------------------------------------------
+# QNX Authentication (Credential Helper)
+# -------------------------------------------------------------------------------
+build --credential_helper=*.qnx.com=%workspace%/tools/qnx_credential_helper.py
+fetch --credential_helper=*.qnx.com=%workspace%/tools/qnx_credential_helper.py
+
+# -------------------------------------------------------------------------------
+# Default build flags (all configurations)
+# -------------------------------------------------------------------------------
 build --java_language_version=17
 build --tool_java_language_version=17
 build --java_runtime_version=remotejdk_17
 build --tool_java_runtime_version=remotejdk_17
 
+build --@score_baselibs_rust//src/log:safety_level=qm
+build --@score_baselibs//score/json:base_library=nlohmann
+build --@score_logging//score/mw/log/flags:KRemote_Logging=False
+
+# Clippy linting
+build --aspects=@score_rust_policies//clippy:linters.bzl%clippy_strict
+build --output_groups=+rules_lint_human
+build:lint --@aspect_rules_lint//lint:fail_on_violation=true
+build:lint --config=per-x86_64-linux
 test --test_output=errors
 
-common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
-common --registry=https://bcr.bazel.build
+# -------------------------------------------------------------------------------
+# Shared configuration
+# -------------------------------------------------------------------------------
+build:per_shared --incompatible_strict_action_env
+build:per_shared --sandbox_writable_path=/var/tmp
+
+# -------------------------------------------------------------------------------
+# Config dedicated to host platform CPU:x86_64 and OS:Linux
+# -------------------------------------------------------------------------------
+build:per-x86_64-linux --config=per_shared
+build:per-x86_64-linux --platforms=@score_bazel_platforms//:x86_64-linux-gcc_12.2.0-posix
+build:per-x86_64-linux --extra_toolchains=@score_gcc_x86_64_toolchain//:x86_64-linux-gcc_12.2.0-posix
+build:per-x86_64-linux --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
+
+# -------------------------------------------------------------------------------
+# Config dedicated to target platform CPU:arm64 and OS:QNX
+# -------------------------------------------------------------------------------
+build:per-arm64-qnx --config=per_shared
+build:per-arm64-qnx --platforms=@score_bazel_platforms//:aarch64-qnx-sdp_8.0.0-posix
+
+# Explicitly set C++ and Rust toolchains for QNX
+build:per-arm64-qnx --extra_toolchains=@score_qcc_aarch64_toolchain//:aarch64-qnx-sdp_8.0.0-posix
+build:per-arm64-qnx --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_aarch64_unknown_nto_qnx800
+
+# Fix the prost_derive bug: Force Ferrocene to be used for host macro compilation too
+build:per-arm64-qnx --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
+
+# Whitelist QNX variables to survive strict_action_env purge for license checks
+build:per-arm64-qnx --action_env=QNX_HOST
+build:per-arm64-qnx --action_env=QNX_TARGET
+build:per-arm64-qnx --action_env=QNX_CONFIGURATION
+
+# Run Cargo build.rs scripts locally so openssl-sys can access host license files
+build:per-arm64-qnx --strategy=CargoBuildScriptRun=local
+
+# -------------------------------------------------------------------------------
+# Import local developer-specific workspace files, if they exist
+# -------------------------------------------------------------------------------
+try-import %workspace%/user.bazelrc
+try-import %workspace%/qnx_local.bazelrc

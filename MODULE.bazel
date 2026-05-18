@@ -15,28 +15,107 @@ module(
     version = "0.1.0",
 )
 
-# ==========================================
-# 1. C++ & RUST SETUP
-# ==========================================
-bazel_dep(name = "rules_cc", version = "0.2.18")
-bazel_dep(name = "rules_python", version = "2.0.0")
-bazel_dep(name = "rules_rust", version = "0.70.0")
+# ===============================================================================
+# CORE BAZEL RULES & DEPENDENCIES
+# ===============================================================================
+bazel_dep(name = "rules_cc", version = "0.1.2")
+bazel_dep(name = "rules_python", version = "1.4.1")
+bazel_dep(name = "rules_rust", version = "0.68.2-score")
+bazel_dep(name = "score_rust_policies", version = "0.0.5", dev_dependency = True)
+bazel_dep(name = "score_crates", version = "0.0.7")
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+# ===============================================================================
+# THIRD-PARTY LIBRARIES & TOOLING
+# ===============================================================================
+bazel_dep(name = "aspect_rules_lint", version = "2.0.0")
+bazel_dep(name = "buildifier_prebuilt", version = "8.2.0.2")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.1")
+bazel_dep(name = "google_benchmark", version = "1.9.4", dev_dependency = True)
+
+# ===============================================================================
+# RUST TOOLCHAIN & CRATE CONFIGURATION
+# ===============================================================================
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate", isolate = True)
 crate.from_cargo(
     name = "crates",
     cargo_lockfile = "//:Cargo.lock",
     manifests = ["//:Cargo.toml"],
+    supported_platform_triples = [
+        "aarch64-unknown-linux-gnu",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-nto-qnx710",
+        "x86_64-pc-nto-qnx710",
+    ],
 )
 use_repo(crate, "crates")
 
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
-rust.toolchain(
-    edition = "2021",
-    versions = ["1.85.0"],
+bazel_dep(name = "score_toolchains_rust", version = "0.8.0", dev_dependency = True)
+register_toolchains(
+    "@score_toolchains_rust//toolchains/ferrocene:all",
+    dev_dependency = True,
 )
-use_repo(rust, "rust_toolchains")
 
-# Register the Rust toolchains
-register_toolchains("@rust_toolchains//:all")
+# ===============================================================================
+# SCORE INTERNAL MODULES
+# ===============================================================================
+bazel_dep(name = "score_baselibs", version = "0.2.7")
+bazel_dep(name = "score_baselibs_rust", version = "0.1.2")
+bazel_dep(name = "score_bazel_platforms", version = "0.1.2")
+bazel_dep(name = "score_platform", version = "0.5.5", dev_dependency = True)
+bazel_dep(name = "score_docs_as_code", version = "4.0.3")
+bazel_dep(name = "score_itf", version = "0.1.0")
+bazel_dep(name = "score_tooling", version = "1.2.0")
+bazel_dep(name = "score_process", version = "1.5.4", dev_dependency = True)
+bazel_dep(name = "score_python_basics", version = "0.3.4")
+bazel_dep(name = "score_logging", version = "0.2.0")
+
+# ===============================================================================
+# C/C++ TOOLCHAIN CONFIGURATION
+# ===============================================================================
+bazel_dep(name = "score_bazel_cpp_toolchains", version = "0.2.2", dev_dependency = True)
+gcc = use_extension("@score_bazel_cpp_toolchains//extensions:gcc.bzl", "gcc", dev_dependency = True)
+
+gcc.toolchain(
+    name = "score_gcc_x86_64_toolchain",
+    target_cpu = "x86_64",
+    target_os = "linux",
+    use_default_package = True,
+    version = "12.2.0",
+)
+
+gcc.toolchain(
+    name = "score_qcc_aarch64_toolchain",
+    sdp_version = "8.0.0",
+    target_cpu = "aarch64",
+    target_os = "qnx",
+    use_default_package = True,
+    version = "12.2.0",
+)
+
+use_repo(
+    gcc,
+    "score_gcc_x86_64_toolchain",
+    "score_qcc_aarch64_toolchain",
+)
+
+register_toolchains(
+    "@score_gcc_x86_64_toolchain//:all",
+    "@score_qcc_aarch64_toolchain//:all",
+)
+
+# -------------------------------------------------------------------------------
+# S-CORE QNX TOOLCHAIN CONFIGURATION
+# -------------------------------------------------------------------------------
+bazel_dep(name = "score_toolchains_qnx", version = "0.0.5", dev_dependency = True)
+
+toolchains_qnx = use_extension("@score_toolchains_qnx//:extensions.bzl", "toolchains_qnx", dev_dependency = True)
+toolchains_qnx.sdp(
+    sha256 = "f2e0cb21c6baddbcb65f6a70610ce498e7685de8ea2e0f1648f01b327f6bac63",
+    strip_prefix = "installation",
+    url = "https://www.qnx.com/download/download/79858/installation.tgz",
+)
+use_repo(toolchains_qnx, "toolchains_qnx_sdp", "toolchains_qnx_ifs")

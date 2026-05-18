@@ -157,7 +157,7 @@ fn hex(b: &[u8]) -> String {
 }
 
 fn unhex(s: &str) -> Result<Vec<u8>, String> {
-    if !s.len().is_multiple_of(2) {
+    if s.len() % 2 != 0 {
         return Err("odd length".into());
     }
     (0..s.len())

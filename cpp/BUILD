@@ -31,12 +31,18 @@ cc_binary(
     name = "demo",
     srcs = ["demo.cpp"],
     deps = [":pkcs11_headers"],
-    linkopts = ["-ldl"],
+    linkopts = select({
+        "@platforms//os:linux": ["-ldl"],
+        "@platforms//os:qnx": [],
+    }),
 )
 
 cc_binary(
     name = "test_cpp_bin",
     srcs = ["test_cpp.cpp"],
     deps = [":pkcs11_headers"],
-    linkopts = ["-ldl"],
+    linkopts = select({
+        "@platforms//os:linux": ["-ldl"],
+        "@platforms//os:qnx": [],
+    }),
 )
