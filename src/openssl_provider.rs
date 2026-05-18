@@ -623,6 +623,22 @@ impl CryptoProvider for OpenSslEngine {
         Ok(key_ref.as_bytes().to_vec())
     }
 
+    // ── HMAC ─────────────────────────────────────────────────────────────────
+
+    fn hmac_sign(&self, algorithm: HashAlgorithm, key: &EngineKeyRef, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        let md   = message_digest(algorithm)?;
+        let pkey = PKey::hmac(key.as_bytes()).map_err(sign_err)?;
+        let mut signer = Signer::new(md, &pkey).map_err(sign_err)?;
+        signer.update(data).map_err(sign_err)?;
+        signer.sign_to_vec().map_err(sign_err)
+    }
+
+    fn hmac_verify(&self, algorithm: HashAlgorithm, key: &EngineKeyRef, data: &[u8], mac: &[u8]) -> Result<bool, CryptoError> {
+        let computed = self.hmac_sign(algorithm, key, data)?;
+        if computed.len() != mac.len() { return Ok(false); }
+        Ok(openssl::memcmp::eq(&computed, mac))
+    }
+
     // ── Hashing ───────────────────────────────────────────────────────────────
 
     fn hash(

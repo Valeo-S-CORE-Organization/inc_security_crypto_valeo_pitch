@@ -42,6 +42,11 @@ pub unsafe extern "C" fn C_SignInit(
             // EC and EdDSA signatures
         },
 
+        // HMAC
+        CKM_SHA256_HMAC | CKM_SHA384_HMAC | CKM_SHA512_HMAC => {
+            // Hash-based Message Authentication Code
+        },
+
         _ => return CKR_MECHANISM_INVALID,
     }
 
@@ -174,6 +179,11 @@ pub unsafe extern "C" fn C_VerifyInit(
         // Elliptic Curve
         CKM_ECDSA | CKM_ECDSA_SHA256 | CKM_EDDSA => {
             // EC and EdDSA signatures
+        },
+
+        // HMAC
+        CKM_SHA256_HMAC | CKM_SHA384_HMAC | CKM_SHA512_HMAC => {
+            // Hash-based Message Authentication Code
         },
 
         _ => return CKR_MECHANISM_INVALID,

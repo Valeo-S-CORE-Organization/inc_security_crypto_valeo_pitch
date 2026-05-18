@@ -32,6 +32,8 @@ pub const CKR_ATTRIBUTE_VALUE_INVALID:         CK_RV = 0x00000013;
 pub const CKR_DATA_INVALID:                    CK_RV = 0x00000020;
 pub const CKR_DATA_LEN_RANGE:                  CK_RV = 0x00000021;
 pub const CKR_DEVICE_ERROR:                    CK_RV = 0x00000030;
+pub const CKR_DEVICE_MEMORY:                   CK_RV = 0x00000031;
+pub const CKR_DEVICE_REMOVED:                  CK_RV = 0x00000032;
 pub const CKR_ENCRYPTED_DATA_INVALID:          CK_RV = 0x00000040;
 pub const CKR_ENCRYPTED_DATA_LEN_RANGE:        CK_RV = 0x00000041;
 pub const CKR_FUNCTION_CANCELED:               CK_RV = 0x00000050;
@@ -55,6 +57,7 @@ pub const CKR_PIN_INCORRECT:                   CK_RV = 0x000000A0;
 pub const CKR_PIN_LEN_RANGE:                   CK_RV = 0x000000A1;
 pub const CKR_PIN_LOCKED:                      CK_RV = 0x000000A4;
 pub const CKR_SESSION_CLOSED:                  CK_RV = 0x000000B0;
+pub const CKR_SESSION_COUNT:                   CK_RV = 0x000000B1;
 pub const CKR_SESSION_HANDLE_INVALID:          CK_RV = 0x000000B3;
 pub const CKR_SESSION_READ_ONLY:               CK_RV = 0x000000B5;
 pub const CKR_SIGNATURE_INVALID:               CK_RV = 0x000000C0;
@@ -71,6 +74,7 @@ pub const CKR_RANDOM_SEED_NOT_SUPPORTED:       CK_RV = 0x00000120;
 pub const CKR_RANDOM_NO_RNG:                   CK_RV = 0x00000121;
 pub const CKR_BUFFER_TOO_SMALL:                CK_RV = 0x00000150;
 pub const CKR_CRYPTOKI_NOT_INITIALIZED:        CK_RV = 0x00000190;
+pub const CKR_TOKEN_NOT_RECOGNIZED:            CK_RV = 0x000000e1;
 pub const CKR_CRYPTOKI_ALREADY_INITIALIZED:    CK_RV = 0x00000191;
 pub const CKR_FUNCTION_REJECTED:               CK_RV = 0x00000200;
 pub const CKR_TOKEN_RESOURCE_EXCEEDED:         CK_RV = 0x00000201;
@@ -100,6 +104,7 @@ pub const CKM_SHA256_RSA_PKCS_PSS:   CK_MECHANISM_TYPE = 0x00000043;
 pub const CKM_MD5:                   CK_MECHANISM_TYPE = 0x00000210;
 pub const CKM_SHA_1:                 CK_MECHANISM_TYPE = 0x00000220;
 pub const CKM_SHA256:                CK_MECHANISM_TYPE = 0x00000250;
+pub const CKM_SHA224:                CK_MECHANISM_TYPE = 0x00000255;
 pub const CKM_DES_KEY_GEN:           CK_MECHANISM_TYPE = 0x00000120;
 pub const CKM_DES_ECB:               CK_MECHANISM_TYPE = 0x00000121;
 pub const CKM_DES_CBC:               CK_MECHANISM_TYPE = 0x00000122;
@@ -125,6 +130,12 @@ pub const CKM_SHA512:                CK_MECHANISM_TYPE = 0x00000270;
 pub const CKM_SHA3_256:              CK_MECHANISM_TYPE = 0x000002B0;
 pub const CKM_SHA3_384:              CK_MECHANISM_TYPE = 0x000002C0;
 pub const CKM_SHA3_512:              CK_MECHANISM_TYPE = 0x000002D0;
+
+// HMAC mechanisms
+pub const CKM_SHA_1_HMAC:            CK_MECHANISM_TYPE = 0x00000221;
+pub const CKM_SHA256_HMAC:           CK_MECHANISM_TYPE = 0x00000251;
+pub const CKM_SHA384_HMAC:           CK_MECHANISM_TYPE = 0x00000261;
+pub const CKM_SHA512_HMAC:           CK_MECHANISM_TYPE = 0x00000271;
 
 // v3.0 EdDSA mechanisms
 pub const CKM_EC_EDWARDS_KEY_PAIR_GEN: CK_MECHANISM_TYPE = 0x00001055;
@@ -229,6 +240,11 @@ pub const SUPPORTED_MECHANISMS: &[CK_MECHANISM_TYPE] = &[
     // HKDF (v3.0)
     CKM_HKDF_DERIVE,
     CKM_HKDF_KEY_GEN,
+    // HMAC
+    CKM_SHA_1_HMAC,
+    CKM_SHA256_HMAC,
+    CKM_SHA384_HMAC,
+    CKM_SHA512_HMAC,
 ];
 
 // ── CKO_* — Object classes ─────────────────────────────────────────────────

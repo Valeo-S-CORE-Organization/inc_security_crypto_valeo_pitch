@@ -234,6 +234,16 @@ pub trait CryptoProvider: Send + Sync {
     /// EdDSA verify. Returns `true` if signature is valid.
     fn eddsa_verify(&self, key: &EngineKeyRef, message: &[u8], signature: &[u8]) -> Result<bool, CryptoError>;
 
+    // ── HMAC ─────────────────────────────────────────────────────────────
+
+    fn hmac_sign(&self, _algorithm: HashAlgorithm, _key: &EngineKeyRef, _data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        Err(CryptoError::MechanismInvalid { name: "hmac_sign not supported" })
+    }
+
+    fn hmac_verify(&self, _algorithm: HashAlgorithm, _key: &EngineKeyRef, _data: &[u8], _mac: &[u8]) -> Result<bool, CryptoError> {
+        Err(CryptoError::MechanismInvalid { name: "hmac_verify not supported" })
+    }
+
     // ── ChaCha20-Poly1305 (v3.0) ────────────────────────────────────────
 
     /// Generate a 256-bit ChaCha20 key.

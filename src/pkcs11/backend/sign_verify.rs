@@ -47,6 +47,12 @@ pub fn sign(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyObject, 
             CKM_EDDSA => e.eddsa_sign(&key.key_ref, data).map_err(Pkcs11Error::from),
             _ => Err(Pkcs11Error::InvalidMechanism),
         },
+        KeyType::GenericSecret => match mechanism {
+            CKM_SHA256_HMAC => e.hmac_sign(crate::types::HashAlgorithm::Sha256, &key.key_ref, data).map_err(Pkcs11Error::from),
+            CKM_SHA384_HMAC => e.hmac_sign(crate::types::HashAlgorithm::Sha384, &key.key_ref, data).map_err(Pkcs11Error::from),
+            CKM_SHA512_HMAC => e.hmac_sign(crate::types::HashAlgorithm::Sha512, &key.key_ref, data).map_err(Pkcs11Error::from),
+            _ => Err(Pkcs11Error::InvalidMechanism),
+        },
         _ => Err(Pkcs11Error::KeyTypeInconsistent),
     }
 }
@@ -90,6 +96,12 @@ pub fn verify(
         },
         KeyType::EdPublic => match mechanism {
             CKM_EDDSA => e.eddsa_verify(&key.key_ref, data, signature).map_err(Pkcs11Error::from)?,
+            _ => return Err(Pkcs11Error::InvalidMechanism),
+        },
+        KeyType::GenericSecret => match mechanism {
+            CKM_SHA256_HMAC => e.hmac_verify(crate::types::HashAlgorithm::Sha256, &key.key_ref, data, signature).map_err(Pkcs11Error::from)?,
+            CKM_SHA384_HMAC => e.hmac_verify(crate::types::HashAlgorithm::Sha384, &key.key_ref, data, signature).map_err(Pkcs11Error::from)?,
+            CKM_SHA512_HMAC => e.hmac_verify(crate::types::HashAlgorithm::Sha512, &key.key_ref, data, signature).map_err(Pkcs11Error::from)?,
             _ => return Err(Pkcs11Error::InvalidMechanism),
         },
         _ => return Err(Pkcs11Error::KeyTypeInconsistent),

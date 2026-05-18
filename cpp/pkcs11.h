@@ -36,6 +36,7 @@ typedef CK_ULONG           CK_PROFILE_ID;
 typedef CK_BYTE*           CK_BYTE_PTR;
 typedef CK_ULONG*          CK_ULONG_PTR;
 typedef void*              CK_VOID_PTR;
+typedef CK_UTF8CHAR*       CK_UTF8CHAR_PTR;
 typedef CK_SLOT_ID*        CK_SLOT_ID_PTR;
 typedef CK_OBJECT_HANDLE*  CK_OBJECT_HANDLE_PTR;
 typedef CK_MECHANISM_TYPE* CK_MECHANISM_TYPE_PTR;
@@ -281,6 +282,8 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 #define CKR_DATA_INVALID                 0x00000020UL
 #define CKR_DATA_LEN_RANGE               0x00000021UL
 #define CKR_DEVICE_ERROR                 0x00000030UL
+#define CKR_DEVICE_MEMORY                0x00000031UL
+#define CKR_DEVICE_REMOVED               0x00000032UL
 #define CKR_AEAD_DECRYPT_FAILED          0x00000035UL
 #define CKR_ENCRYPTED_DATA_INVALID       0x00000040UL
 #define CKR_FUNCTION_NOT_SUPPORTED       0x00000054UL
@@ -294,14 +297,21 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 #define CKR_OPERATION_ACTIVE             0x00000090UL
 #define CKR_OPERATION_NOT_INITIALIZED    0x00000091UL
 #define CKR_PIN_INCORRECT                0x000000A0UL
+#define CKR_PIN_LOCKED                   0x000000A4UL
+#define CKR_SESSION_CLOSED               0x000000B0UL
+#define CKR_SESSION_COUNT                0x000000B1UL
 #define CKR_SESSION_HANDLE_INVALID       0x000000B3UL
+#define CKR_SESSION_READ_ONLY            0x000000B5UL
 #define CKR_SIGNATURE_INVALID            0x000000C0UL
 #define CKR_TEMPLATE_INCOMPLETE          0x000000D0UL
 #define CKR_TEMPLATE_INCONSISTENT        0x000000D1UL
 #define CKR_BUFFER_TOO_SMALL             0x00000150UL
 #define CKR_USER_ALREADY_LOGGED_IN       0x00000100UL
 #define CKR_USER_NOT_LOGGED_IN           0x00000101UL
+#define CKR_TOKEN_NOT_PRESENT            0x000000E0UL
 #define CKR_CRYPTOKI_NOT_INITIALIZED     0x00000190UL
+#define CKR_TOKEN_NOT_RECOGNIZED         0x000000e1UL
+#define CKF_TOKEN_INITIALIZED            0x00000400UL
 #define CKR_TOKEN_WRITE_PROTECTED        0x000000E2UL
 #define CKR_CRYPTOKI_ALREADY_INITIALIZED 0x00000191UL
 #define CKR_FUNCTION_REJECTED            0x00000200UL
@@ -321,11 +331,16 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 #define CKM_MD5                         0x00000210UL
 #define CKM_SHA_1                       0x00000220UL
 #define CKM_SHA256                      0x00000250UL
+#define CKM_SHA256_HMAC                 0x00000251UL
+#define CKM_SHA224                      0x00000255UL
 #define CKM_SHA384                      0x00000260UL
+#define CKM_SHA384_HMAC                 0x00000261UL
 #define CKM_SHA512                      0x00000270UL
+#define CKM_SHA512_HMAC                 0x00000271UL
 #define CKM_SHA3_256                    0x000002B0UL
 #define CKM_SHA3_384                    0x000002C0UL
 #define CKM_SHA3_512                    0x000002D0UL
+#define CKM_GENERIC_SECRET_KEY_GEN      0x00000350UL
 #define CKM_EC_KEY_PAIR_GEN             0x00001040UL
 #define CKM_ECDSA                       0x00001041UL
 #define CKM_ECDSA_SHA256                0x00001043UL
@@ -368,6 +383,7 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 #define CKA_PRIVATE           0x00000002UL
 #define CKA_LABEL             0x00000003UL
 #define CKA_VALUE             0x00000011UL
+#define CKA_ID                0x00000102UL
 #define CKA_PRIVATE_EXPONENT  0x00000123UL
 #define CKA_PRIME_1           0x00000124UL
 #define CKA_PRIME_2           0x00000125UL
@@ -379,12 +395,16 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 #define CKA_SENSITIVE         0x00000103UL
 #define CKA_ENCRYPT           0x00000104UL
 #define CKA_DECRYPT           0x00000105UL
+#define CKA_WRAP              0x00000106UL
+#define CKA_UNWRAP            0x00000107UL
 #define CKA_SIGN              0x00000108UL
 #define CKA_VERIFY            0x00000109UL
+#define CKA_DERIVE            0x0000010CUL
 #define CKA_MODULUS           0x00000120UL
 #define CKA_MODULUS_BITS      0x00000121UL
 #define CKA_PUBLIC_EXPONENT   0x00000122UL
 #define CKA_VALUE_LEN         0x00000161UL
+#define CKA_EXTRACTABLE       0x00000162UL
 #define CKA_COPYABLE          0x00000171UL
 #define CKA_DESTROYABLE       0x00000172UL
 #define CKA_EC_PARAMS         0x00000180UL
@@ -408,6 +428,8 @@ typedef CK_INTERFACE* CK_INTERFACE_PTR;
 /* ── Entry points ──────────────────────────────────────────────────────── */
 
 extern "C" {
+    CK_RV C_Initialize(CK_VOID_PTR pInitArgs);
+    CK_RV C_Finalize(CK_VOID_PTR pReserved);
     CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList);
     CK_RV C_GetInterfaceList(CK_INTERFACE_PTR pInterfacesList, CK_ULONG_PTR pulCount);
     CK_RV C_GetInterface(const CK_UTF8CHAR* pInterfaceName, CK_VERSION* pVersion,
