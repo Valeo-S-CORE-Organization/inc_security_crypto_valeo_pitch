@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── Message-based Sign API (v3.0) ────────────────────────────────────────
 
@@ -35,6 +36,7 @@ pub unsafe extern "C" fn C_SignMessage(
     pul_sig_len:  *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_SignMessage called session={} len={}", h_session, ul_data_len);
     if p_data.is_null() || pul_sig_len.is_null() { return CKR_ARGUMENTS_BAD; }
     let data = std::slice::from_raw_parts(p_data, ul_data_len as usize);
     let (ctx, slot_id) = ck_try!(session::with_session(h_session, |s| {
@@ -108,6 +110,7 @@ pub unsafe extern "C" fn C_VerifyMessage(
     ul_sig_len:   CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_VerifyMessage called session={} len={}", h_session, ul_data_len);
     if p_data.is_null() || p_signature.is_null() { return CKR_ARGUMENTS_BAD; }
     let data = std::slice::from_raw_parts(p_data, ul_data_len as usize);
     let sig  = std::slice::from_raw_parts(p_signature, ul_sig_len as usize);

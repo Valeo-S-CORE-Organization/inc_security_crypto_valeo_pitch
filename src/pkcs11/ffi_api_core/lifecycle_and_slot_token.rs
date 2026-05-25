@@ -16,17 +16,24 @@ use super::*;
 
 #[no_mangle]
 pub unsafe extern "C" fn C_Initialize(p_init_args: *mut CK_C_INITIALIZE_ARGS) -> CK_RV {
+    // one-time logging initialization. MUST be the first line
+    // to ensure subsequent info!/warn! macros are not dropped.
+    crate::logger::init();
+
+    info!(context: "CONFIG", "C_Initialize called");
+
     // Parse and validate the threading model.
     //
-    // | CKF_OS_LOCKING_OK | Mutex callbacks | Action                          |
-    // |-------------------|-----------------|---------------------------------|
-    // | No                | NULL            | Single-threaded; accept.        |
+    // | CKF_OS_LOCKING_OK | Mutex callbacks | Action                           |
+    // |-------------------|-----------------|----------------------------------|
+    // | No                | NULL            | Single-threaded; accept.         |
     // | Yes               | NULL            | OS locking (parking_lot); accept.|
-    // | No                | Non-NULL        | App mutexes only; CKR_CANT_LOCK.|
-    // | Yes               | Non-NULL        | Prefer OS locking; ignore cbs.  |
+    // | No                | Non-NULL        | App mutexes only; CKR_CANT_LOCK. |
+    // | Yes               | Non-NULL        | Prefer OS locking; ignore cbs.   |
     if !p_init_args.is_null() {
         let args = &*p_init_args;
         if !args.pReserved.is_null() {
+            warn!(context: "FFI", "C_Initialize rejected: pReserved must be NULL");
             return CKR_ARGUMENTS_BAD;
         }
         let has_callbacks = args.CreateMutex.is_some()
@@ -36,6 +43,7 @@ pub unsafe extern "C" fn C_Initialize(p_init_args: *mut CK_C_INITIALIZE_ARGS) ->
         let os_locking_ok = args.flags & CKF_OS_LOCKING_OK != 0;
         if has_callbacks && !os_locking_ok {
             // App-supplied mutexes without OS locking — we cannot use them (v1).
+            warn!(context: "CONFIG", "C_Initialize rejected: mutex callbacks without CKF_OS_LOCKING_OK");
             return CKR_CANT_LOCK;
         }
         // All other cases: we use parking_lot (OS-level locking) regardless.
@@ -44,6 +52,7 @@ pub unsafe extern "C" fn C_Initialize(p_init_args: *mut CK_C_INITIALIZE_ARGS) ->
     // Guard against double-initialization.
     let mut guard = global().write().unwrap_or_else(|e| e.into_inner());
     if guard.is_some() {
+        warn!(context: "CONFIG", "C_Initialize called while already initialized");
         return CKR_CRYPTOKI_ALREADY_INITIALIZED;
     }
 
@@ -66,6 +75,7 @@ pub unsafe extern "C" fn C_Initialize(p_init_args: *mut CK_C_INITIALIZE_ARGS) ->
     }
 
     *guard = Some(GlobalState);
+    info!(context: "CONFIG", "PKCS#11 initialized for {} slot(s)", slot_ids.len());
 
     // Register the post-fork child handler exactly once for the process lifetime.
     // Must happen after `*guard = Some(...)` so the child handler sees an
@@ -79,17 +89,20 @@ pub unsafe extern "C" fn C_Initialize(p_init_args: *mut CK_C_INITIALIZE_ARGS) ->
 
 #[no_mangle]
 pub unsafe extern "C" fn C_Finalize(p_reserved: *mut c_void) -> CK_RV {
+    info!(context: "CONFIG", "C_Finalize called");
     // PKCS#11 pReserved must be NULL.
     if !p_reserved.is_null() {
+        warn!(context: "FFI", "C_Finalize rejected: pReserved must be NULL");
         return CKR_ARGUMENTS_BAD;
     }
     let mut guard = global().write().unwrap_or_else(|e| e.into_inner());
     let state = match guard.as_mut() {
         Some(s) => s,
-        None    => return CKR_CRYPTOKI_NOT_INITIALIZED,
+        None    => { warn!(context: "CONFIG", "C_Finalize called while not initialized"); return CKR_CRYPTOKI_NOT_INITIALIZED; },
     };
     state.shutdown();
     *guard = None;
+    info!(context: "CONFIG", "PKCS#11 finalized");
     CKR_OK
 }
 
@@ -128,6 +141,7 @@ pub unsafe extern "C" fn C_GetSlotList(
     pul_count:      *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CONFIG", "C_GetSlotList called");
     if pul_count.is_null() { return CKR_ARGUMENTS_BAD; }
     let ids = crate::registry::slot_ids();
     let n = ids.len() as CK_ULONG;
@@ -149,6 +163,7 @@ pub unsafe extern "C" fn C_GetSlotList(
 #[no_mangle]
 pub unsafe extern "C" fn C_GetSlotInfo(slot_id: CK_SLOT_ID, p_info: *mut CK_SLOT_INFO) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CONFIG", "C_GetSlotInfo called slot={}", slot_id);
     let (engine, internal_id) = match crate::registry::engine_for_slot(slot_id) {
         Ok(pair) => pair,
         Err(_)   => return CKR_SLOT_ID_INVALID,
@@ -166,6 +181,7 @@ pub unsafe extern "C" fn C_GetSlotInfo(slot_id: CK_SLOT_ID, p_info: *mut CK_SLOT
 #[no_mangle]
 pub unsafe extern "C" fn C_GetTokenInfo(slot_id: CK_SLOT_ID, p_info: *mut CK_TOKEN_INFO) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CONFIG", "C_GetTokenInfo called slot={}", slot_id);
     let (engine, internal_id) = match crate::registry::engine_for_slot(slot_id) {
         Ok(pair) => pair,
         Err(_)   => return CKR_SLOT_ID_INVALID,
@@ -202,6 +218,7 @@ pub unsafe extern "C" fn C_GetMechanismList(
     pul_count:  *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CONFIG", "C_GetMechanismList called slot={}", slot_id);
     let (engine, internal_id) = match crate::registry::engine_for_slot(slot_id) {
         Ok(pair) => pair,
         Err(_)   => return CKR_SLOT_ID_INVALID,
@@ -237,6 +254,7 @@ pub unsafe extern "C" fn C_GetMechanismInfo(
     p_info:    *mut CK_MECHANISM_INFO,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CONFIG", "C_GetMechanismInfo called slot={} mech={}", slot_id, mech_type);
     let (engine, internal_id) = match crate::registry::engine_for_slot(slot_id) {
         Ok(pair) => pair,
         Err(_)   => return CKR_SLOT_ID_INVALID,
@@ -382,9 +400,11 @@ pub unsafe extern "C" fn C_InitToken(
     p_label:     *const CK_UTF8CHAR,
 ) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "CONFIG", "C_InitToken called slot={}", slot_id);
     if !crate::registry::is_valid_slot(slot_id) { return CKR_SLOT_ID_INVALID; }
     if p_pin.is_null() || p_label.is_null() { return CKR_ARGUMENTS_BAD; }
     if session::has_open_sessions(slot_id) {
+        warn!(context: "CONFIG", "C_InitToken rejected: open sessions exist on slot={}", slot_id);
         return CKR_SESSION_EXISTS;
     }
     let pin = std::slice::from_raw_parts(p_pin, ul_pin_len as usize);
@@ -403,5 +423,6 @@ pub unsafe extern "C" fn C_InitToken(
     object_store::ensure_baseline_profile(slot_id);
 
     object_store::persist_to_disk();
+    info!(context: "CONFIG", "C_InitToken completed for slot={}", slot_id);
     CKR_OK
 }

@@ -22,6 +22,8 @@ pub fn encrypt_message(
     aad: &[u8],
     plaintext: &[u8],
 ) -> Result<(Vec<u8>, Vec<u8>)> {
+    debug!(context: "BACKEND", "Message encrypt: slot={} mechanism={} key_handle={} iv_len={} aad_len={} len={}", 
+        slot_id, mechanism, key.handle, iv.len(), aad.len(), plaintext.len());
     let e = eng(slot_id)?;
     match mechanism {
         CKM_AES_GCM => e.aes_gcm_encrypt(&key.key_ref, iv, aad, plaintext).map_err(Pkcs11Error::from),
@@ -39,6 +41,8 @@ pub fn decrypt_message(
     ciphertext: &[u8],
     tag: &[u8],
 ) -> Result<Zeroizing<Vec<u8>>> {
+    debug!(context: "BACKEND", "Message decrypt: slot={} mechanism={} key_handle={} iv_len={} aad_len={} len={} tag_len={}", 
+        slot_id, mechanism, key.handle, iv.len(), aad.len(), ciphertext.len(), tag.len());
     let e = eng(slot_id)?;
     match mechanism {
         CKM_AES_GCM => e.aes_gcm_decrypt(&key.key_ref, iv, aad, ciphertext, tag).map_err(Pkcs11Error::from),

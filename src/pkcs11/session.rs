@@ -17,6 +17,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
+use score_log::{debug, trace, warn};
 
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
@@ -148,6 +149,7 @@ impl Session {
         if obj.always_authenticate {
             // Check if the "single-use ticket" exists
             if !self.context_specific_authed {
+                warn!(context: "AUTH", "context-specific auth required and missing session={}", self.handle);
                 return Err(Pkcs11Error::UserNotLoggedIn);
             }
             // // consume the authentication immediately
@@ -169,7 +171,9 @@ fn next_session_handle() -> CK_SESSION_HANDLE {
 }
 
 pub fn open_session(slot_id: CK_SLOT_ID, flags: CK_FLAGS) -> Result<CK_SESSION_HANDLE> {
+    debug!(context: "SESSION", "Opening session: slot={} flags={}", slot_id, flags);
     if flags & CKF_SERIAL_SESSION == 0 {
+        warn!(context: "SESSION", "open_session rejected without CKF_SERIAL_SESSION slot={} flags={}", slot_id, flags);
         return Err(Pkcs11Error::SessionParallelNotSupported);
     }
 
@@ -185,6 +189,7 @@ pub fn open_session(slot_id: CK_SLOT_ID, flags: CK_FLAGS) -> Result<CK_SESSION_H
 
     // Security Officer cannot have Read-Only sessions
     if current_login_state == LoginState::SoLoggedIn && !is_rw {
+        warn!(context: "SESSION", "open_session rejected RO while SO logged in slot={}", slot_id);
         return Err(Pkcs11Error::SessionReadWriteSoExists);
     }
     let handle = next_session_handle();
@@ -192,16 +197,21 @@ pub fn open_session(slot_id: CK_SLOT_ID, flags: CK_FLAGS) -> Result<CK_SESSION_H
     // Inherit the safely validated login state
     session.login_state = current_login_state;
     sessions.insert(handle, session);
+    debug!(context: "SESSION", "opened session={} slot={} rw={}", handle, slot_id, is_rw);
     Ok(handle)
 }
 
 pub fn close_session(handle: CK_SESSION_HANDLE) -> Result<()> {
     SESSIONS.write().remove(&handle).ok_or(Pkcs11Error::InvalidSessionHandle)?;
+    debug!(context: "SESSION", "closed session={}", handle);
     Ok(())
 }
 
 pub fn close_all_sessions(slot_id: CK_SLOT_ID) {
-    SESSIONS.write().retain(|_, s| s.slot_id != slot_id);
+    let mut sessions = SESSIONS.write();
+    let before = sessions.len();
+    sessions.retain(|_, s| s.slot_id != slot_id);
+    debug!(context: "SESSION", "closed all sessions slot={} removed={}", slot_id, before.saturating_sub(sessions.len()));
 }
 
 pub fn with_session_mut<F, T>(handle: CK_SESSION_HANDLE, f: F) -> Result<T>
@@ -238,7 +248,12 @@ pub fn get_session_info(handle: CK_SESSION_HANDLE) -> Result<CK_SESSION_INFO> {
     })
 }
 
-pub fn clear_sessions() { SESSIONS.write().clear(); }
+pub fn clear_sessions() {
+    let mut sessions = SESSIONS.write();
+    let n = sessions.len();
+    sessions.clear();
+    debug!(context: "SESSION", "cleared all sessions count={}", n);
+}
 
 pub fn session_count() -> usize { SESSIONS.read().len() }
 
@@ -270,9 +285,14 @@ pub fn login_all_sessions_on_slot(slot_id: CK_SLOT_ID, state: LoginState) {
 /// become hidden), so any in-progress C_FindObjects must be invalidated.
 pub fn release_find_contexts_on_slot(slot_id: CK_SLOT_ID) {
     let mut sessions = SESSIONS.write();
+    let mut released = 0usize;
     for s in sessions.values_mut().filter(|s| s.slot_id == slot_id) {
+        if s.find_ctx.is_some() {
+            released += 1;
+        }
         s.find_ctx = None;
     }
+    trace!(context: "SESSION", "released find contexts slot={} count={}", slot_id, released);
 }
 
 /// Get the current login state for a slot (from any session on that slot).

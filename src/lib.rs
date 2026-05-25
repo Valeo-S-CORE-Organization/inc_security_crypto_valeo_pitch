@@ -49,6 +49,7 @@ pub mod pkcs11;
 pub mod registry;
 pub mod traits;
 pub mod types;
+pub(crate) mod logger;
 
 // ── Convenience re-exports ────────────────────────────────────────────────────
 

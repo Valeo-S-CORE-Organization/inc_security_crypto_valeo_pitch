@@ -15,6 +15,7 @@ _TESTS_WITH_COMMON = [
     "attribute_policy",
     "copy_object",
     "lifecycle",
+    "logging_smoke",
     "mechanism_policy",
     "message_api",
     "persistence_integration",
@@ -53,6 +54,10 @@ _TESTS_NO_COMMON = [
     ),
     deps = _COMMON_DEPS + all_crate_deps(normal = True, package_name = "") + all_crate_deps(normal_dev = True, package_name = ""),
     proc_macro_deps = all_crate_deps(proc_macro_dev = True, package_name = ""),
+    env = {
+        "CRYPTOKI_STORE": "$$TEST_TMPDIR/token.json",
+        "RUST_TEST_THREADS": "1",
+    },
 ) for name in _TESTS_WITH_COMMON]
 
 [rust_test(
@@ -66,6 +71,10 @@ _TESTS_NO_COMMON = [
     ),
     deps = _COMMON_DEPS + all_crate_deps(normal = True, package_name = "") + all_crate_deps(normal_dev = True, package_name = ""),
     proc_macro_deps = all_crate_deps(proc_macro_dev = True, package_name = ""),
+    env = {
+        "CRYPTOKI_STORE": "$$TEST_TMPDIR/token.json",
+        "RUST_TEST_THREADS": "1",
+    },
 ) for name in _TESTS_NO_COMMON]
 
 test_suite(

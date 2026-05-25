@@ -19,6 +19,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
+use score_log::{debug, error, trace, warn};
 
 use crate::traits::EngineKeyRef;
 
@@ -167,9 +168,14 @@ pub fn store_object(mut obj: KeyObject, session_handle: Option<CK_SESSION_HANDLE
         obj.creating_session = session_handle;
     }
     let h = obj.handle;
+    debug!(context: "STORE", "Storing object: handle={} type={:?} slot={} token={}", 
+        h, obj.key_type, obj.slot_id, is_token);
     OBJECT_STORE.write().insert(h, obj);
     if is_token {
+        trace!(context: "STORE", "stored token object handle={}", h);
         persist_if_needed();
+    } else {
+        trace!(context: "STORE", "stored session object handle={}", h);
     }
     h
 }
@@ -240,17 +246,30 @@ pub fn destroy_object(handle: CK_OBJECT_HANDLE) -> Result<()> {
         .write()
         .remove(&handle)
         .ok_or(Pkcs11Error::InvalidObjectHandle)?;
-    if !is_session_object(&obj) {
+    let token_object = !is_session_object(&obj);
+    if token_object {
         persist_if_needed();
     }
+    trace!(context: "STORE", "destroyed object handle={} token={}", handle, token_object);
     Ok(())
 }
 
-pub fn clear_objects() { OBJECT_STORE.write().clear(); }
+pub fn clear_objects() {
+    let mut store = OBJECT_STORE.write();
+    let n = store.len();
+    store.clear();
+    debug!(context: "STORE", "cleared all objects count={}", n);
+}
 
 /// Clear only objects belonging to a specific slot (used by C_InitToken).
 pub fn clear_objects_for_slot(slot_id: CK_SLOT_ID) {
-    OBJECT_STORE.write().retain(|_, obj| obj.slot_id != slot_id);
+    let removed = {
+        let mut store = OBJECT_STORE.write();
+        let before = store.len();
+        store.retain(|_, obj| obj.slot_id != slot_id);
+        before.saturating_sub(store.len())
+    };
+    debug!(context: "STORE", "cleared objects for slot={} removed={}", slot_id, removed);
     persist_if_needed();
 }
 
@@ -275,7 +294,6 @@ pub fn ensure_baseline_profile(slot_id: CK_SLOT_ID) -> CK_OBJECT_HANDLE {
             }
         }
     }
-
     let handle = next_handle();
     let mut attrs: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>> = HashMap::new();
     attrs.insert(CKA_CLASS,       (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec());
@@ -368,9 +386,9 @@ fn persist_if_needed() {
         match crate::registry::engine_for_slot(obj.slot_id) {
             Ok((engine, _)) => match storage::StoredObject::from_key_object(obj, engine.as_ref()) {
                 Ok(stored) => objects.push(stored),
-                Err(e) => eprintln!("cryptoki:serialize error: {e}"),
+                Err(_) => error!(context: "STORE", "serialize failed for object={}", obj.handle),
             },
-            Err(_) => eprintln!("cryptoki:no engine for slot {} — skipping object {}", obj.slot_id, obj.handle),
+            Err(_) => warn!(context: "STORE", "no engine for slot={} skipping object={}", obj.slot_id, obj.handle),
         }
     }
 
@@ -388,13 +406,18 @@ fn persist_if_needed() {
         objects,
         next_handle: NEXT_HANDLE.load(Ordering::SeqCst),
     };
-    let _ = storage::save_state(&state);
+    if storage::save_state(&state).is_err() {
+        error!(context: "STORE", "save_state failed");
+    } else {
+        trace!(context: "STORE", "persisted token objects count={}", state.objects.len());
+    }
 }
 
 /// Load persisted objects from disk into the object store.
 /// Called by `C_Initialize` to restore token objects from a previous session.
 pub fn load_persisted_objects() {
     if let Some(state) = storage::load_state() {
+        let count = state.objects.len();
         let mut store = OBJECT_STORE.write();
         for stored in state.objects {
             let slot_id = stored.slot_id;
@@ -402,15 +425,16 @@ pub fn load_persisted_objects() {
             match crate::registry::engine_for_slot(slot_id) {
                 Ok((engine, _)) => match stored.into_key_object_with_engine(engine.as_ref()) {
                     Ok(obj) => { store.insert(h, obj); }
-                    Err(e)  => eprintln!("cryptoki:deserialize error: {e}"),
+                    Err(_)  => error!(context: "STORE", "deserialize failed handle={}", h),
                 },
-                Err(_) => eprintln!("cryptoki:no engine for slot {slot_id} — skipping object {h} on load"),
+                Err(_) => warn!(context: "STORE", "no engine for slot={} skipping object={} on load", slot_id, h),
             }
         }
         // Ensure the handle counter is past all loaded handles to avoid collisions.
         let max_loaded = store.keys().copied().max().unwrap_or(0);
         let counter = state.next_handle.max(max_loaded + 1);
         NEXT_HANDLE.store(counter, Ordering::SeqCst);
+        info!(context: "STORE", "Loaded {} persisted objects from storage. next_handle={}", store.len(), counter);
 
         // Restore per-slot token state.
         if !state.tokens.is_empty() {

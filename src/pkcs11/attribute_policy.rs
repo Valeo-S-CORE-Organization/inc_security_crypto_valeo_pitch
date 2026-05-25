@@ -32,6 +32,7 @@ use super::constants::*;
 use super::error::{Pkcs11Error, Result};
 use super::object_store::KeyObject;
 use super::types::*;
+use score_log::warn;
 
 // ── validate_attribute_change ────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ pub fn validate_attribute_change(
             let was_true   = old_val.is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
             let going_false = !new_val.is_empty() && new_val[0] == CK_FALSE;
             if was_true && going_false {
+                warn!(context: "ATTR", "Attribute policy violation: cannot set CKA_SENSITIVE/CKA_WRAP_WITH_TRUSTED to FALSE after it was TRUE");
                 return Err(Pkcs11Error::AttributeReadOnly);
             }
         }
@@ -63,6 +65,7 @@ pub fn validate_attribute_change(
             let was_false  = old_val.is_some_and(|v| v.is_empty() || v[0] == CK_FALSE);
             let going_true  = !new_val.is_empty() && new_val[0] == CK_TRUE;
             if was_false && going_true {
+                warn!(context: "ATTR", "Attribute policy violation: cannot set CKA_EXTRACTABLE to TRUE after it was FALSE");
                 return Err(Pkcs11Error::AttributeReadOnly);
             }
         }
@@ -73,6 +76,7 @@ pub fn validate_attribute_change(
         | CKA_EC_PARAMS
         | CKA_MODULUS_BITS
         | CKA_VALUE_LEN => {
+            warn!(context: "ATTR", "Attribute policy violation: attempted to change immutable attribute type={}", attr);
             return Err(Pkcs11Error::AttributeReadOnly);
         }
         _ => {}
@@ -121,6 +125,7 @@ pub fn check_attribute_access(attr: CK_ATTRIBUTE_TYPE, obj: &KeyObject) -> Resul
         .get(&CKA_SENSITIVE)
         .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
     if is_sensitive {
+        warn!(context: "ATTR", "Attribute access rejected: CKA_VALUE requested for sensitive object handle={}", obj.handle);
         return Err(Pkcs11Error::AttributeSensitive);
     }
 
@@ -130,6 +135,7 @@ pub fn check_attribute_access(attr: CK_ATTRIBUTE_TYPE, obj: &KeyObject) -> Resul
         .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
 
     if !is_extractable {
+        warn!(context: "ATTR", "Attribute access rejected: CKA_VALUE requested for non-extractable object handle={}", obj.handle);
         return Err(Pkcs11Error::AttributeSensitive);
     }
     Ok(())

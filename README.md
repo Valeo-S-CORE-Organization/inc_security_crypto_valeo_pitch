@@ -31,7 +31,7 @@ cargo build --release
 
 ### Bazel workflow
 
-The repository builds fully with native `rules_rust`.
+The repository builds fully with native `rules_rust` and utilizes a **hermetic OpenSSL build**. Unlike standard builds, it does not depend on host system headers or libraries; instead, it fetches and compiles OpenSSL from source within the Bazel sandbox.
 
 #### Build targets
 
@@ -47,11 +47,11 @@ bazel build //examples:pkcs11_business_demo
 #### Test
 
 ```bash
-# All 22 Rust integration tests (native rust_test, sandboxed, cached)
+# All native Rust integration tests
 bazel test //tests:integration_tests
 
-# Single test
-bazel test //tests:pkcs11_integration
+# Specialized logging verification test (spawns child process)
+bazel test //tests:logging_smoke
 
 # C++ Google Test conformance suite
 bazel test //tests/cpp:cpp_tests
@@ -61,27 +61,45 @@ bazel test //tests/cpp:cpp_tests
 
 | Path | Contents |
 | --- | --- |
-| `MODULE.bazel` | `rules_rust` + `crate_universe` (`crate.from_cargo(...)`) |
+| `MODULE.bazel` | `rules_rust` + `rules_foreign_cc` + hermetic patches |
+| `third_party/openssl/` | Bazel build instructions for compiling OpenSSL from source |
+| `third_party/patches/` | Fixes for upstream crates and hermetic OpenSSL linking |
 | `src/BUILD` | `rust_library` → `//src:cryptoki_lib` |
 | `examples/BUILD` | `rust_binary` per example |
-| `tests/BUILD` | 22 native `rust_test` targets + `integration_tests` suite |
+| `tests/BUILD` | native `rust_test` targets + `integration_tests` suite |
 | `tests/rust/BUILD` | Smoke test |
 | `tests/cpp/BUILD` | C++ `cc_test` via gtest |
 
-#### Notes
+---
 
-* Dependencies resolved through `crate_universe`; `package_name = ""` refers to the workspace root crate.
-* Tests that use `mod common` include `tests/common/mod.rs` explicitly in `srcs`.
-* `serial_test` proc-macro (used by `always_authenticate`, `persistence_integration`, `pkcs11_v3_integration`) is pulled via `proc_macro_deps`.
-* Each test target is independently cacheable — Bazel only reruns tests whose inputs changed.
+## Observability & Logging 🪵
 
-### Run the tests
+The PKCS#11 layer is fully instrumented using `score_log`. Every significant FFI entry point, internal object store mutation, and crypto backend dispatch is logged with appropriate context tags.
 
-```bash
-cargo test
+### Initialization
+
+The logger is initialized thread-safely via `src/logger.rs` on the first call to `C_Initialize`. It uses a C++-backed bridge (`score_log_bridge`) provided by `@score_logging` to deliver high-performance, structured logging.
+
+### Configuration
+
+You can configure the logging behavior via a JSON file. Use `logger_config_template.json` as a starting point.
+
+```json
+{
+    "appId": "TEST",
+    "appDesc": "Rust test scenarios",
+    "logMode": "kConsole",
+    "logLevel": "kVerbose",
+    "logLevelThresholdConsole": "kInfo"
+}
 ```
 
-### Try the demo
+*   **Environment Variable:** Set `PKCS11_LOG_CONFIG` to the **directory** containing your `logging.json` file.
+*   **Default Path:** If the environment variable is unset, it defaults to `/etc/my_pkcs11/logging.json`.
+
+---
+
+## Try the demo
 
 There's an end-to-end example that walks through the full v3.0 call sequence — initialization, sessions, key generation (AES, RSA, EC, Ed25519, ChaCha20), encrypt/decrypt, sign/verify, hashing, interface discovery, and cleanup:
 
@@ -110,7 +128,8 @@ The PKCS#11 layer is organized as small operation-focused modules with thin hubs
 │  src/pkcs11/ffi_api_*  —  FFI boundary + orchestrators               │
 │                                                                      │
 │  GlobalState: OnceLock<RwLock<Option<GlobalState>>>                  │
-│    None → Some on C_Initialize, Some → None on C_Finalize            │
+│    None → Some on C_Initialize (triggers src/logger.rs init)         │
+│    Some → None on C_Finalize                                         │
 │    ck_try! macro: Pkcs11Error → CK_RV at every return site           │
 │                                                                      │
 │  Orchestration order for all C_* ops:                                │
@@ -489,7 +508,7 @@ openssl       = "0.10"   # for pre-hashing with MessageDigest::sha256()
 
 This project uses Bazel to hermetically cross-compile for QNX SDP 8.0 (aarch64) while maintaining default compatibility with Linux x86_64 hosts.
 
-The build system dynamically links against QNX's native C-bindings (like OpenSSL) and bypasses strict sandbox limitations to securely validate your local QNX developer license during compilation.
+The build system utilizes a **fully hermetic OpenSSL source build** via `rules_foreign_cc`. It fetches the OpenSSL 3.6.1 source and compiles it using the QNX `qcc` toolchain within the sandbox. This eliminates dependencies on the host system and ensures ABI compatibility with the QNX target.
 
 ### 1. Initial Setup
 Because QNX installations vary per machine, you must configure Bazel with your local toolchain paths before building. You only need to do this once.

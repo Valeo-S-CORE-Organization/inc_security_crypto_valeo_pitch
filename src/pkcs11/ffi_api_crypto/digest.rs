@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, trace};
 
 // ── Digest ────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ pub unsafe extern "C" fn C_DigestInit(
     p_mechanism: *const CK_MECHANISM,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_DigestInit called session={}", h_session);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech_type = (*p_mechanism).mechanism;
     match mech_type {
@@ -51,6 +53,7 @@ pub unsafe extern "C" fn C_Digest(
     pul_digest_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_Digest called session={} len={}", h_session, ul_data_len);
     if pul_digest_len.is_null() {
         let _ = session::with_session_mut(h_session, |s| {
             s.digest_ctx.take();
@@ -92,6 +95,7 @@ pub unsafe extern "C" fn C_DigestUpdate(
     ul_part_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_DigestUpdate called session={} len={}", h_session, ul_part_len);
     if p_part.is_null() && ul_part_len > 0 { return CKR_ARGUMENTS_BAD; }
 
     ck_try!(session::with_session_mut(h_session, |s| {
@@ -115,6 +119,7 @@ pub unsafe extern "C" fn C_DigestFinal(
     pul_digest_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_DigestFinal called session={}", h_session);
     if pul_digest_len.is_null() {
         let _ = session::with_session_mut(h_session, |s| {
             s.digest_ctx.take();

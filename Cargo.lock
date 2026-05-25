@@ -135,6 +135,7 @@ dependencies = [
  "openssl",
  "parking_lot",
  "parsec-client",
+ "score_log",
  "serde",
  "serde_json",
  "serial_test",
@@ -945,6 +946,31 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "score_log"
+version = "0.0.1"
+source = "git+https://github.com/eclipse-score/baselibs_rust.git?tag=v0.1.0#0eba2934fa8b0e1a343ec6bf6f7ff00cec27d81c"
+dependencies = [
+ "score_log_fmt",
+ "score_log_fmt_macro",
+]
+
+[[package]]
+name = "score_log_fmt"
+version = "0.0.1"
+source = "git+https://github.com/eclipse-score/baselibs_rust.git?tag=v0.1.0#0eba2934fa8b0e1a343ec6bf6f7ff00cec27d81c"
+
+[[package]]
+name = "score_log_fmt_macro"
+version = "0.0.1"
+source = "git+https://github.com/eclipse-score/baselibs_rust.git?tag=v0.1.0#0eba2934fa8b0e1a343ec6bf6f7ff00cec27d81c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "score_log_fmt",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "sdd"

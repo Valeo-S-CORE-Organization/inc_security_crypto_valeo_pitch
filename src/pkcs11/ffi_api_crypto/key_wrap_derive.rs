@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── C_WrapKey ─────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ pub unsafe extern "C" fn C_WrapKey(
     pul_wrapped_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_WrapKey called session={} wrapping_key={} target_key={}", h_session, h_wrapping_key, h_key);
     if p_mechanism.is_null() || pul_wrapped_len.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
@@ -100,6 +102,7 @@ pub unsafe extern "C" fn C_UnwrapKey(
     ph_key:           *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_UnwrapKey called session={} unwrapping_key={} len={}", h_session, h_unwrapping_key, ul_wrapped_len);
     if p_mechanism.is_null() || p_wrapped_key.is_null() || ph_key.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
@@ -177,6 +180,7 @@ pub unsafe extern "C" fn C_DeriveKey(
     ph_key:      *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_DeriveKey called session={} base_key={}", h_session, h_base_key);
     if p_mechanism.is_null() || ph_key.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech = &*p_mechanism;
     let attrs = collect_template(p_template, ul_count);

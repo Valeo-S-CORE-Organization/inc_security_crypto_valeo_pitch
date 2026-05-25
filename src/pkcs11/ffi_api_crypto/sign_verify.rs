@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── Sign ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ pub unsafe extern "C" fn C_SignInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_SignInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech_type = (*p_mechanism).mechanism;
 
@@ -47,7 +49,7 @@ pub unsafe extern "C" fn C_SignInit(
             // Hash-based Message Authentication Code
         },
 
-        _ => return CKR_MECHANISM_INVALID,
+        _ => { warn!(context: "MECH", "C_SignInit rejected mechanism={}", mech_type); return CKR_MECHANISM_INVALID; },
     }
 
     ck_try!(session::with_session_mut(h_session, |s| {
@@ -69,6 +71,7 @@ pub unsafe extern "C" fn C_Sign(
     pul_sig_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_Sign called session={} len={}", h_session, ul_data_len);
     if p_data.is_null() || pul_sig_len.is_null() { return CKR_ARGUMENTS_BAD; }
 
     let is_length_req = p_signature.is_null();
@@ -123,6 +126,7 @@ pub unsafe extern "C" fn C_SignFinal(
     pul_sig_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "MECH", "C_SignFinal session={}", h_session);
     if pul_sig_len.is_null() { return CKR_ARGUMENTS_BAD; }
     let is_length_req = p_signature.is_null();
 
@@ -161,6 +165,7 @@ pub unsafe extern "C" fn C_VerifyInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_VerifyInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech_type = (*p_mechanism).mechanism;
     match mech_type {
@@ -186,7 +191,7 @@ pub unsafe extern "C" fn C_VerifyInit(
             // Hash-based Message Authentication Code
         },
 
-        _ => return CKR_MECHANISM_INVALID,
+        _ => { warn!(context: "MECH", "C_VerifyInit rejected mechanism={}", mech_type); return CKR_MECHANISM_INVALID; },
     }
     ck_try!(session::with_session_mut(h_session, |s| {
         if s.verify_ctx.is_some() { return Err(Pkcs11Error::OperationActive); }
@@ -205,6 +210,7 @@ pub unsafe extern "C" fn C_Verify(
     ul_sig_len:   CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_Verify called session={} len={} sig_len={}", h_session, ul_data_len, ul_sig_len);
     if p_data.is_null() || p_signature.is_null() { return CKR_ARGUMENTS_BAD; }
     let key_handle = ck_try!(session::with_session(h_session, |s| {
         s.verify_ctx.as_ref().map(|ctx| ctx.key_handle).ok_or(Pkcs11Error::OperationNotInitialised)

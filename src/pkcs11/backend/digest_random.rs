@@ -17,12 +17,14 @@ pub fn key_value_for_digest(slot_id: CK_SLOT_ID, key: &KeyObject) -> Result<Vec<
 }
 
 pub fn digest(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, data: &[u8]) -> Result<Vec<u8>> {
+    debug!(context: "BACKEND", "Digest: slot={} mechanism={} len={}", slot_id, mechanism, data.len());
     let e = eng(slot_id)?;
     let alg = mechanism_to_hash_algorithm(mechanism)?;
     e.hash(alg, data).map_err(Pkcs11Error::from)
 }
 
 pub fn generate_random(slot_id: CK_SLOT_ID, buf: &mut [u8]) -> Result<()> {
+    debug!(context: "BACKEND", "Generate random: slot={} len={}", slot_id, buf.len());
     let e = eng(slot_id)?;
     e.generate_random(buf).map_err(Pkcs11Error::from)
 }

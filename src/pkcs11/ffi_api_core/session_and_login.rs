@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── C_InitPIN / C_SetPIN ─────────────────────────────────────────────────
 
@@ -21,10 +22,12 @@ pub unsafe extern "C" fn C_InitPIN(
     ul_pin_len:  CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "AUTH", "C_InitPIN called session={}", h_session);
     ck_try!(require_rw_session(h_session));
     // Caller must be SO logged in.
     let slot_id = ck_try!(session::with_session(h_session, |s| {
         if s.login_state != session::LoginState::SoLoggedIn {
+            warn!(context: "AUTH", "C_InitPIN rejected: not SO logged in");
             return Err(Pkcs11Error::UserNotLoggedIn);
         }
         Ok(s.slot_id)
@@ -48,6 +51,7 @@ pub unsafe extern "C" fn C_SetPIN(
     ul_new_pin_len:  CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "AUTH", "C_SetPIN called session={}", h_session);
     ck_try!(require_rw_session(h_session));
     let old_pin = if p_old_pin.is_null() { &[] as &[u8] }
                   else { std::slice::from_raw_parts(p_old_pin, ul_old_pin_len as usize) };
@@ -63,6 +67,7 @@ pub unsafe extern "C" fn C_SetPIN(
     // Verify old PIN with failure counting, then set the new PIN.
     ck_try!(token::with_token_mut(slot_id, |tok| {
         if let Err(err) = tok.verify_pin(user_type, old_pin) {
+            warn!(context: "AUTH", "C_SetPIN old PIN verification failed");
             if user_type != CKU_USER || tok.verify_pin(user_type, new_pin).is_err() {
                 return Err(err);
             }
@@ -90,6 +95,7 @@ pub unsafe extern "C" fn C_OpenSession(
     ph_session:    *mut CK_SESSION_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "SESSION", "C_OpenSession called slot={} flags={}", slot_id, flags);
     if !crate::registry::is_valid_slot(slot_id) { return CKR_SLOT_ID_INVALID; }
     if ph_session.is_null() { return CKR_ARGUMENTS_BAD; }
     *ph_session = ck_try!(session::open_session(slot_id, flags));
@@ -99,6 +105,7 @@ pub unsafe extern "C" fn C_OpenSession(
 #[no_mangle]
 pub extern "C" fn C_CloseSession(h_session: CK_SESSION_HANDLE) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "SESSION", "C_CloseSession called session={}", h_session);
     ck_try!(session::close_session(h_session));
     // Destroy session objects owned by the closing session.
     object_store::destroy_objects_for_session(h_session);
@@ -108,6 +115,7 @@ pub extern "C" fn C_CloseSession(h_session: CK_SESSION_HANDLE) -> CK_RV {
 #[no_mangle]
 pub extern "C" fn C_CloseAllSessions(slot_id: CK_SLOT_ID) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "SESSION", "C_CloseAllSessions called slot={}", slot_id);
     if !crate::registry::is_valid_slot(slot_id) {
         return CKR_SLOT_ID_INVALID;
     }
@@ -123,6 +131,7 @@ pub unsafe extern "C" fn C_GetSessionInfo(
     p_info:    *mut CK_SESSION_INFO,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "SESSION", "C_GetSessionInfo called session={}", h_session);
     if p_info.is_null() { return CKR_ARGUMENTS_BAD; }
     *p_info = ck_try!(session::get_session_info(h_session));
     CKR_OK
@@ -138,6 +147,7 @@ pub unsafe extern "C" fn C_Login(
     ul_pin_len:  CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "AUTH", "C_Login called session={} user_type={}", h_session, user_type);
 
     // FFI validation to prevent silent logic bugs
     if p_pin.is_null() && ul_pin_len != 0 {
@@ -227,6 +237,7 @@ pub unsafe extern "C" fn C_Login(
 #[no_mangle]
 pub extern "C" fn C_Logout(h_session: CK_SESSION_HANDLE) -> CK_RV {
     ck_try!(check_init());
+    info!(context: "AUTH", "C_Logout called session={}", h_session);
     let slot_id = ck_try!(session::with_session(h_session, |s| Ok(s.slot_id)));
 
     // Check that we are actually logged in on this token.

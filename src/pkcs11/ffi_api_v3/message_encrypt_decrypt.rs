@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── Message-based Encrypt API (v3.0) ──────────────────────────────────────
 
@@ -21,6 +22,7 @@ pub unsafe extern "C" fn C_MessageEncryptInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_MessageEncryptInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech_type = (*p_mechanism).mechanism;
     // Only AES-GCM and ChaCha20-Poly1305 support per-message IV semantics.
@@ -48,6 +50,7 @@ pub unsafe extern "C" fn C_EncryptMessage(
     pul_cipher_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_EncryptMessage called session={} len={}", h_session, ul_plain_len);
     if p_plaintext.is_null() || pul_cipher_len.is_null() || p_parameter.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
@@ -134,6 +137,7 @@ pub unsafe extern "C" fn C_MessageDecryptInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_MessageDecryptInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech_type = (*p_mechanism).mechanism;
     // Only AES-GCM and ChaCha20-Poly1305 support per-message IV semantics.
@@ -161,6 +165,7 @@ pub unsafe extern "C" fn C_DecryptMessage(
     pul_plain_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_DecryptMessage called session={} len={}", h_session, ul_cipher_len);
     if p_ciphertext.is_null() || pul_plain_len.is_null() || p_parameter.is_null() {
         return CKR_ARGUMENTS_BAD;
     }

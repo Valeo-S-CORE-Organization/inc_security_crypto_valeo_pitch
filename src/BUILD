@@ -12,6 +12,8 @@ DEPS = [
     "@score_crates//:libc",
     "@score_crates//:serde",
     "@score_crates//:serde_json",
+    "@score_baselibs_rust//src/log/score_log",
+    "@score_logging//score/mw/log/rust/score_log_bridge",
 
     # --- Community Fallback (Crate Universe) ---
     "@crates//:argon2",
@@ -25,11 +27,19 @@ DEPS = [
     "@crates//:openssl",
 ]
 
+# Shared C/C++ linker flags required by score_log_bridge
+CPP_LINKER_FLAGS = [
+    "-Clink-arg=-lstdc++",
+    "-Clink-arg=-lm",
+    "-Clink-arg=-lc",
+]
+
 rust_library(
     name = "cryptoki_lib",
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     srcs = glob(["**/*.rs"]),
+    rustc_flags = CPP_LINKER_FLAGS,
     deps = DEPS,
 )
 
@@ -38,5 +48,6 @@ rust_shared_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     srcs = glob(["**/*.rs"]),
+    rustc_flags = CPP_LINKER_FLAGS,
     deps = DEPS,
 )

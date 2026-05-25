@@ -14,6 +14,7 @@ use super::*;
 
 pub fn get_attribute(slot_id: CK_SLOT_ID, key: &KeyObject, attr_type: CK_ATTRIBUTE_TYPE) -> Result<Vec<u8>> {
     use crate::attributes::AttributeType;
+    trace!(context: "BACKEND", "Get attribute: slot={} key_handle={} attr_type={}", slot_id, key.handle, attr_type);
     let e = eng(slot_id)?;
     let at = AttributeType::from_u32(attr_type as u32).ok_or(Pkcs11Error::InvalidAttributeType)?;
     let val = match key.key_type {

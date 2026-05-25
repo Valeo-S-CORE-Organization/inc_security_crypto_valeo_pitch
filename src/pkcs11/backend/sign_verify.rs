@@ -13,6 +13,7 @@
 use super::*;
 
 pub fn sign(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyObject, data: &[u8]) -> Result<Vec<u8>> {
+    debug!(context: "BACKEND", "Signing: slot={} mechanism={} key_handle={} data_len={}", slot_id, mechanism, key.handle, data.len());
     let e = eng(slot_id)?;
     match key.key_type {
         KeyType::RsaPrivate => match mechanism {
@@ -64,6 +65,7 @@ pub fn verify(
     data: &[u8],
     signature: &[u8],
 ) -> Result<()> {
+    debug!(context: "BACKEND", "Verifying: slot={} mechanism={} key_handle={} data_len={} sig_len={}", slot_id, mechanism, key.handle, data.len(), signature.len());
     let e = eng(slot_id)?;
     let ok = match key.key_type {
         KeyType::RsaPublic => match mechanism {

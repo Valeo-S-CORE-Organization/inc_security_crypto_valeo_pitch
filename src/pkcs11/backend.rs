@@ -22,6 +22,7 @@
 use std::collections::HashMap;
 
 use crate::traits::EngineKeyRef;
+use score_log::{trace, warn};
 
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
@@ -57,7 +58,11 @@ pub struct GeneratedKey {
 }
 
 fn eng(slot_id: CK_SLOT_ID) -> Result<std::sync::Arc<dyn crate::traits::CryptoProvider>> {
-    let (engine, _internal_slot_id) = crate::registry::engine_for_slot(slot_id).map_err(Pkcs11Error::from)?;
+    trace!(context: "BACKEND", "provider lookup slot={}", slot_id);
+    let (engine, _internal_slot_id) = crate::registry::engine_for_slot(slot_id).map_err(|e| {
+        warn!(context: "BACKEND", "provider lookup failed slot={} ", slot_id);
+        Pkcs11Error::from(e)
+    })?;
     Ok(engine)
 }
 

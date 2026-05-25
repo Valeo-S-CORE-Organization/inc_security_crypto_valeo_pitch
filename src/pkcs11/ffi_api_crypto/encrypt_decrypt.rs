@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, trace};
 
 // ── Encrypt ───────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ pub unsafe extern "C" fn C_EncryptInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_EncryptInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech = &*p_mechanism;
     let (iv, aad, tag_len) = extract_cipher_params(mech);
@@ -44,6 +46,7 @@ pub unsafe extern "C" fn C_Encrypt(
     pul_encrypted_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_Encrypt called session={} len={}", h_session, ul_data_len);
     if p_data.is_null() || pul_encrypted_len.is_null() { return CKR_ARGUMENTS_BAD; }
     let data = std::slice::from_raw_parts(p_data, ul_data_len as usize);
     let (ctx, slot_id) = ck_try!(session::with_session_mut(h_session, |s| {
@@ -113,6 +116,7 @@ pub unsafe extern "C" fn C_DecryptInit(
     h_key:       CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "CRYPTO", "C_DecryptInit called session={} key={}", h_session, h_key);
     if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
     let mech = &*p_mechanism;
     let (iv, aad, tag_len) = extract_cipher_params(mech);
@@ -138,6 +142,7 @@ pub unsafe extern "C" fn C_Decrypt(
     pul_data_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "CRYPTO", "C_Decrypt called session={} len={}", h_session, ul_enc_len);
     if p_encrypted.is_null() || pul_data_len.is_null() { return CKR_ARGUMENTS_BAD; }
 
     let is_length_req = p_data.is_null();

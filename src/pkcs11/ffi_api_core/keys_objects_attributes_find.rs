@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
 use super::*;
+use score_log::{debug, info, trace, warn};
 
 // ── Key generation ────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
     ph_priv_key:    *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "MECH", "C_GenerateKeyPair session={}", h_session);
     if p_mechanism.is_null() || ph_pub_key.is_null() || ph_priv_key.is_null() {
         return CKR_ARGUMENTS_BAD;
     }
@@ -108,8 +110,9 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
             *ph_pub_key  = store_pub(pub_gen);
             *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
         }
-        _ => return CKR_MECHANISM_INVALID,
+        _ => { warn!(context: "MECH", "C_GenerateKeyPair rejected mechanism={}", mech.mechanism); return CKR_MECHANISM_INVALID; },
     }
+    info!(context: "MECH", "C_GenerateKeyPair created pub_handle={} priv_handle={} mech={}", *ph_pub_key, *ph_priv_key, mech.mechanism);
     CKR_OK
 }
 
@@ -122,6 +125,7 @@ pub unsafe extern "C" fn C_GenerateKey(
     ph_key:      *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "MECH", "C_GenerateKey session={}", h_session);
 
     if p_mechanism.is_null() || ph_key.is_null() { return CKR_ARGUMENTS_BAD; }
     if ul_count > 0 && p_template.is_null() { return CKR_ARGUMENTS_BAD; }
@@ -149,7 +153,7 @@ pub unsafe extern "C" fn C_GenerateKey(
         CKM_DES3_KEY_GEN           => CKK_DES3,
         CKM_CHACHA20_KEY_GEN       => CKK_CHACHA20,
         CKM_GENERIC_SECRET_KEY_GEN => CKK_GENERIC_SECRET,
-        _ => return CKR_MECHANISM_INVALID,
+        _ => { warn!(context: "MECH", "C_GenerateKey rejected mechanism={}", mech.mechanism); return CKR_MECHANISM_INVALID; },
     };
 
     if let Some(type_val) = attrs.get(&CKA_KEY_TYPE) {
@@ -205,6 +209,7 @@ pub unsafe extern "C" fn C_GenerateRandom(
     ul_random_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "MECH", "C_GenerateRandom session={} bytes={}", h_session, ul_random_len);
     if p_random.is_null() { return CKR_ARGUMENTS_BAD; }
     let slot_id = ck_try!(session_slot(h_session));
     let buf = std::slice::from_raw_parts_mut(p_random, ul_random_len as usize);
@@ -222,6 +227,7 @@ pub unsafe extern "C" fn C_CreateObject(
     ph_object: *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "ATTR", "C_CreateObject session={} attr_count={}", h_session, ul_count);
     if ph_object.is_null() { return CKR_ARGUMENTS_BAD; }
     if p_template.is_null() || ul_count == 0 { return CKR_TEMPLATE_INCOMPLETE; }
     let slot_id = ck_try!(session_slot(h_session));
@@ -277,6 +283,7 @@ pub extern "C" fn C_DestroyObject(
     h_object:  CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "STORE", "C_DestroyObject session={} object={}", h_session, h_object);
     let (slot_id, logged_in) = ck_try!(session::with_session(h_session, |s| {
         Ok((s.slot_id, s.login_state != LoginState::NotLoggedIn))
     }));
@@ -328,6 +335,7 @@ pub unsafe extern "C" fn C_GetAttributeValue(
     ul_count:   CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "ATTR", "C_GetAttributeValue session={} object={} count={}", h_session, h_object, ul_count);
     if p_template.is_null() { return CKR_ARGUMENTS_BAD; }
     let slot_id = ck_try!(session_slot(h_session));
     let attrs = std::slice::from_raw_parts_mut(p_template, ul_count as usize);
@@ -457,6 +465,7 @@ pub unsafe extern "C" fn C_FindObjectsInit(
     ul_count:   CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "STORE", "C_FindObjectsInit called session={} count={}", h_session, ul_count);
     let (slot_id, logged_in) = ck_try!(session::with_session(h_session, |s| {
         Ok((s.slot_id, s.login_state != LoginState::NotLoggedIn))
     }));
@@ -478,6 +487,7 @@ pub unsafe extern "C" fn C_FindObjects(
     pul_count:    *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
+    trace!(context: "STORE", "C_FindObjects called session={} max={}", h_session, ul_max_count);
     if ph_object.is_null() || pul_count.is_null() { return CKR_ARGUMENTS_BAD; }
     ck_try!(session::with_session_mut(h_session, |s| {
         let ctx   = s.find_ctx.as_mut().ok_or(Pkcs11Error::OperationNotInitialised)?;
@@ -496,6 +506,7 @@ pub unsafe extern "C" fn C_FindObjects(
 #[no_mangle]
 pub extern "C" fn C_FindObjectsFinal(h_session: CK_SESSION_HANDLE) -> CK_RV {
     ck_try!(check_init());
+    debug!(context: "STORE", "C_FindObjectsFinal called session={}", h_session);
     ck_try!(session::with_session_mut(h_session, |s| {
         s.find_ctx = None;
         Ok(())

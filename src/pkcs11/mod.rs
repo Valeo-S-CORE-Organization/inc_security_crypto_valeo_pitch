@@ -34,6 +34,7 @@ pub mod types;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use std::sync::{Once, OnceLock, RwLock};
+use score_log::{debug, info, trace, warn};
 
 
 

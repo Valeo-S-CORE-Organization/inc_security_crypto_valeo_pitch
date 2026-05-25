@@ -20,6 +20,7 @@ pub fn generate_rsa_key_pair(
     pub_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     priv_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<(GeneratedKey, GeneratedKey)> {
+    debug!(context: "BACKEND", "Generating RSA key pair: bits={} slot={}", modulus_bits, slot_id);
     if !(1024..=16384).contains(&modulus_bits) {
         return Err(Pkcs11Error::KeySizeRange);
     }
@@ -52,6 +53,7 @@ pub fn generate_ec_key_pair(
     pub_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     priv_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<(GeneratedKey, GeneratedKey)> {
+    debug!(context: "BACKEND", "Generating EC key pair: curve={:?} slot={}", curve, slot_id);
     let e = eng(slot_id)?;
     let pair = e.generate_ec_key_pair(curve).map_err(Pkcs11Error::from)?;
 
@@ -78,6 +80,7 @@ pub fn generate_ed_key_pair(
     pub_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     priv_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<(GeneratedKey, GeneratedKey)> {
+    debug!(context: "BACKEND", "Generating Edwards key pair: curve={:?} slot={}", curve, slot_id);
     let e = eng(slot_id)?;
     let pair = e.generate_ed_key_pair(curve).map_err(Pkcs11Error::from)?;
 
@@ -103,6 +106,7 @@ pub fn generate_aes_key(
     key_len_bytes: usize,
     template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<GeneratedKey> {
+    debug!(context: "BACKEND", "Generating AES key: len={} slot={}", key_len_bytes, slot_id);
     if !matches!(key_len_bytes, 16 | 24 | 32) {
         return Err(Pkcs11Error::KeySizeRange);
     }
@@ -131,6 +135,7 @@ pub fn generate_chacha20_key(
     slot_id: CK_SLOT_ID,
     template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<GeneratedKey> {
+    debug!(context: "BACKEND", "Generating ChaCha20 key: slot={}", slot_id);
     let e = eng(slot_id)?;
     let key_ref = e.generate_chacha20_key().map_err(Pkcs11Error::from)?;
 
@@ -147,6 +152,7 @@ pub fn generate_generic_secret_key(
     key_len_bytes: usize,
     template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<GeneratedKey> {
+    debug!(context: "BACKEND", "Generating generic secret key: len={} slot={}", key_len_bytes, slot_id);
     if key_len_bytes == 0 || key_len_bytes > 4096 {
         return Err(Pkcs11Error::KeySizeRange);
     }

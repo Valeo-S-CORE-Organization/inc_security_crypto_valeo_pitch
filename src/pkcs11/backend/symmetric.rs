@@ -28,6 +28,8 @@ pub fn encrypt_symmetric(
     aad: Option<&[u8]>,
     plaintext: &[u8],
 ) -> Result<Vec<u8>> {
+    debug!(context: "BACKEND", "Symmetric encrypt: slot={} mechanism={} key_handle={} iv_len={} aad_len={} len={}", 
+        slot_id, mechanism, key.handle, iv.len(), aad.map_or(0, |a| a.len()), plaintext.len());
     let e = eng(slot_id)?;
     match mechanism {
         CKM_DES_ECB | CKM_DES_CBC | CKM_DES3_ECB | CKM_DES3_CBC | CKM_AES_ECB | CKM_AES_CBC => {
@@ -57,6 +59,8 @@ pub fn decrypt_symmetric(
     ciphertext: &[u8],
     tag_len: usize,
 ) -> Result<Zeroizing<Vec<u8>>> {
+    debug!(context: "BACKEND", "Symmetric decrypt: slot={} mechanism={} key_handle={} iv_len={} aad_len={} len={} tag_len={}", 
+        slot_id, mechanism, key.handle, iv.len(), aad.map_or(0, |a| a.len()), ciphertext.len(), tag_len);
     let e = eng(slot_id)?;
     match mechanism {
         CKM_DES_ECB | CKM_DES_CBC | CKM_DES3_ECB | CKM_DES3_CBC | CKM_AES_ECB | CKM_AES_CBC => {

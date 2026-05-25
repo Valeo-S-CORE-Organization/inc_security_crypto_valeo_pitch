@@ -12,6 +12,7 @@
 // *******************************************************************************
 use std::fs;
 use std::io::Write as _;
+use score_log::{info, error, debug};
 
 use super::locks::LOCK_FILE_FD;
 use super::models::StoredState;
@@ -25,6 +26,7 @@ pub fn load_state() -> Option<StoredState> {
 
 pub fn save_state(state: &StoredState) -> Result<(), String> {
     let path = storage_path();
+    debug!(context: "STOR", "Saving state to {:?}", path);
     let parent = path.parent().unwrap_or_else(|| std::path::Path::new("."));
 
     fs::create_dir_all(parent).map_err(|e| format!("mkdir: {e}"))?;
@@ -55,8 +57,7 @@ pub fn save_state(state: &StoredState) -> Result<(), String> {
 
     let json = serde_json::to_string_pretty(state).map_err(|e| format!("serialize: {e}"))?;
 
-    let mut tmp = tempfile::NamedTempFile::new_in(parent)
-        .map_err(|e| format!("create tempfile: {e}"))?;
+    let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|e| format!("create tempfile: {e}"))?;
     tmp.write_all(json.as_bytes()).map_err(|e| format!("write tempfile: {e}"))?;
 
     #[cfg(unix)]
@@ -67,7 +68,10 @@ pub fn save_state(state: &StoredState) -> Result<(), String> {
     }
 
     tmp.as_file().sync_all().map_err(|e| format!("fsync tempfile: {e}"))?;
-    tmp.persist(&path).map_err(|e| format!("persist (rename): {e}"))?;
+    tmp.persist(&path).map_err(|e| {
+        error!(context: "STOR", "Failed to persist storage to {:?}: {}", path, e);
+        format!("persist (rename): {e}")
+    })?;
 
     let dir = fs::File::open(parent).map_err(|e| format!("open parent dir: {e}"))?;
     dir.sync_all().map_err(|e| format!("fsync parent dir: {e}"))?;
@@ -84,6 +88,7 @@ pub fn save_state(state: &StoredState) -> Result<(), String> {
 pub fn delete_storage() -> Result<(), String> {
     let path = storage_path();
     if path.exists() {
+        info!(context: "STOR", "Deleting storage file at {:?}", path);
         fs::remove_file(&path).map_err(|e| format!("delete: {e}"))?;
     }
     Ok(())

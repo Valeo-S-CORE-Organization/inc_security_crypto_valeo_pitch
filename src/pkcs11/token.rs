@@ -31,6 +31,7 @@ use parking_lot::RwLock;
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
 use super::types::*;
+use score_log::{info, warn, debug};
 
 // ── PIN hashing ─────────────────────────────────────────────────────────
 
@@ -152,6 +153,7 @@ impl Token {
 
     /// Initialize the token with SO PIN and label (C_InitToken).
     pub fn init_token(&mut self, so_pin: &[u8], label: &[CK_UTF8CHAR; 32]) -> Result<()> {
+        debug!(context: "TOKEN", "Token initialization slot={} label={}", self.slot_id, String::from_utf8_lossy(label));
         if so_pin.len() < self.min_pin_len || so_pin.len() > self.max_pin_len {
             return Err(Pkcs11Error::PinLenRange);
         }
@@ -206,7 +208,8 @@ impl Token {
 
     /// Verify a PIN for login, with failure counting and lockout.
     pub fn verify_pin(&mut self, user_type: CK_USER_TYPE, pin: &[u8]) -> Result<()> {
-        match user_type {
+        trace!(context: "TOKEN", "PIN verification slot={} user_type={}", self.slot_id, user_type);
+        let hash = match user_type {
             CKU_SO => {
                 if self.state == TokenState::ReadOnly {
                     return Err(Pkcs11Error::PinLocked);
