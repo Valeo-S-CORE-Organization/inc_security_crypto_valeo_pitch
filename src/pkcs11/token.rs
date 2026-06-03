@@ -31,7 +31,7 @@ use parking_lot::RwLock;
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
 use super::types::*;
-use score_log::{info, warn, debug};
+use score_log::{info, warn, debug, trace};
 
 // ── PIN hashing ─────────────────────────────────────────────────────────
 
@@ -45,10 +45,17 @@ impl HashedPin {
     /// Hash a PIN with Argon2id and a fresh random salt.
     pub fn new(pin: &[u8]) -> Self {
         let salt = SaltString::generate(&mut OsRng);
+        
+        let params = if cfg!(debug_assertions) {
+            argon2::Params::new(4_096, 1, 1, Some(32)).expect("invalid debug Argon2 params")
+        } else {
+            argon2::Params::new(65_536, 3, 4, Some(32)).expect("invalid prod Argon2 params")
+        };
+
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,
             argon2::Version::V0x13,
-            argon2::Params::new(65_536, 3, 4, Some(32)).expect("invalid Argon2 params"),
+            params,
         );
         let phc_string = argon2
             .hash_password(pin, &salt)
@@ -153,7 +160,7 @@ impl Token {
 
     /// Initialize the token with SO PIN and label (C_InitToken).
     pub fn init_token(&mut self, so_pin: &[u8], label: &[CK_UTF8CHAR; 32]) -> Result<()> {
-        debug!(context: "TOKEN", "Token initialization slot={} label={}", self.slot_id, String::from_utf8_lossy(label));
+        debug!(context: "TOKEN", "Token initialization slot={} label={}", self.slot_id, String::from_utf8_lossy(label).as_ref());
         if so_pin.len() < self.min_pin_len || so_pin.len() > self.max_pin_len {
             return Err(Pkcs11Error::PinLenRange);
         }
@@ -237,7 +244,7 @@ impl Token {
                 self.user_pin_failures = 0;
             }
             _ => return Err(Pkcs11Error::ArgumentsBad),
-        }
+        };
         Ok(())
     }
 

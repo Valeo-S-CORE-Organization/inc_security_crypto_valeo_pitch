@@ -69,7 +69,7 @@ pub fn save_state(state: &StoredState) -> Result<(), String> {
 
     tmp.as_file().sync_all().map_err(|e| format!("fsync tempfile: {e}"))?;
     tmp.persist(&path).map_err(|e| {
-        error!(context: "STOR", "Failed to persist storage to {:?}: {}", path, e);
+        error!(context: "STOR", "Failed to persist storage to {:?}: {}", path, format!("{}", e).as_str());
         format!("persist (rename): {e}")
     })?;
 

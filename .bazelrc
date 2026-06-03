@@ -44,11 +44,27 @@ test --test_output=errors
 # -------------------------------------------------------------------------------
 build:per_shared --incompatible_strict_action_env
 build:per_shared --sandbox_writable_path=/var/tmp
+build:per_shared --host_platform=@score_bazel_platforms//:x86_64-linux
+
+# -------------------------------------------------------------------------------
+# Shared qnx configuration
+# -------------------------------------------------------------------------------
+build:shared_qnx --config=per_shared
+build:shared_qnx --copt=-D_QNX_SOURCE
+build:shared_qnx --copt=-DGRPC_POSIX_SOCKET
+build:shared_qnx --copt=-DGRPC_POSIX_SOCKETUTILS
+build:shared_qnx --copt=-DGRPC_POSIX_WAKEUP_FD
+build:shared_qnx --copt=-DIP_PKTINFO=0
+build:shared_qnx --cxxopt=-D_QNX_SOURCE
+build:shared_qnx --cxxopt=-DGRPC_POSIX_SOCKET
+build:shared_qnx --cxxopt=-DGRPC_POSIX_SOCKETUTILS
+build:shared_qnx --cxxopt=-DGRPC_POSIX_WAKEUP_FD
+build:shared_qnx --cxxopt=-DIP_PKTINFO=0
 
 # -------------------------------------------------------------------------------
 # Config dedicated to host platform CPU:x86_64 and OS:Linux
 # -------------------------------------------------------------------------------
-build:per-x86_64-linux --config=per_shared
+build:per-x86_64-linux --config=shared_qnx
 build:per-x86_64-linux --platforms=@score_bazel_platforms//:x86_64-linux-gcc_12.2.0-posix
 build:per-x86_64-linux --extra_toolchains=@score_gcc_x86_64_toolchain//:x86_64-linux-gcc_12.2.0-posix
 build:per-x86_64-linux --extra_toolchains=@score_toolchains_rust//toolchains/ferrocene:ferrocene_x86_64_unknown_linux_gnu
@@ -56,7 +72,7 @@ build:per-x86_64-linux --extra_toolchains=@score_toolchains_rust//toolchains/fer
 # -------------------------------------------------------------------------------
 # Config dedicated to target platform CPU:arm64 and OS:QNX
 # -------------------------------------------------------------------------------
-build:per-arm64-qnx --config=per_shared
+build:per-arm64-qnx --config=shared_qnx
 build:per-arm64-qnx --platforms=@score_bazel_platforms//:aarch64-qnx-sdp_8.0.0-posix
 
 # Explicitly set C++ and Rust toolchains for QNX

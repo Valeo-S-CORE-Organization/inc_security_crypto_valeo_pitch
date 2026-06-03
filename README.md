@@ -21,12 +21,18 @@ A few things worth highlighting:
 
 ### Prerequisites
 
-Stable Rust toolchain. If you're using the bundled OpenSSL reference backend, you'll also need the OpenSSL dev headers (`libssl-dev` on Debian/Ubuntu, `openssl-devel` on Fedora). A custom backend may have different requirements.
+Stable Rust toolchain. You will also need **Bazel** (via `bazelisk`) as this repository uses a Bazel-centric build system to hermetically compile C/C++ dependencies and logging bridges.
 
-### Build
+### Environment Setup
+
+Because this workspace relies on internal C++ logging bridges (`score_log_bridge`) that are resolved exclusively by Bazel, standard `cargo` commands (`cargo build`, `cargo test`) will fail due to unresolved imports. You must use Bazel for all development workflows.
 
 ```bash
-cargo build --release
+# 1. Ensure you have bazelisk installed
+# https://bazel.build/install/bazelisk
+
+# 2. Configure QNX credentials and overrides (Optional, if targeting QNX)
+./configure.sh
 ```
 
 ### Bazel workflow
@@ -104,7 +110,7 @@ You can configure the logging behavior via a JSON file. Use `logger_config_templ
 There's an end-to-end example that walks through the full v3.0 call sequence — initialization, sessions, key generation (AES, RSA, EC, Ed25519, ChaCha20), encrypt/decrypt, sign/verify, hashing, interface discovery, and cleanup:
 
 ```bash
-cargo run --example pkcs11_demo
+bazel run //examples:pkcs11_demo
 ```
 
 ### Configuration
@@ -383,7 +389,7 @@ socket_path = "/tmp/parsec/run/parsec.sock" # example path
 
 [[provider]]
 provider_type = "Pkcs11"
-library_path  = ".../target/release/libcryptoki.so"   # absolute path
+library_path  = ".../bazel-bin/src/libcryptoki.so"   # absolute path
 slot_number   = 0
 user_pin      = "1234"
 ```
@@ -395,10 +401,7 @@ See [`parsec/config.toml.example`](parsec/config.toml.example) for the full anno
 The daemon loads the library at runtime, so build it first:
 
 ```bash
-# Cargo
-cargo build --release          # → target/release/libcryptoki.so
-
-# Bazel
+# Bazel (Builds shared library to bazel-bin/src/libcryptoki.so)
 bazel build //src:cryptoki_cdylib
 ```
 
@@ -427,8 +430,8 @@ The `parsec/` directory contains three distinct Rust files serving different pur
 
 | File | Role | Build target |
 | --- | --- | --- |
-| [`parsec/client.rs`](parsec/client.rs) | CLI test harness — 7 subcommands to exercise every Parsec operation interactively | `cargo build --bin parsec_client` / `bazel build //parsec:parsec_client` |
-| [`parsec/client_demo.rs`](parsec/client_demo.rs) | Minimal app example — the reference starting point for a client application | `cargo run --example parsec_client_demo` |
+| [`parsec/client.rs`](parsec/client.rs) | CLI test harness — 7 subcommands to exercise every Parsec operation interactively | `bazel build //parsec:parsec_client` |
+| [`parsec/client_demo.rs`](parsec/client_demo.rs) | Minimal app example — the reference starting point for a client application | `bazel run //parsec:parsec_client_demo` |
 | [`parsec/basic_client.rs`](parsec/basic_client.rs) | Full `BasicClient` API reference with doc-comments for every operation | (library reference, not a runnable binary) |
 
 **`client.rs` — CLI test harness**
@@ -436,19 +439,10 @@ The `parsec/` directory contains three distinct Rust files serving different pur
 A self-contained binary that exposes the full Parsec operation set as subcommands. Use it to verify the daemon is working correctly end-to-end before integrating into an application:
 
 ```bash
-# Cargo
-cargo build --bin parsec_client
-./target/debug/parsec_client keygen mykey
-./target/debug/parsec_client list
-./target/debug/parsec_client sign   mykey "hello"
-./target/debug/parsec_client verify mykey "hello" <hex-sig>
-./target/debug/parsec_client export mykey
-./target/debug/parsec_client random 32
-./target/debug/parsec_client destroy mykey
-
 # Bazel
 bazel build //parsec:parsec_client
 ./bazel-bin/parsec/parsec_client keygen mykey
+./bazel-bin/parsec/parsec_client sign mykey "hello"
 
 # Or use the wrapper script (resolves binary and sets PARSEC_SERVICE_ENDPOINT automatically)
 parsec/scripts/start_client.sh keygen mykey
@@ -604,7 +598,7 @@ bazel build //tests/... --config=per-arm64-qnx
 
 Every test goes through the C ABI function pointers (`fn_list()` / `fn_list_3_0()`) — the same path a real PKCS#11 consumer would take. No shortcuts.
 
-Current Status: 198 tests — 0 failures (last verified on April 30, 2026 via `cargo test`)
+Current Status: 198 tests — 0 failures (last verified on April 30, 2026 via `bazel test //tests/...`)
 
 ```text
 [████████████████████]  197 / 197  100%
@@ -657,18 +651,17 @@ Follow these steps to initialize the submodule, compile the libraries, and execu
 # 1. Fetch the Google Test Conformance Suite submodule
 git submodule update --init --recursive
 
-# 2. Build the Rust shared library
-cargo build
+# 2. Build the Rust shared library via Bazel
+bazel build //src:cryptoki_cdylib
 
 # 3. Build the C++ test binary
-cd cpp && mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug && make
+cd cpp/pkcs11test && make
 
 # 4. Clear the token storage to start fresh
 rm -rf ~/.cryptoki/token.json
 
 # 5. Run the conformance suite against the Rust library
-./pkcs11test -m libcryptoki.so -l ../../target/debug -s 0 -u 1234 -o so-pin -I --gtest_filter=-Ciphers*:HMACs*:Duals*:*DES*:*MD5-RSA*:*SHA1-RSA*
+./pkcs11test -m libcryptoki.so -l ../../bazel-bin/src -s 0 -u 1234 -o so-pin -I --gtest_filter=-Ciphers*:HMACs*:Duals*:*DES*:*MD5-RSA*:*SHA1-RSA*
 ```
 
 Optional flags:
@@ -701,7 +694,7 @@ We use the `zeroize` crate throughout the call stack:
 
 ### 3. PINs are Argon2id hashes, not passwords
 
-PIN management is entirely separate from the crypto backend — the `argon2` crate handles it directly. Parameters: 64 MiB memory, 3 iterations, 4 parallelism, 32-byte output. SO and User PINs are hashed independently; the PHC strings live in the token state.
+PIN management is entirely separate from the crypto backend — the `argon2` crate handles it directly. Parameters: 64 MiB memory, 3 iterations, 4 parallelism, 32-byte output. SO and User PINs are hashed independently; the PHC strings live in the token state. *(Note: To prevent severe execution bottlenecks during unoptimized local testing, debug builds conditionally use lightweight parameters, while release builds enforce the secure defaults).*
 
 ### 4. Writes are atomic
 
@@ -786,7 +779,7 @@ To preserve the architecture and readability:
 2. **Thin Hubs:** Keep hub modules (`ffi_api_*`, `backend/`, `storage/`) thin. Re-export through the relevant hub module instead of importing deep internals externally.
 3. **Documentation:** Add a short module-level `//!` ownership header for every new module.
 4. **Dependencies:** Keep cross-module dependencies one-directional where possible.
-5. **CI Checks:** Keep `cargo clippy --all-targets --all-features -- -D warnings` and full `cargo test` green for every structural change.
+5. **CI Checks:** Keep `bazel build //...` and full `bazel test //...` green for every structural change.
 
 ---
 

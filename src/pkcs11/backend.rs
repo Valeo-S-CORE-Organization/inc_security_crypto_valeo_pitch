@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 
 use crate::traits::EngineKeyRef;
-use score_log::{trace, warn};
+use score_log::{trace, warn, debug, info};
 
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};

@@ -67,7 +67,7 @@ pub fn hkdf_derive(
     info: &[u8],
     okm_len: usize,
 ) -> Result<Zeroizing<Vec<u8>>> {
-    debug!(context: "BACKEND", "HKDF derive: slot={} base_key={} prf={:?} okm_len={}", slot_id, base_key.handle, hash, okm_len);
+    debug!(context: "BACKEND", "HKDF derive: slot={} base_key={} prf={} okm_len={}", slot_id, base_key.handle, format!("{:?}", hash).as_str(), okm_len);
     let e = eng(slot_id)?;
     e.hkdf_derive(hash, &base_key.key_ref, salt, info, okm_len).map_err(Pkcs11Error::from)
 }

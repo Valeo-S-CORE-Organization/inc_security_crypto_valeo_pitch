@@ -34,3 +34,12 @@ sh_binary(
     srcs = ["scripts/start_client.sh"],
     data = [":parsec_client"],
 )
+
+rust_binary(
+    name = "parsec_client_demo",
+    crate_root = "client_demo.rs",
+    srcs = ["client_demo.rs"],
+    aliases = aliases(package_name = ""),
+    deps = all_crate_deps(normal = True, package_name = ""),
+    proc_macro_deps = all_crate_deps(proc_macro = True, package_name = ""),
+)

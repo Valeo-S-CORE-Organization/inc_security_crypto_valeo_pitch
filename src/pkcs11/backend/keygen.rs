@@ -53,7 +53,7 @@ pub fn generate_ec_key_pair(
     pub_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     priv_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<(GeneratedKey, GeneratedKey)> {
-    debug!(context: "BACKEND", "Generating EC key pair: curve={:?} slot={}", curve, slot_id);
+    debug!(context: "BACKEND", "Generating EC key pair: curve={} slot={}", format!("{:?}", curve).as_str(), slot_id);
     let e = eng(slot_id)?;
     let pair = e.generate_ec_key_pair(curve).map_err(Pkcs11Error::from)?;
 
@@ -80,7 +80,7 @@ pub fn generate_ed_key_pair(
     pub_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     priv_template: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
 ) -> Result<(GeneratedKey, GeneratedKey)> {
-    debug!(context: "BACKEND", "Generating Edwards key pair: curve={:?} slot={}", curve, slot_id);
+    debug!(context: "BACKEND", "Generating Edwards key pair: curve={} slot={}", format!("{:?}", curve).as_str(), slot_id);
     let e = eng(slot_id)?;
     let pair = e.generate_ed_key_pair(curve).map_err(Pkcs11Error::from)?;
 

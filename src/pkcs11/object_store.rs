@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use score_log::{debug, error, trace, warn};
+use score_log::{debug, error, trace, warn, info};
 
 use crate::traits::EngineKeyRef;
 
@@ -168,8 +168,8 @@ pub fn store_object(mut obj: KeyObject, session_handle: Option<CK_SESSION_HANDLE
         obj.creating_session = session_handle;
     }
     let h = obj.handle;
-    debug!(context: "STORE", "Storing object: handle={} type={:?} slot={} token={}", 
-        h, obj.key_type, obj.slot_id, is_token);
+    debug!(context: "STORE", "Storing object: handle={} type={} slot={} token={}", 
+        h, format!("{:?}", obj.key_type).as_str(), obj.slot_id, is_token);
     OBJECT_STORE.write().insert(h, obj);
     if is_token {
         trace!(context: "STORE", "stored token object handle={}", h);
