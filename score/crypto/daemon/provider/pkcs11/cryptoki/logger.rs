@@ -1,6 +1,6 @@
 use score_log_bridge::ScoreLogBridgeBuilder;
-use std::sync::Once;
 use std::path::PathBuf;
+use std::sync::Once;
 
 static LOGGER_INIT: Once = Once::new();
 

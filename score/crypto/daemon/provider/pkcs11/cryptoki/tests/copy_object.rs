@@ -50,8 +50,15 @@ fn ulong_attr(val: CK_ULONG) -> Vec<u8> {
 unsafe fn open_rw() -> CK_SESSION_HANDLE {
     let fl = common::fn_list();
     let mut h: CK_SESSION_HANDLE = 0;
-    let rv = p11!(fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION,
-                  ptr::null_mut(), None, &mut h);
+    let rv = p11!(
+        fl,
+        C_OpenSession,
+        0,
+        CKF_SERIAL_SESSION | CKF_RW_SESSION,
+        ptr::null_mut(),
+        None,
+        &mut h
+    );
     assert_eq!(rv, CKR_OK, "C_OpenSession (RW) failed: {rv:#010x}");
     h
 }
@@ -66,32 +73,34 @@ unsafe fn open_ro() -> CK_SESSION_HANDLE {
 }
 
 /// Generate a session AES-128 key.
-unsafe fn make_aes_key(
-    session: CK_SESSION_HANDLE,
-    extra: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)],
-) -> CK_OBJECT_HANDLE {
+unsafe fn make_aes_key(session: CK_SESSION_HANDLE, extra: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> CK_OBJECT_HANDLE {
     let fl = common::fn_list();
-    let mut attrs_data: Vec<(CK_ATTRIBUTE_TYPE, Vec<u8>)> = vec![
-        (CKA_TOKEN,     bool_attr(false)),
-        (CKA_VALUE_LEN, ulong_attr(16)),
-    ];
+    let mut attrs_data: Vec<(CK_ATTRIBUTE_TYPE, Vec<u8>)> =
+        vec![(CKA_TOKEN, bool_attr(false)), (CKA_VALUE_LEN, ulong_attr(16))];
     attrs_data.extend_from_slice(extra);
     let mut raw: Vec<CK_ATTRIBUTE> = attrs_data
         .iter()
         .map(|(t, v)| CK_ATTRIBUTE {
-            r#type:     *t,
-            pValue:     v.as_ptr() as *mut _,
+            r#type: *t,
+            pValue: v.as_ptr() as *mut _,
             ulValueLen: v.len() as CK_ULONG,
         })
         .collect();
     let mut mech = CK_MECHANISM {
-        mechanism:      CKM_AES_KEY_GEN,
-        pParameter:     ptr::null(),
+        mechanism: CKM_AES_KEY_GEN,
+        pParameter: ptr::null(),
         ulParameterLen: 0,
     };
     let mut handle: CK_OBJECT_HANDLE = 0;
-    let rv = p11!(fl, C_GenerateKey, session, &mut mech,
-                  raw.as_mut_ptr(), raw.len() as CK_ULONG, &mut handle);
+    let rv = p11!(
+        fl,
+        C_GenerateKey,
+        session,
+        &mut mech,
+        raw.as_mut_ptr(),
+        raw.len() as CK_ULONG,
+        &mut handle
+    );
     assert_eq!(rv, CKR_OK, "C_GenerateKey failed: {rv:#010x}");
     handle
 }
@@ -101,29 +110,43 @@ unsafe fn get_bool(session: CK_SESSION_HANDLE, obj: CK_OBJECT_HANDLE, attr_type:
     let fl = common::fn_list();
     let mut val: CK_BBOOL = 0;
     let mut attr = CK_ATTRIBUTE {
-        r#type:     attr_type,
-        pValue:     &mut val as *mut CK_BBOOL as *mut _,
+        r#type: attr_type,
+        pValue: &mut val as *mut CK_BBOOL as *mut _,
         ulValueLen: 1,
     };
     let rv = p11!(fl, C_GetAttributeValue, session, obj, &mut attr, 1u64);
-    if rv == CKR_OK { Some(val != 0) } else { None }
+    if rv == CKR_OK {
+        Some(val != 0)
+    } else {
+        None
+    }
 }
 
 /// Copy an object with the given template overrides.
-unsafe fn copy(session: CK_SESSION_HANDLE, src: CK_OBJECT_HANDLE,
-               overrides: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> (CK_RV, CK_OBJECT_HANDLE) {
+unsafe fn copy(
+    session: CK_SESSION_HANDLE,
+    src: CK_OBJECT_HANDLE,
+    overrides: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)],
+) -> (CK_RV, CK_OBJECT_HANDLE) {
     let fl = common::fn_list();
     let mut raw: Vec<CK_ATTRIBUTE> = overrides
         .iter()
         .map(|(t, v)| CK_ATTRIBUTE {
-            r#type:     *t,
-            pValue:     v.as_ptr() as *mut _,
+            r#type: *t,
+            pValue: v.as_ptr() as *mut _,
             ulValueLen: v.len() as CK_ULONG,
         })
         .collect();
     let mut new_handle: CK_OBJECT_HANDLE = 0;
-    let rv = p11!(fl, C_CopyObject, session, src,
-                  raw.as_mut_ptr(), raw.len() as CK_ULONG, &mut new_handle);
+    let rv = p11!(
+        fl,
+        C_CopyObject,
+        session,
+        src,
+        raw.as_mut_ptr(),
+        raw.len() as CK_ULONG,
+        &mut new_handle
+    );
     (rv, new_handle)
 }
 
@@ -155,10 +178,10 @@ fn copy_with_attribute_override() {
         let session = open_rw();
         let fl = common::fn_list();
         // Source has CKA_ENCRYPT=TRUE, CKA_DECRYPT=FALSE.
-        let src = make_aes_key(session, &[
-            (CKA_ENCRYPT, bool_attr(true)),
-            (CKA_DECRYPT, bool_attr(false)),
-        ]);
+        let src = make_aes_key(
+            session,
+            &[(CKA_ENCRYPT, bool_attr(true)), (CKA_DECRYPT, bool_attr(false))],
+        );
         // Override: flip DECRYPT to TRUE on the copy.
         let (rv, copy_h) = copy(session, src, &[(CKA_DECRYPT, bool_attr(true))]);
         assert_eq!(rv, CKR_OK, "C_CopyObject with override failed: {rv:#010x}");
@@ -180,8 +203,10 @@ fn copy_ratchet_sensitive_true_to_false_rejected() {
         let src = make_aes_key(session, &[(CKA_SENSITIVE, bool_attr(true))]);
         // Attempt to lower SENSITIVE on the copy — must be blocked.
         let (rv, _) = copy(session, src, &[(CKA_SENSITIVE, bool_attr(false))]);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-                   "ratchet must prevent SENSITIVE TRUE→FALSE on copy: {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "ratchet must prevent SENSITIVE TRUE→FALSE on copy: {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, session);
     }
 }
@@ -196,8 +221,10 @@ fn copy_ratchet_extractable_false_to_true_rejected() {
         let src = make_aes_key(session, &[(CKA_EXTRACTABLE, bool_attr(false))]);
         // Attempt to raise EXTRACTABLE on the copy — must be blocked.
         let (rv, _) = copy(session, src, &[(CKA_EXTRACTABLE, bool_attr(true))]);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-                   "ratchet must prevent EXTRACTABLE FALSE→TRUE on copy: {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "ratchet must prevent EXTRACTABLE FALSE→TRUE on copy: {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, session);
     }
 }
@@ -212,8 +239,10 @@ fn copy_ro_session_rejected() {
         let fl = common::fn_list();
         let src = make_aes_key(rw, &[]);
         let (rv, _) = copy(ro, src, &[(CKA_TOKEN, bool_attr(true))]);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY,
-                   "RO session must be rejected for C_CopyObject: {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "RO session must be rejected for C_CopyObject: {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, rw);
         p11!(fl, C_CloseSession, ro);
     }
@@ -236,8 +265,8 @@ fn copy_is_independent_of_source() {
         let class = {
             let mut val: CK_ULONG = 0;
             let mut attr = CK_ATTRIBUTE {
-                r#type:     CKA_CLASS,
-                pValue:     &mut val as *mut CK_ULONG as *mut _,
+                r#type: CKA_CLASS,
+                pValue: &mut val as *mut CK_ULONG as *mut _,
                 ulValueLen: std::mem::size_of::<CK_ULONG>() as CK_ULONG,
             };
             p11!(fl, C_GetAttributeValue, session, src, &mut attr, 1u64)

@@ -40,11 +40,11 @@
 //! ```
 
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock, OnceLock};
+use std::sync::{Arc, OnceLock, RwLock};
 
 use crate::error::CryptoError;
-use crate::traits::CryptoProvider;
 use crate::pkcs11::types::CK_SLOT_ID;
+use crate::traits::CryptoProvider;
 
 // ── Virtual slot ─────────────────────────────────────────────────────────
 
@@ -87,17 +87,22 @@ fn get_registry() -> &'static RwLock<Registry> {
 /// Each engine gets `engine.slot_count()` slots (default: 1).
 pub fn register_engine(engine: impl CryptoProvider + 'static) -> Result<Vec<CK_SLOT_ID>, CryptoError> {
     let engine: Arc<dyn CryptoProvider> = Arc::new(engine);
-    let mut reg = get_registry().write().map_err(|_| CryptoError::GeneralError { message: "registry lock poisoned".into() })?;
+    let mut reg = get_registry().write().map_err(|_| CryptoError::GeneralError {
+        message: "registry lock poisoned".into(),
+    })?;
 
     let count = engine.slot_count();
     let mut assigned = Vec::with_capacity(count);
 
     for i in 0..count {
         let global_id = reg.next_slot_id;
-        reg.slots.insert(global_id, VirtualSlot {
-            engine: Arc::clone(&engine),
-            internal_slot_id: i as CK_SLOT_ID,
-        });
+        reg.slots.insert(
+            global_id,
+            VirtualSlot {
+                engine: Arc::clone(&engine),
+                internal_slot_id: i as CK_SLOT_ID,
+            },
+        );
         assigned.push(global_id);
         reg.next_slot_id += 1;
     }
@@ -112,7 +117,9 @@ pub fn register_engine(engine: impl CryptoProvider + 'static) -> Result<Vec<CK_S
 /// ID) which must be used when talking to the engine.  The global ID is what
 /// the application sees; the internal ID is what the engine understands.
 pub fn engine_for_slot(slot_id: CK_SLOT_ID) -> Result<(Arc<dyn CryptoProvider>, CK_SLOT_ID), CryptoError> {
-    let reg = get_registry().read().map_err(|_| CryptoError::GeneralError { message: "registry lock poisoned".into() })?;
+    let reg = get_registry().read().map_err(|_| CryptoError::GeneralError {
+        message: "registry lock poisoned".into(),
+    })?;
     reg.slots
         .get(&slot_id)
         .map(|vs| (Arc::clone(&vs.engine), vs.internal_slot_id))
@@ -145,7 +152,9 @@ pub fn slot_count() -> usize {
 /// Equivalent to `engine_for_slot(0)` when only one engine is registered.
 /// Kept for backward compatibility with code that uses a single engine.
 pub fn engine() -> Result<Arc<dyn CryptoProvider>, CryptoError> {
-    let reg = get_registry().read().map_err(|_| CryptoError::GeneralError { message: "registry lock poisoned".into() })?;
+    let reg = get_registry().read().map_err(|_| CryptoError::GeneralError {
+        message: "registry lock poisoned".into(),
+    })?;
     if reg.engines.is_empty() {
         return Err(CryptoError::NotInitialized);
     }

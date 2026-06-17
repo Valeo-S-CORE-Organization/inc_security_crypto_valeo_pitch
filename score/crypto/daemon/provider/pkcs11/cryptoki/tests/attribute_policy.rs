@@ -55,22 +55,17 @@ fn ulong_attr(val: CK_ULONG) -> Vec<u8> {
 }
 
 /// Generate a session AES-128 key with the given extra attributes.
-unsafe fn make_aes_key(
-    session: CK_SESSION_HANDLE,
-    extra_attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)],
-) -> CK_OBJECT_HANDLE {
+unsafe fn make_aes_key(session: CK_SESSION_HANDLE, extra_attrs: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)]) -> CK_OBJECT_HANDLE {
     let fl = common::fn_list();
     // Build the base template: token=false, value_len=16.
-    let mut attrs_data: Vec<(CK_ATTRIBUTE_TYPE, Vec<u8>)> = vec![
-        (CKA_TOKEN,     bool_attr(false)),
-        (CKA_VALUE_LEN, ulong_attr(16)),
-    ];
+    let mut attrs_data: Vec<(CK_ATTRIBUTE_TYPE, Vec<u8>)> =
+        vec![(CKA_TOKEN, bool_attr(false)), (CKA_VALUE_LEN, ulong_attr(16))];
     attrs_data.extend_from_slice(extra_attrs);
     let mut raw: Vec<CK_ATTRIBUTE> = attrs_data
         .iter()
         .map(|(t, v)| CK_ATTRIBUTE {
-            r#type:     *t,
-            pValue:     v.as_ptr() as *mut _,
+            r#type: *t,
+            pValue: v.as_ptr() as *mut _,
             ulValueLen: v.len() as CK_ULONG,
         })
         .collect();
@@ -80,18 +75,30 @@ unsafe fn make_aes_key(
         ulParameterLen: 0,
     };
     let mut handle: CK_OBJECT_HANDLE = 0;
-    let rv = p11!(fl, C_GenerateKey, session, &mut mech, raw.as_mut_ptr(), raw.len() as CK_ULONG, &mut handle);
+    let rv = p11!(
+        fl,
+        C_GenerateKey,
+        session,
+        &mut mech,
+        raw.as_mut_ptr(),
+        raw.len() as CK_ULONG,
+        &mut handle
+    );
     assert_eq!(rv, CKR_OK, "C_GenerateKey failed: {rv:#010x}");
     handle
 }
 
 /// Read a single boolean attribute from an object. Returns `None` if unavailable.
-unsafe fn get_bool_attr(session: CK_SESSION_HANDLE, handle: CK_OBJECT_HANDLE, attr_type: CK_ATTRIBUTE_TYPE) -> Option<bool> {
+unsafe fn get_bool_attr(
+    session: CK_SESSION_HANDLE,
+    handle: CK_OBJECT_HANDLE,
+    attr_type: CK_ATTRIBUTE_TYPE,
+) -> Option<bool> {
     let fl = common::fn_list();
     let mut val: CK_BBOOL = 0;
     let mut attr = CK_ATTRIBUTE {
-        r#type:     attr_type,
-        pValue:     &mut val as *mut _ as *mut _,
+        r#type: attr_type,
+        pValue: &mut val as *mut _ as *mut _,
         ulValueLen: 1,
     };
     let rv = p11!(fl, C_GetAttributeValue, session, handle, &mut attr, 1);
@@ -105,15 +112,15 @@ unsafe fn get_bool_attr(session: CK_SESSION_HANDLE, handle: CK_OBJECT_HANDLE, at
 /// Set a boolean attribute. Returns the CK_RV directly.
 unsafe fn set_bool_attr(
     session: CK_SESSION_HANDLE,
-    handle:  CK_OBJECT_HANDLE,
+    handle: CK_OBJECT_HANDLE,
     attr_type: CK_ATTRIBUTE_TYPE,
     value: bool,
 ) -> CK_RV {
     let fl = common::fn_list();
     let data = bool_attr(value);
     let mut attr = CK_ATTRIBUTE {
-        r#type:     attr_type,
-        pValue:     data.as_ptr() as *mut _,
+        r#type: attr_type,
+        pValue: data.as_ptr() as *mut _,
         ulValueLen: 1,
     };
     p11!(fl, C_SetAttributeValue, session, handle, &mut attr, 1)
@@ -128,7 +135,10 @@ fn sensitive_false_to_true_is_allowed() {
     unsafe {
         let session = open_session();
         // Create a key explicitly with SENSITIVE=FALSE.
-        let handle = make_aes_key(session, &[(CKA_SENSITIVE, bool_attr(false)), (CKA_EXTRACTABLE, bool_attr(true))]);
+        let handle = make_aes_key(
+            session,
+            &[(CKA_SENSITIVE, bool_attr(false)), (CKA_EXTRACTABLE, bool_attr(true))],
+        );
         assert_eq!(get_bool_attr(session, handle, CKA_SENSITIVE), Some(false));
         // Ratchet it to TRUE — must succeed.
         let rv = set_bool_attr(session, handle, CKA_SENSITIVE, true);
@@ -149,8 +159,10 @@ fn sensitive_true_to_false_is_rejected() {
         assert_eq!(get_bool_attr(session, handle, CKA_SENSITIVE), Some(true));
         // Attempt the forbidden direction.
         let rv = set_bool_attr(session, handle, CKA_SENSITIVE, false);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-            "SENSITIVE TRUE → FALSE must return CKR_ATTRIBUTE_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "SENSITIVE TRUE → FALSE must return CKR_ATTRIBUTE_READ_ONLY, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -164,10 +176,10 @@ fn extractable_true_to_false_is_allowed() {
     unsafe {
         let session = open_session();
         // Create a key with SENSITIVE=FALSE, EXTRACTABLE=TRUE to start.
-        let handle = make_aes_key(session, &[
-            (CKA_SENSITIVE,   bool_attr(false)),
-            (CKA_EXTRACTABLE, bool_attr(true)),
-        ]);
+        let handle = make_aes_key(
+            session,
+            &[(CKA_SENSITIVE, bool_attr(false)), (CKA_EXTRACTABLE, bool_attr(true))],
+        );
         assert_eq!(get_bool_attr(session, handle, CKA_EXTRACTABLE), Some(true));
         let rv = set_bool_attr(session, handle, CKA_EXTRACTABLE, false);
         assert_eq!(rv, CKR_OK, "EXTRACTABLE TRUE → FALSE must be allowed, got {rv:#010x}");
@@ -186,8 +198,10 @@ fn extractable_false_to_true_is_rejected() {
         let handle = make_aes_key(session, &[]);
         assert_eq!(get_bool_attr(session, handle, CKA_EXTRACTABLE), Some(false));
         let rv = set_bool_attr(session, handle, CKA_EXTRACTABLE, true);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-            "EXTRACTABLE FALSE → TRUE must return CKR_ATTRIBUTE_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "EXTRACTABLE FALSE → TRUE must return CKR_ATTRIBUTE_READ_ONLY, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -204,13 +218,15 @@ fn key_type_is_immutable() {
         // Attempt to change CKA_KEY_TYPE to something else (CKK_DES = 0x13).
         let new_type = ulong_attr(0x13);
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_KEY_TYPE,
-            pValue:     new_type.as_ptr() as *mut _,
+            r#type: CKA_KEY_TYPE,
+            pValue: new_type.as_ptr() as *mut _,
             ulValueLen: new_type.len() as CK_ULONG,
         };
         let rv = p11!(common::fn_list(), C_SetAttributeValue, session, handle, &mut attr, 1);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-            "CKA_KEY_TYPE must be immutable, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "CKA_KEY_TYPE must be immutable, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -224,13 +240,15 @@ fn class_is_immutable() {
         let handle = make_aes_key(session, &[]);
         let new_class = ulong_attr(CKO_PUBLIC_KEY);
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_CLASS,
-            pValue:     new_class.as_ptr() as *mut _,
+            r#type: CKA_CLASS,
+            pValue: new_class.as_ptr() as *mut _,
             ulValueLen: new_class.len() as CK_ULONG,
         };
         let rv = p11!(common::fn_list(), C_SetAttributeValue, session, handle, &mut attr, 1);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-            "CKA_CLASS must be immutable, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "CKA_CLASS must be immutable, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -244,13 +262,15 @@ fn value_len_is_immutable() {
         let handle = make_aes_key(session, &[]);
         let new_len = ulong_attr(32);
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_VALUE_LEN,
-            pValue:     new_len.as_ptr() as *mut _,
+            r#type: CKA_VALUE_LEN,
+            pValue: new_len.as_ptr() as *mut _,
             ulValueLen: new_len.len() as CK_ULONG,
         };
         let rv = p11!(common::fn_list(), C_SetAttributeValue, session, handle, &mut attr, 1);
-        assert_eq!(rv, CKR_ATTRIBUTE_READ_ONLY,
-            "CKA_VALUE_LEN must be immutable, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_READ_ONLY,
+            "CKA_VALUE_LEN must be immutable, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -269,13 +289,15 @@ fn value_blocked_when_sensitive() {
 
         let mut val_buf = vec![0u8; 32];
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_VALUE,
-            pValue:     val_buf.as_mut_ptr() as *mut _,
+            r#type: CKA_VALUE,
+            pValue: val_buf.as_mut_ptr() as *mut _,
             ulValueLen: 32,
         };
         let rv = p11!(common::fn_list(), C_GetAttributeValue, session, handle, &mut attr, 1);
-        assert_eq!(rv, CKR_ATTRIBUTE_SENSITIVE,
-            "CKA_VALUE on a sensitive key must return CKR_ATTRIBUTE_SENSITIVE, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_SENSITIVE,
+            "CKA_VALUE on a sensitive key must return CKR_ATTRIBUTE_SENSITIVE, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -287,22 +309,24 @@ fn value_blocked_when_not_extractable() {
     unsafe {
         let session = open_session();
         // Explicitly sensitive=false but extractable=false.
-        let handle = make_aes_key(session, &[
-            (CKA_SENSITIVE,   bool_attr(false)),
-            (CKA_EXTRACTABLE, bool_attr(false)),
-        ]);
-        assert_eq!(get_bool_attr(session, handle, CKA_SENSITIVE),   Some(false));
+        let handle = make_aes_key(
+            session,
+            &[(CKA_SENSITIVE, bool_attr(false)), (CKA_EXTRACTABLE, bool_attr(false))],
+        );
+        assert_eq!(get_bool_attr(session, handle, CKA_SENSITIVE), Some(false));
         assert_eq!(get_bool_attr(session, handle, CKA_EXTRACTABLE), Some(false));
 
         let mut val_buf = vec![0u8; 32];
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_VALUE,
-            pValue:     val_buf.as_mut_ptr() as *mut _,
+            r#type: CKA_VALUE,
+            pValue: val_buf.as_mut_ptr() as *mut _,
             ulValueLen: 32,
         };
         let rv = p11!(common::fn_list(), C_GetAttributeValue, session, handle, &mut attr, 1);
-        assert_eq!(rv, CKR_ATTRIBUTE_SENSITIVE,
-            "CKA_VALUE on a non-extractable key must return CKR_ATTRIBUTE_SENSITIVE, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ATTRIBUTE_SENSITIVE,
+            "CKA_VALUE on a non-extractable key must return CKR_ATTRIBUTE_SENSITIVE, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -316,8 +340,16 @@ fn generated_aes_key_has_secure_defaults() {
     unsafe {
         let session = open_session();
         let handle = make_aes_key(session, &[]);
-        assert_eq!(get_bool_attr(session, handle, CKA_SENSITIVE),   Some(true),  "default SENSITIVE must be TRUE");
-        assert_eq!(get_bool_attr(session, handle, CKA_EXTRACTABLE), Some(false), "default EXTRACTABLE must be FALSE");
+        assert_eq!(
+            get_bool_attr(session, handle, CKA_SENSITIVE),
+            Some(true),
+            "default SENSITIVE must be TRUE"
+        );
+        assert_eq!(
+            get_bool_attr(session, handle, CKA_EXTRACTABLE),
+            Some(false),
+            "default EXTRACTABLE must be FALSE"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -334,23 +366,21 @@ fn generated_rsa_private_key_has_secure_defaults() {
         let token_false = bool_attr(false);
         let mut pub_template = vec![
             CK_ATTRIBUTE {
-                r#type:     CKA_TOKEN,
-                pValue:     token_false.as_ptr() as *mut _,
+                r#type: CKA_TOKEN,
+                pValue: token_false.as_ptr() as *mut _,
                 ulValueLen: 1,
             },
             CK_ATTRIBUTE {
-                r#type:     CKA_MODULUS_BITS,
-                pValue:     modulus_bits_val.as_ptr() as *mut _,
+                r#type: CKA_MODULUS_BITS,
+                pValue: modulus_bits_val.as_ptr() as *mut _,
                 ulValueLen: 8,
             },
         ];
-        let mut priv_template = vec![
-            CK_ATTRIBUTE {
-                r#type:     CKA_TOKEN,
-                pValue:     token_false.as_ptr() as *mut _,
-                ulValueLen: 1,
-            },
-        ];
+        let mut priv_template = vec![CK_ATTRIBUTE {
+            r#type: CKA_TOKEN,
+            pValue: token_false.as_ptr() as *mut _,
+            ulValueLen: 1,
+        }];
         let mut mech = CK_MECHANISM {
             mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
             pParameter: ptr::null(),
@@ -358,16 +388,30 @@ fn generated_rsa_private_key_has_secure_defaults() {
         };
         let mut pub_h: CK_OBJECT_HANDLE = 0;
         let mut priv_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_GenerateKeyPair,
-            session, &mut mech,
-            pub_template.as_mut_ptr(), pub_template.len() as CK_ULONG,
-            priv_template.as_mut_ptr(), priv_template.len() as CK_ULONG,
-            &mut pub_h, &mut priv_h,
+        let rv = p11!(
+            fl,
+            C_GenerateKeyPair,
+            session,
+            &mut mech,
+            pub_template.as_mut_ptr(),
+            pub_template.len() as CK_ULONG,
+            priv_template.as_mut_ptr(),
+            priv_template.len() as CK_ULONG,
+            &mut pub_h,
+            &mut priv_h,
         );
         assert_eq!(rv, CKR_OK, "C_GenerateKeyPair failed: {rv:#010x}");
 
-        assert_eq!(get_bool_attr(session, priv_h, CKA_SENSITIVE),   Some(true),  "private key default SENSITIVE must be TRUE");
-        assert_eq!(get_bool_attr(session, priv_h, CKA_EXTRACTABLE), Some(false), "private key default EXTRACTABLE must be FALSE");
+        assert_eq!(
+            get_bool_attr(session, priv_h, CKA_SENSITIVE),
+            Some(true),
+            "private key default SENSITIVE must be TRUE"
+        );
+        assert_eq!(
+            get_bool_attr(session, priv_h, CKA_EXTRACTABLE),
+            Some(false),
+            "private key default EXTRACTABLE must be FALSE"
+        );
 
         p11!(fl, C_CloseSession, session);
     }
@@ -385,16 +429,19 @@ fn always_sensitive_stays_false_after_ratchet_up() {
         let fl = common::fn_list();
         let session = open_session();
         // Key created with SENSITIVE=FALSE → always_sensitive starts false.
-        let handle = make_aes_key(session, &[
-            (CKA_SENSITIVE,   bool_attr(false)),
-            (CKA_EXTRACTABLE, bool_attr(true)),
-        ]);
+        let handle = make_aes_key(
+            session,
+            &[(CKA_SENSITIVE, bool_attr(false)), (CKA_EXTRACTABLE, bool_attr(true))],
+        );
         // Ratchet SENSITIVE to TRUE.
         let rv = set_bool_attr(session, handle, CKA_SENSITIVE, true);
         assert_eq!(rv, CKR_OK);
         // always_sensitive should remain FALSE (key was not always sensitive).
-        assert_eq!(get_bool_attr(session, handle, CKA_ALWAYS_SENSITIVE), Some(false),
-            "CKA_ALWAYS_SENSITIVE must stay FALSE when key was created non-sensitive");
+        assert_eq!(
+            get_bool_attr(session, handle, CKA_ALWAYS_SENSITIVE),
+            Some(false),
+            "CKA_ALWAYS_SENSITIVE must stay FALSE when key was created non-sensitive"
+        );
         p11!(fl, C_CloseSession, session);
     }
 }

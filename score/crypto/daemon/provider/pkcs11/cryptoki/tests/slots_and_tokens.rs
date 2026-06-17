@@ -20,11 +20,7 @@
 
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
-use cryptoki::pkcs11::{
-    C_Initialize,
-    C_GetInfo, C_GetSlotList, C_GetSlotInfo, C_GetTokenInfo,
-    C_GetMechanismList,
-};
+use cryptoki::pkcs11::{C_GetInfo, C_GetMechanismList, C_GetSlotInfo, C_GetSlotList, C_GetTokenInfo, C_Initialize};
 use std::ptr;
 use std::sync::Once;
 
@@ -76,16 +72,8 @@ fn slot_and_token_info() {
         // Step 3: C_GetSlotInfo — retrieve hardware/firmware version and flags
         // (show_slot_info() → p11Func->C_GetSlotInfo(slotId, &slotInfo))
         let mut slot_info: CK_SLOT_INFO = std::mem::zeroed();
-        assert_eq!(
-            C_GetSlotInfo(slot_id, &mut slot_info),
-            CKR_OK,
-            "C_GetSlotInfo failed",
-        );
-        assert_ne!(
-            slot_info.flags & CKF_TOKEN_PRESENT,
-            0,
-            "CKF_TOKEN_PRESENT must be set",
-        );
+        assert_eq!(C_GetSlotInfo(slot_id, &mut slot_info), CKR_OK, "C_GetSlotInfo failed",);
+        assert_ne!(slot_info.flags & CKF_TOKEN_PRESENT, 0, "CKF_TOKEN_PRESENT must be set",);
 
         // Step 4: C_GetTokenInfo — retrieve token label, flags, memory, pin-length limits
         // (show_token_info() → p11Func->C_GetTokenInfo(slotId, &tokenInfo))
@@ -117,12 +105,15 @@ fn slot_and_token_info() {
             CKR_OK,
             "C_GetMechanismList (fill) failed",
         );
-        assert!(mechs.contains(&CKM_AES_KEY_GEN),          "missing CKM_AES_KEY_GEN");
-        assert!(mechs.contains(&CKM_AES_CBC_PAD),          "missing CKM_AES_CBC_PAD");
-        assert!(mechs.contains(&CKM_AES_GCM),              "missing CKM_AES_GCM");
-        assert!(mechs.contains(&CKM_RSA_PKCS_KEY_PAIR_GEN),"missing CKM_RSA_PKCS_KEY_PAIR_GEN");
-        assert!(mechs.contains(&CKM_EC_KEY_PAIR_GEN),      "missing CKM_EC_KEY_PAIR_GEN");
-        assert!(mechs.contains(&CKM_SHA256),               "missing CKM_SHA256");
+        assert!(mechs.contains(&CKM_AES_KEY_GEN), "missing CKM_AES_KEY_GEN");
+        assert!(mechs.contains(&CKM_AES_CBC_PAD), "missing CKM_AES_CBC_PAD");
+        assert!(mechs.contains(&CKM_AES_GCM), "missing CKM_AES_GCM");
+        assert!(
+            mechs.contains(&CKM_RSA_PKCS_KEY_PAIR_GEN),
+            "missing CKM_RSA_PKCS_KEY_PAIR_GEN"
+        );
+        assert!(mechs.contains(&CKM_EC_KEY_PAIR_GEN), "missing CKM_EC_KEY_PAIR_GEN");
+        assert!(mechs.contains(&CKM_SHA256), "missing CKM_SHA256");
 
         // Step 6: C_GetInfo — library version and vendor information
         let mut info: CK_INFO = std::mem::zeroed();

@@ -42,8 +42,18 @@ pub fn generate_rsa_key_pair(
     priv_attrs.insert(CKA_MODULUS_BITS, ulong_bytes(pair.bits as CK_ULONG));
 
     Ok((
-        GeneratedKey { key_type: KeyType::RsaPrivate, key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()), attrs: priv_attrs, key_gen_mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN },
-        GeneratedKey { key_type: KeyType::RsaPublic, key_ref: EngineKeyRef::from_bytes(pair.public_der), attrs: pub_attrs, key_gen_mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN },
+        GeneratedKey {
+            key_type: KeyType::RsaPrivate,
+            key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()),
+            attrs: priv_attrs,
+            key_gen_mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+        },
+        GeneratedKey {
+            key_type: KeyType::RsaPublic,
+            key_ref: EngineKeyRef::from_bytes(pair.public_der),
+            attrs: pub_attrs,
+            key_gen_mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+        },
     ))
 }
 
@@ -69,8 +79,18 @@ pub fn generate_ec_key_pair(
     priv_attrs.insert(CKA_EC_PARAMS, pair.ec_params_der);
 
     Ok((
-        GeneratedKey { key_type: KeyType::EcPrivate, key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()), attrs: priv_attrs, key_gen_mechanism: CKM_EC_KEY_PAIR_GEN },
-        GeneratedKey { key_type: KeyType::EcPublic, key_ref: EngineKeyRef::from_bytes(pair.public_der), attrs: pub_attrs, key_gen_mechanism: CKM_EC_KEY_PAIR_GEN },
+        GeneratedKey {
+            key_type: KeyType::EcPrivate,
+            key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()),
+            attrs: priv_attrs,
+            key_gen_mechanism: CKM_EC_KEY_PAIR_GEN,
+        },
+        GeneratedKey {
+            key_type: KeyType::EcPublic,
+            key_ref: EngineKeyRef::from_bytes(pair.public_der),
+            attrs: pub_attrs,
+            key_gen_mechanism: CKM_EC_KEY_PAIR_GEN,
+        },
     ))
 }
 
@@ -96,8 +116,18 @@ pub fn generate_ed_key_pair(
     priv_attrs.insert(CKA_EC_PARAMS, pair.ec_params_der);
 
     Ok((
-        GeneratedKey { key_type: KeyType::EdPrivate, key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()), attrs: priv_attrs, key_gen_mechanism: CKM_EC_EDWARDS_KEY_PAIR_GEN },
-        GeneratedKey { key_type: KeyType::EdPublic, key_ref: EngineKeyRef::from_bytes(pair.public_der), attrs: pub_attrs, key_gen_mechanism: CKM_EC_EDWARDS_KEY_PAIR_GEN },
+        GeneratedKey {
+            key_type: KeyType::EdPrivate,
+            key_ref: EngineKeyRef::from_bytes(pair.private_der.to_vec()),
+            attrs: priv_attrs,
+            key_gen_mechanism: CKM_EC_EDWARDS_KEY_PAIR_GEN,
+        },
+        GeneratedKey {
+            key_type: KeyType::EdPublic,
+            key_ref: EngineKeyRef::from_bytes(pair.public_der),
+            attrs: pub_attrs,
+            key_gen_mechanism: CKM_EC_EDWARDS_KEY_PAIR_GEN,
+        },
     ))
 }
 
@@ -144,7 +174,12 @@ pub fn generate_chacha20_key(
     attrs.insert(CKA_KEY_TYPE, ulong_bytes(CKK_CHACHA20));
     attrs.insert(CKA_VALUE_LEN, ulong_bytes(32));
 
-    Ok(GeneratedKey { key_type: KeyType::ChaCha20Secret, key_ref, attrs, key_gen_mechanism: CKM_CHACHA20_KEY_GEN })
+    Ok(GeneratedKey {
+        key_type: KeyType::ChaCha20Secret,
+        key_ref,
+        attrs,
+        key_gen_mechanism: CKM_CHACHA20_KEY_GEN,
+    })
 }
 
 pub fn generate_generic_secret_key(

@@ -36,7 +36,7 @@ cc_binary(
         "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": [
             "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
             "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
-            "//third_party/openssl:openssl",
+            "//third_party/openssl",
         ],
         "//conditions:default": [
             "//third_party/soft_hsm:libsofthsm_shared",

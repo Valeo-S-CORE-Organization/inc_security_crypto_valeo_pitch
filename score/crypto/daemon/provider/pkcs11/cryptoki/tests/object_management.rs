@@ -20,13 +20,8 @@
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
 use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_GenerateKey, C_GenerateKeyPair,
-    C_FindObjectsInit, C_FindObjects, C_FindObjectsFinal,
-    C_GetAttributeValue,
-    C_DestroyObject,
+    C_CloseSession, C_DestroyObject, C_FindObjects, C_FindObjectsFinal, C_FindObjectsInit, C_GenerateKey,
+    C_GenerateKeyPair, C_GetAttributeValue, C_Initialize, C_Login, C_Logout, C_OpenSession,
 };
 use std::ffi::c_void;
 use std::ptr;
@@ -53,7 +48,10 @@ unsafe fn connect_to_slot() -> CK_SESSION_HANDLE {
         CKR_OK,
     );
     let rv = C_Login(h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN, "C_Login failed: {rv:#x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#x}"
+    );
     h
 }
 
@@ -166,10 +164,14 @@ fn generate_rsa_keypair() {
         let mut h_private: CK_OBJECT_HANDLE = 0;
         assert_eq!(
             C_GenerateKeyPair(
-                h_session, &mech,
-                pub_attrs.as_mut_ptr(), 1,
-                priv_attrs.as_mut_ptr(), 0,
-                &mut h_public, &mut h_private,
+                h_session,
+                &mech,
+                pub_attrs.as_mut_ptr(),
+                1,
+                priv_attrs.as_mut_ptr(),
+                0,
+                &mut h_public,
+                &mut h_private,
             ),
             CKR_OK,
             "C_GenerateKeyPair (RSA) failed",
@@ -234,10 +236,14 @@ fn generate_ecdsa_keypair() {
         let mut h_private: CK_OBJECT_HANDLE = 0;
         assert_eq!(
             C_GenerateKeyPair(
-                h_session, &mech,
-                pub_attrs.as_mut_ptr(), 1,
-                priv_attrs.as_mut_ptr(), 0,
-                &mut h_public, &mut h_private,
+                h_session,
+                &mech,
+                pub_attrs.as_mut_ptr(),
+                1,
+                priv_attrs.as_mut_ptr(),
+                0,
+                &mut h_public,
+                &mut h_private,
             ),
             CKR_OK,
             "C_GenerateKeyPair (EC) failed",
@@ -287,7 +293,11 @@ fn count_all_keys() {
                 pValue: key_size_le.as_ptr() as *mut c_void,
                 ulValueLen: 8,
             }];
-            let mech = CK_MECHANISM { mechanism: CKM_AES_KEY_GEN, pParameter: ptr::null(), ulParameterLen: 0 };
+            let mech = CK_MECHANISM {
+                mechanism: CKM_AES_KEY_GEN,
+                pParameter: ptr::null(),
+                ulParameterLen: 0,
+            };
             let mut kh: CK_OBJECT_HANDLE = 0;
             assert_eq!(C_GenerateKey(h_session, &mech, attrs.as_mut_ptr(), 1, &mut kh), CKR_OK);
             kh
@@ -295,22 +305,62 @@ fn count_all_keys() {
         let (rsa_pub, rsa_priv) = {
             let bits: u64 = 2048;
             let bits_le = bits.to_le_bytes();
-            let mut pub_attrs = [CK_ATTRIBUTE { r#type: CKA_MODULUS_BITS, pValue: bits_le.as_ptr() as *mut c_void, ulValueLen: 8 }];
+            let mut pub_attrs = [CK_ATTRIBUTE {
+                r#type: CKA_MODULUS_BITS,
+                pValue: bits_le.as_ptr() as *mut c_void,
+                ulValueLen: 8,
+            }];
             let mut priv_attrs: [CK_ATTRIBUTE; 0] = [];
-            let mech = CK_MECHANISM { mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN, pParameter: ptr::null(), ulParameterLen: 0 };
+            let mech = CK_MECHANISM {
+                mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+                pParameter: ptr::null(),
+                ulParameterLen: 0,
+            };
             let mut h_pub: CK_OBJECT_HANDLE = 0;
             let mut h_priv: CK_OBJECT_HANDLE = 0;
-            assert_eq!(C_GenerateKeyPair(h_session, &mech, pub_attrs.as_mut_ptr(), 1, priv_attrs.as_mut_ptr(), 0, &mut h_pub, &mut h_priv), CKR_OK);
+            assert_eq!(
+                C_GenerateKeyPair(
+                    h_session,
+                    &mech,
+                    pub_attrs.as_mut_ptr(),
+                    1,
+                    priv_attrs.as_mut_ptr(),
+                    0,
+                    &mut h_pub,
+                    &mut h_priv
+                ),
+                CKR_OK
+            );
             (h_pub, h_priv)
         };
         let (ec_pub, ec_priv) = {
             let oid = [0x06u8, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07];
-            let mut pub_attrs = [CK_ATTRIBUTE { r#type: CKA_EC_PARAMS, pValue: oid.as_ptr() as *mut c_void, ulValueLen: oid.len() as CK_ULONG }];
+            let mut pub_attrs = [CK_ATTRIBUTE {
+                r#type: CKA_EC_PARAMS,
+                pValue: oid.as_ptr() as *mut c_void,
+                ulValueLen: oid.len() as CK_ULONG,
+            }];
             let mut priv_attrs: [CK_ATTRIBUTE; 0] = [];
-            let mech = CK_MECHANISM { mechanism: CKM_EC_KEY_PAIR_GEN, pParameter: ptr::null(), ulParameterLen: 0 };
+            let mech = CK_MECHANISM {
+                mechanism: CKM_EC_KEY_PAIR_GEN,
+                pParameter: ptr::null(),
+                ulParameterLen: 0,
+            };
             let mut h_pub: CK_OBJECT_HANDLE = 0;
             let mut h_priv: CK_OBJECT_HANDLE = 0;
-            assert_eq!(C_GenerateKeyPair(h_session, &mech, pub_attrs.as_mut_ptr(), 1, priv_attrs.as_mut_ptr(), 0, &mut h_pub, &mut h_priv), CKR_OK);
+            assert_eq!(
+                C_GenerateKeyPair(
+                    h_session,
+                    &mech,
+                    pub_attrs.as_mut_ptr(),
+                    1,
+                    priv_attrs.as_mut_ptr(),
+                    0,
+                    &mut h_pub,
+                    &mut h_priv
+                ),
+                CKR_OK
+            );
             (h_pub, h_priv)
         };
 
@@ -329,7 +379,9 @@ fn count_all_keys() {
             let mut total: usize = 0;
             loop {
                 assert_eq!(C_FindObjects(h_session, handles.as_mut_ptr(), 64, &mut count), CKR_OK);
-                if count == 0 { break; }
+                if count == 0 {
+                    break;
+                }
                 total += count as usize;
             }
             assert_eq!(C_FindObjectsFinal(h_session), CKR_OK);
@@ -352,7 +404,7 @@ fn count_all_keys() {
             assert_eq!(C_FindObjectsFinal(h_session), CKR_OK);
             let found = &handles[..count as usize];
             assert!(found.contains(&rsa_priv), "RSA private key must be found");
-            assert!(found.contains(&ec_priv),  "EC private key must be found");
+            assert!(found.contains(&ec_priv), "EC private key must be found");
         }
 
         // Step 6: countPublicKeys() — filter by CKO_PUBLIC_KEY
@@ -371,7 +423,7 @@ fn count_all_keys() {
             assert_eq!(C_FindObjectsFinal(h_session), CKR_OK);
             let found = &handles[..count as usize];
             assert!(found.contains(&rsa_pub), "RSA public key must be found");
-            assert!(found.contains(&ec_pub),  "EC public key must be found");
+            assert!(found.contains(&ec_pub), "EC public key must be found");
         }
 
         // Step 7: countSecretKeys() — filter by CKO_SECRET_KEY

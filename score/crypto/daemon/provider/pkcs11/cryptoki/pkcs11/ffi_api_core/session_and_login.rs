@@ -17,9 +17,9 @@ use score_log::{debug, info, trace, warn};
 
 #[no_mangle]
 pub unsafe extern "C" fn C_InitPIN(
-    h_session:   CK_SESSION_HANDLE,
-    p_pin:       *const CK_UTF8CHAR,
-    ul_pin_len:  CK_ULONG,
+    h_session: CK_SESSION_HANDLE,
+    p_pin: *const CK_UTF8CHAR,
+    ul_pin_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     info!(context: "AUTH", "C_InitPIN called session={}", h_session);
@@ -44,25 +44,32 @@ pub unsafe extern "C" fn C_InitPIN(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_SetPIN(
-    h_session:       CK_SESSION_HANDLE,
-    p_old_pin:       *const CK_UTF8CHAR,
-    ul_old_pin_len:  CK_ULONG,
-    p_new_pin:       *const CK_UTF8CHAR,
-    ul_new_pin_len:  CK_ULONG,
+    h_session: CK_SESSION_HANDLE,
+    p_old_pin: *const CK_UTF8CHAR,
+    ul_old_pin_len: CK_ULONG,
+    p_new_pin: *const CK_UTF8CHAR,
+    ul_new_pin_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     info!(context: "AUTH", "C_SetPIN called session={}", h_session);
     ck_try!(require_rw_session(h_session));
-    let old_pin = if p_old_pin.is_null() { &[] as &[u8] }
-                  else { std::slice::from_raw_parts(p_old_pin, ul_old_pin_len as usize) };
-    let new_pin = if p_new_pin.is_null() { &[] as &[u8] }
-                  else { std::slice::from_raw_parts(p_new_pin, ul_new_pin_len as usize) };
+    let old_pin = if p_old_pin.is_null() {
+        &[] as &[u8]
+    } else {
+        std::slice::from_raw_parts(p_old_pin, ul_old_pin_len as usize)
+    };
+    let new_pin = if p_new_pin.is_null() {
+        &[] as &[u8]
+    } else {
+        std::slice::from_raw_parts(p_new_pin, ul_new_pin_len as usize)
+    };
     let (user_type, slot_id) = ck_try!(session::with_session(h_session, |s| {
         match s.login_state {
-            session::LoginState::SoLoggedIn   => Ok((CKU_SO, s.slot_id)),
+            session::LoginState::SoLoggedIn => Ok((CKU_SO, s.slot_id)),
             session::LoginState::UserLoggedIn => Ok((CKU_USER, s.slot_id)),
             // If not logged in, C_SetPIN defaults to changing the User PIN
-            session::LoginState::NotLoggedIn  => Ok((CKU_USER, s.slot_id)),        }
+            session::LoginState::NotLoggedIn => Ok((CKU_USER, s.slot_id)),
+        }
     }));
     // Verify old PIN with failure counting, then set the new PIN.
     ck_try!(token::with_token_mut(slot_id, |tok| {
@@ -88,16 +95,20 @@ pub unsafe extern "C" fn C_SetPIN(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_OpenSession(
-    slot_id:       CK_SLOT_ID,
-    flags:         CK_FLAGS,
+    slot_id: CK_SLOT_ID,
+    flags: CK_FLAGS,
     _p_application: *mut c_void,
-    _notify:       CK_NOTIFY,
-    ph_session:    *mut CK_SESSION_HANDLE,
+    _notify: CK_NOTIFY,
+    ph_session: *mut CK_SESSION_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "SESSION", "C_OpenSession called slot={} flags={}", slot_id, flags);
-    if !crate::registry::is_valid_slot(slot_id) { return CKR_SLOT_ID_INVALID; }
-    if ph_session.is_null() { return CKR_ARGUMENTS_BAD; }
+    if !crate::registry::is_valid_slot(slot_id) {
+        return CKR_SLOT_ID_INVALID;
+    }
+    if ph_session.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     *ph_session = ck_try!(session::open_session(slot_id, flags));
     CKR_OK
 }
@@ -126,13 +137,12 @@ pub extern "C" fn C_CloseAllSessions(slot_id: CK_SLOT_ID) -> CK_RV {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn C_GetSessionInfo(
-    h_session: CK_SESSION_HANDLE,
-    p_info:    *mut CK_SESSION_INFO,
-) -> CK_RV {
+pub unsafe extern "C" fn C_GetSessionInfo(h_session: CK_SESSION_HANDLE, p_info: *mut CK_SESSION_INFO) -> CK_RV {
     ck_try!(check_init());
     trace!(context: "SESSION", "C_GetSessionInfo called session={}", h_session);
-    if p_info.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_info.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     *p_info = ck_try!(session::get_session_info(h_session));
     CKR_OK
 }
@@ -141,10 +151,10 @@ pub unsafe extern "C" fn C_GetSessionInfo(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_Login(
-    h_session:   CK_SESSION_HANDLE,
-    user_type:   CK_USER_TYPE,
-    p_pin:       *const CK_UTF8CHAR,
-    ul_pin_len:  CK_ULONG,
+    h_session: CK_SESSION_HANDLE,
+    user_type: CK_USER_TYPE,
+    p_pin: *const CK_UTF8CHAR,
+    ul_pin_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     info!(context: "AUTH", "C_Login called session={} user_type={}", h_session, user_type);
@@ -187,13 +197,13 @@ pub unsafe extern "C" fn C_Login(
             Ok(())
         }));
         return CKR_OK;
-        }
+    }
 
     // Validate user type early.
     let new_state = match user_type {
         CKU_USER => LoginState::UserLoggedIn,
-        CKU_SO   => LoginState::SoLoggedIn,
-        _        => return CKR_USER_TYPE_INVALID,
+        CKU_SO => LoginState::SoLoggedIn,
+        _ => return CKR_USER_TYPE_INVALID,
     };
 
     // Check if already logged in on this token (any session).

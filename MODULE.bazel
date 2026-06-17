@@ -19,25 +19,7 @@ bazel_dep(name = "rules_python", version = "2.1.0")
 single_version_override(
     module_name = "rules_python",
     version = "1.5.4",
-# ==========================================
-# 1. C++ & RUST SETUP
-# ==========================================
-bazel_dep(name = "rules_cc", version = "0.2.18")
-bazel_dep(name = "rules_rust", version = "0.70.0")
-bazel_dep(name = "rules_shell", version = "0.8.0")
-
-crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
-crate.from_cargo(
-    name = "crates",
-    cargo_lockfile = "//:Cargo.lock",
-    manifests = ["//:Cargo.toml"],
-=======
-bazel_dep(name = "rules_python", version = "2.0.1")
-single_version_override(
-    module_name = "rules_python",
-    version = "1.5.4",
 )
-
 PYTHON_VERSION = "3.12"
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -234,12 +216,10 @@ filegroup(
 # Valeo - Cryptoki
 # *******************************************************************************
 bazel_dep(name = "rules_rust", version = "0.67.0")  # Synced version
-
 git_override(
     module_name = "rules_rust",
     commit = "2b171a7376e69cb1207eced1f66904ce4ae0c819",
     remote = "https://github.com/pawelrutkaq/rules_rust.git",
->>>>>>> 8c17d44 (Initial Cryptoki integration into ETAS)
 )
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
@@ -525,13 +505,13 @@ bazel_dep(name = "score_itf", version = "0.1.0", dev_dependency = True)
 register_toolchains("@rust_toolchains//:all")
 
 bazel_dep(name = "rules_shell", version = "0.8.0")
+
 bazel_dep(name = "score_rust_policies", version = "0.0.4", dev_dependency = True)
 bazel_dep(name = "score_toolchains_rust", version = "0.7.0", dev_dependency = True)
 
 bazel_dep(name = "score_crates", version = "0.0.7")
 
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate", isolate = True)
-
 crate.from_cargo(
     name = "crates",
     cargo_lockfile = "//score/crypto/daemon/provider/pkcs11/cryptoki:Cargo.lock",
@@ -543,14 +523,12 @@ crate.from_cargo(
         "x86_64-pc-nto-qnx710",
     ],
 )
-
 crate.annotation(
     crate = "openssl-sys",
     patch_args = ["-p0"],
     patches = ["@@//third_party/patches:openssl_sys_build_rs.patch"],
     deps = ["@@//third_party/openssl:openssl"],
 )
-
 use_repo(crate, "crates")
 
 # ===============================================================================
@@ -566,7 +544,10 @@ bazel_dep(name = "buildifier_prebuilt", version = "8.2.0.2")
 bazel_dep(name = "score_docs_as_code", version = "4.0.3", dev_dependency = True)
 multiple_version_override(
     module_name = "score_docs_as_code",
-    versions = ["3.0.1", "4.0.3"],
+    versions = [
+        "3.0.1",
+        "4.0.3",
+    ],
 )
 
 # GoogleTest
@@ -577,12 +558,12 @@ bazel_dep(name = "score_baselibs", version = "0.2.7")
 
 # Integration testing
 bazel_dep(name = "score_itf", version = "0.1.0")
-
 bazel_dep(name = "score_baselibs_rust", version = "0.1.2")
+
 bazel_dep(name = "score_platform", version = "0.5.5", dev_dependency = True)
+
 bazel_dep(name = "score_python_basics", version = "0.3.4")
 bazel_dep(name = "score_logging", version = "0.2.0")
-
 single_version_override(
     module_name = "score_logging",
     patch_strip = 0,

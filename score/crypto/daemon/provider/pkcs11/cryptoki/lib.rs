@@ -44,19 +44,20 @@
 
 pub mod attributes;
 pub mod error;
+pub(crate) mod logger;
 pub mod openssl_provider;
 pub mod pkcs11;
 pub mod registry;
 pub mod traits;
 pub mod types;
-pub(crate) mod logger;
 
 // ── Convenience re-exports ────────────────────────────────────────────────────
 
 pub use attributes::{AttributeType, AttributeValue};
 pub use error::CryptoError;
 pub use openssl_provider::OpenSslEngine;
-pub use registry::{engine, engine_for_slot, register_engine, try_engine,
-                   is_valid_slot, slot_ids, slot_count, reset_registry};
-pub use traits::{CryptoProvider, EngineMechanismInfo, EngineKeyRef, StreamHasher};
+pub use registry::{
+    engine, engine_for_slot, is_valid_slot, register_engine, reset_registry, slot_count, slot_ids, try_engine,
+};
+pub use traits::{CryptoProvider, EngineKeyRef, EngineMechanismInfo, StreamHasher};
 pub use types::{EcCurve, EcKeyPair, EdKeyPair, EdwardsCurve, HashAlgorithm, RsaKeyPair};

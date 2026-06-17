@@ -20,19 +20,21 @@
 
 mod common;
 
+use cryptoki::pkcs11::constants::*;
+use cryptoki::pkcs11::types::*;
 use std::mem;
 use std::ptr;
 use std::sync::{Mutex, Once};
-use cryptoki::pkcs11::constants::*;
-use cryptoki::pkcs11::types::*;
 
 static INIT: Once = Once::new();
 fn init() {
     INIT.call_once(|| unsafe {
         let fl = common::fn_list();
         let rv = p11!(fl, C_Initialize, ptr::null_mut());
-        assert!(rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
-            "C_Initialize failed: {rv:#010x}");
+        assert!(
+            rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
+            "C_Initialize failed: {rv:#010x}"
+        );
     });
 }
 
@@ -72,26 +74,26 @@ unsafe fn get_mech_info(mech: CK_MECHANISM_TYPE) -> (CK_RV, CK_MECHANISM_INFO) {
 #[test]
 fn classify_standard_mechanisms() {
     use cryptoki::pkcs11::mechanisms::{classify, MechanismTier};
-    assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, None),      MechanismTier::Standard);
+    assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, None), MechanismTier::Standard);
     assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(2048)), MechanismTier::Standard);
     assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(4096)), MechanismTier::Standard);
-    assert_eq!(classify(CKM_AES_GCM, None),                    MechanismTier::Standard);
-    assert_eq!(classify(CKM_ECDSA_SHA256, None),               MechanismTier::Standard);
+    assert_eq!(classify(CKM_AES_GCM, None), MechanismTier::Standard);
+    assert_eq!(classify(CKM_ECDSA_SHA256, None), MechanismTier::Standard);
 }
 
 #[test]
 fn classify_legacy_mechanisms() {
     use cryptoki::pkcs11::mechanisms::{classify, MechanismTier};
-    assert_eq!(classify(CKM_MD5, None),              MechanismTier::Legacy);
-    assert_eq!(classify(CKM_SHA_1, None),            MechanismTier::Legacy);
-    assert_eq!(classify(CKM_SHA1_RSA_PKCS, None),    MechanismTier::Legacy);
+    assert_eq!(classify(CKM_MD5, None), MechanismTier::Legacy);
+    assert_eq!(classify(CKM_SHA_1, None), MechanismTier::Legacy);
+    assert_eq!(classify(CKM_SHA1_RSA_PKCS, None), MechanismTier::Legacy);
     assert_eq!(classify(CKM_SHA1_RSA_PKCS_PSS, None), MechanismTier::Legacy);
 }
 
 #[test]
 fn classify_forbidden_rsa_small_key() {
     use cryptoki::pkcs11::mechanisms::{classify, MechanismTier};
-    assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(512)),  MechanismTier::Standard);
+    assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(512)), MechanismTier::Standard);
     assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(1024)), MechanismTier::Standard);
     assert_eq!(classify(CKM_RSA_PKCS_KEY_PAIR_GEN, Some(2047)), MechanismTier::Standard);
 }
@@ -105,14 +107,22 @@ fn mechanism_list_excludes_legacy_by_default() {
     std::env::remove_var("CRYPTOKI_LEGACY");
     unsafe {
         let mechs = get_mechanism_list();
-        assert!(!mechs.contains(&CKM_MD5),
-            "CKM_MD5 should be absent from mechanism list without legacy env var");
-        assert!(!mechs.contains(&CKM_SHA_1),
-            "CKM_SHA_1 should be absent from mechanism list without legacy env var");
-        assert!(!mechs.contains(&CKM_SHA1_RSA_PKCS),
-            "CKM_SHA1_RSA_PKCS should be absent without legacy env var");
-        assert!(!mechs.contains(&CKM_SHA1_RSA_PKCS_PSS),
-            "CKM_SHA1_RSA_PKCS_PSS should be absent without legacy env var");
+        assert!(
+            !mechs.contains(&CKM_MD5),
+            "CKM_MD5 should be absent from mechanism list without legacy env var"
+        );
+        assert!(
+            !mechs.contains(&CKM_SHA_1),
+            "CKM_SHA_1 should be absent from mechanism list without legacy env var"
+        );
+        assert!(
+            !mechs.contains(&CKM_SHA1_RSA_PKCS),
+            "CKM_SHA1_RSA_PKCS should be absent without legacy env var"
+        );
+        assert!(
+            !mechs.contains(&CKM_SHA1_RSA_PKCS_PSS),
+            "CKM_SHA1_RSA_PKCS_PSS should be absent without legacy env var"
+        );
     }
 }
 
@@ -124,9 +134,9 @@ fn mechanism_list_includes_standard_mechs() {
     unsafe {
         let mechs = get_mechanism_list();
         assert!(mechs.contains(&CKM_RSA_PKCS_KEY_PAIR_GEN), "RSA keygen missing");
-        assert!(mechs.contains(&CKM_AES_GCM),               "AES-GCM missing");
-        assert!(mechs.contains(&CKM_ECDSA_SHA256),          "ECDSA-SHA256 missing");
-        assert!(mechs.contains(&CKM_SHA256),                "SHA-256 missing");
+        assert!(mechs.contains(&CKM_AES_GCM), "AES-GCM missing");
+        assert!(mechs.contains(&CKM_ECDSA_SHA256), "ECDSA-SHA256 missing");
+        assert!(mechs.contains(&CKM_SHA256), "SHA-256 missing");
     }
 }
 
@@ -137,10 +147,15 @@ fn mechanism_list_includes_legacy_when_env_var_set() {
     std::env::set_var("CRYPTOKI_LEGACY", "1");
     unsafe {
         let mechs = get_mechanism_list();
-        assert!(mechs.contains(&CKM_MD5),   "CKM_MD5 should appear with CRYPTOKI_LEGACY=1");
-        assert!(mechs.contains(&CKM_SHA_1), "CKM_SHA_1 should appear with CRYPTOKI_LEGACY=1");
-        assert!(mechs.contains(&CKM_SHA1_RSA_PKCS),
-            "CKM_SHA1_RSA_PKCS should appear with CRYPTOKI_LEGACY=1");
+        assert!(mechs.contains(&CKM_MD5), "CKM_MD5 should appear with CRYPTOKI_LEGACY=1");
+        assert!(
+            mechs.contains(&CKM_SHA_1),
+            "CKM_SHA_1 should appear with CRYPTOKI_LEGACY=1"
+        );
+        assert!(
+            mechs.contains(&CKM_SHA1_RSA_PKCS),
+            "CKM_SHA1_RSA_PKCS should appear with CRYPTOKI_LEGACY=1"
+        );
     }
     std::env::remove_var("CRYPTOKI_LEGACY");
 }
@@ -154,16 +169,22 @@ fn get_mech_info_legacy_rejected_by_default() {
     std::env::remove_var("CRYPTOKI_LEGACY");
     unsafe {
         let (rv, _) = get_mech_info(CKM_MD5);
-        assert_eq!(rv, CKR_MECHANISM_INVALID,
-            "CKM_MD5 info should be CKR_MECHANISM_INVALID without legacy opt-in");
+        assert_eq!(
+            rv, CKR_MECHANISM_INVALID,
+            "CKM_MD5 info should be CKR_MECHANISM_INVALID without legacy opt-in"
+        );
 
         let (rv, _) = get_mech_info(CKM_SHA_1);
-        assert_eq!(rv, CKR_MECHANISM_INVALID,
-            "CKM_SHA_1 info should be CKR_MECHANISM_INVALID without legacy opt-in");
+        assert_eq!(
+            rv, CKR_MECHANISM_INVALID,
+            "CKM_SHA_1 info should be CKR_MECHANISM_INVALID without legacy opt-in"
+        );
 
         let (rv, _) = get_mech_info(CKM_SHA1_RSA_PKCS);
-        assert_eq!(rv, CKR_MECHANISM_INVALID,
-            "CKM_SHA1_RSA_PKCS info should be CKR_MECHANISM_INVALID without legacy opt-in");
+        assert_eq!(
+            rv, CKR_MECHANISM_INVALID,
+            "CKM_SHA1_RSA_PKCS info should be CKR_MECHANISM_INVALID without legacy opt-in"
+        );
     }
 }
 
@@ -178,7 +199,10 @@ fn get_mech_info_legacy_allowed_when_env_var_set() {
         assert_eq!(info.flags & CKF_DIGEST, CKF_DIGEST);
 
         let (rv, _) = get_mech_info(CKM_SHA1_RSA_PKCS);
-        assert_eq!(rv, CKR_OK, "CKM_SHA1_RSA_PKCS info should succeed with CRYPTOKI_LEGACY=1");
+        assert_eq!(
+            rv, CKR_OK,
+            "CKM_SHA1_RSA_PKCS info should succeed with CRYPTOKI_LEGACY=1"
+        );
     }
     std::env::remove_var("CRYPTOKI_LEGACY");
 }
@@ -193,8 +217,11 @@ fn rsa_keygen_min_key_size_is_1024() {
     unsafe {
         let (rv, info) = get_mech_info(CKM_RSA_PKCS_KEY_PAIR_GEN);
         assert_eq!(rv, CKR_OK);
-        assert_eq!(info.ulMinKeySize, 1024,
-            "RSA keygen ulMinKeySize must be 2048, got {}", info.ulMinKeySize);
+        assert_eq!(
+            info.ulMinKeySize, 1024,
+            "RSA keygen ulMinKeySize must be 2048, got {}",
+            info.ulMinKeySize
+        );
     }
 }
 
@@ -210,26 +237,31 @@ fn rsa_keygen_1024_succeeds() {
         let bits: CK_ULONG = 1024;
         let bits_bytes = bits.to_le_bytes();
         let pub_template = [CK_ATTRIBUTE {
-            r#type:     CKA_MODULUS_BITS,
-            pValue:     bits_bytes.as_ptr() as *mut _,
+            r#type: CKA_MODULUS_BITS,
+            pValue: bits_bytes.as_ptr() as *mut _,
             ulValueLen: bits_bytes.len() as CK_ULONG,
         }];
         let priv_template: [CK_ATTRIBUTE; 0] = [];
         let mech = CK_MECHANISM {
-            mechanism:      CKM_RSA_PKCS_KEY_PAIR_GEN,
-            pParameter:     ptr::null_mut(),
+            mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+            pParameter: ptr::null_mut(),
             ulParameterLen: 0,
         };
-        let mut pub_h:  CK_OBJECT_HANDLE = 0;
+        let mut pub_h: CK_OBJECT_HANDLE = 0;
         let mut priv_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_GenerateKeyPair,
-            h, &mech,
-            pub_template.as_ptr(), pub_template.len() as CK_ULONG,
-            priv_template.as_ptr(), priv_template.len() as CK_ULONG,
-            &mut pub_h, &mut priv_h,
+        let rv = p11!(
+            fl,
+            C_GenerateKeyPair,
+            h,
+            &mech,
+            pub_template.as_ptr(),
+            pub_template.len() as CK_ULONG,
+            priv_template.as_ptr(),
+            priv_template.len() as CK_ULONG,
+            &mut pub_h,
+            &mut priv_h,
         );
-        assert_eq!(rv, CKR_OK,
-            "RSA 1024-bit keygen should succeed, got {rv:#010x}");
+        assert_eq!(rv, CKR_OK, "RSA 1024-bit keygen should succeed, got {rv:#010x}");
 
         p11!(fl, C_CloseSession, h);
     }
@@ -245,26 +277,34 @@ fn rsa_keygen_512_returns_key_size_range() {
         let bits: CK_ULONG = 512;
         let bits_bytes = bits.to_le_bytes();
         let pub_template = [CK_ATTRIBUTE {
-            r#type:     CKA_MODULUS_BITS,
-            pValue:     bits_bytes.as_ptr() as *mut _,
+            r#type: CKA_MODULUS_BITS,
+            pValue: bits_bytes.as_ptr() as *mut _,
             ulValueLen: bits_bytes.len() as CK_ULONG,
         }];
         let priv_template: [CK_ATTRIBUTE; 0] = [];
         let mech = CK_MECHANISM {
-            mechanism:      CKM_RSA_PKCS_KEY_PAIR_GEN,
-            pParameter:     ptr::null_mut(),
+            mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+            pParameter: ptr::null_mut(),
             ulParameterLen: 0,
         };
-        let mut pub_h:  CK_OBJECT_HANDLE = 0;
+        let mut pub_h: CK_OBJECT_HANDLE = 0;
         let mut priv_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_GenerateKeyPair,
-            h, &mech,
-            pub_template.as_ptr(), pub_template.len() as CK_ULONG,
-            priv_template.as_ptr(), priv_template.len() as CK_ULONG,
-            &mut pub_h, &mut priv_h,
+        let rv = p11!(
+            fl,
+            C_GenerateKeyPair,
+            h,
+            &mech,
+            pub_template.as_ptr(),
+            pub_template.len() as CK_ULONG,
+            priv_template.as_ptr(),
+            priv_template.len() as CK_ULONG,
+            &mut pub_h,
+            &mut priv_h,
         );
-        assert_eq!(rv, CKR_KEY_SIZE_RANGE,
-            "RSA 512-bit keygen should return CKR_KEY_SIZE_RANGE, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_KEY_SIZE_RANGE,
+            "RSA 512-bit keygen should return CKR_KEY_SIZE_RANGE, got {rv:#010x}"
+        );
 
         p11!(fl, C_CloseSession, h);
     }
@@ -280,26 +320,31 @@ fn rsa_keygen_2048_succeeds() {
         let bits: CK_ULONG = 2048;
         let bits_bytes = bits.to_le_bytes();
         let pub_template = [CK_ATTRIBUTE {
-            r#type:     CKA_MODULUS_BITS,
-            pValue:     bits_bytes.as_ptr() as *mut _,
+            r#type: CKA_MODULUS_BITS,
+            pValue: bits_bytes.as_ptr() as *mut _,
             ulValueLen: bits_bytes.len() as CK_ULONG,
         }];
         let priv_template: [CK_ATTRIBUTE; 0] = [];
         let mech = CK_MECHANISM {
-            mechanism:      CKM_RSA_PKCS_KEY_PAIR_GEN,
-            pParameter:     ptr::null_mut(),
+            mechanism: CKM_RSA_PKCS_KEY_PAIR_GEN,
+            pParameter: ptr::null_mut(),
             ulParameterLen: 0,
         };
-        let mut pub_h:  CK_OBJECT_HANDLE = 0;
+        let mut pub_h: CK_OBJECT_HANDLE = 0;
         let mut priv_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_GenerateKeyPair,
-            h, &mech,
-            pub_template.as_ptr(), pub_template.len() as CK_ULONG,
-            priv_template.as_ptr(), priv_template.len() as CK_ULONG,
-            &mut pub_h, &mut priv_h,
+        let rv = p11!(
+            fl,
+            C_GenerateKeyPair,
+            h,
+            &mech,
+            pub_template.as_ptr(),
+            pub_template.len() as CK_ULONG,
+            priv_template.as_ptr(),
+            priv_template.len() as CK_ULONG,
+            &mut pub_h,
+            &mut priv_h,
         );
-        assert_eq!(rv, CKR_OK,
-            "RSA 2048-bit keygen should succeed, got {rv:#010x}");
+        assert_eq!(rv, CKR_OK, "RSA 2048-bit keygen should succeed, got {rv:#010x}");
 
         p11!(fl, C_CloseSession, h);
     }

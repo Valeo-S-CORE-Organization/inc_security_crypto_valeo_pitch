@@ -20,12 +20,8 @@
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
 use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_EncryptInit, C_Encrypt,
-    C_DecryptInit, C_Decrypt,
-    C_GenerateKey, C_GenerateKeyPair,
+    C_CloseSession, C_Decrypt, C_DecryptInit, C_Encrypt, C_EncryptInit, C_GenerateKey, C_GenerateKeyPair, C_Initialize,
+    C_Login, C_Logout, C_OpenSession,
 };
 use std::ffi::c_void;
 use std::ptr;
@@ -55,7 +51,10 @@ unsafe fn connect_to_slot() -> CK_SESSION_HANDLE {
     );
     // Login — tolerate CKR_USER_ALREADY_LOGGED_IN (token-wide login from parallel test).
     let rv = C_Login(h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN, "C_Login failed: {rv:#x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#x}"
+    );
     h
 }
 
@@ -109,10 +108,14 @@ unsafe fn generate_rsa_key_pair(h: CK_SESSION_HANDLE) -> (CK_OBJECT_HANDLE, CK_O
     let mut h_private: CK_OBJECT_HANDLE = 0;
     assert_eq!(
         C_GenerateKeyPair(
-            h, &mech,
-            pub_attrs.as_mut_ptr(), 1,
-            priv_attrs.as_mut_ptr(), 0,
-            &mut h_public, &mut h_private,
+            h,
+            &mech,
+            pub_attrs.as_mut_ptr(),
+            1,
+            priv_attrs.as_mut_ptr(),
+            0,
+            &mut h_public,
+            &mut h_private,
         ),
         CKR_OK,
     );
@@ -124,10 +127,10 @@ unsafe fn generate_rsa_key_pair(h: CK_SESSION_HANDLE) -> (CK_OBJECT_HANDLE, CK_O
 #[repr(C)]
 #[allow(non_snake_case)]
 struct GcmParams {
-    pIv:      *const u8,
-    ulIvLen:  u64,
+    pIv: *const u8,
+    ulIvLen: u64,
     ulIvBits: u64,
-    pAAD:     *const u8,
+    pAAD: *const u8,
     ulAADLen: u64,
     ulTagBits: u64,
 }
@@ -173,14 +176,20 @@ fn ckm_aes_cbc_pad() {
         assert_eq!(
             C_Encrypt(
                 h_session,
-                plain_data.as_ptr(), plain_data.len() as CK_ULONG,
-                encrypted_data.as_mut_ptr(), &mut enc_len,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                encrypted_data.as_mut_ptr(),
+                &mut enc_len,
             ),
             CKR_OK,
         );
         encrypted_data.truncate(enc_len as usize);
         assert!(enc_len > 0);
-        assert_ne!(encrypted_data.as_slice(), plain_data.as_slice(), "ciphertext must differ from plaintext");
+        assert_ne!(
+            encrypted_data.as_slice(),
+            plain_data.as_slice(),
+            "ciphertext must differ from plaintext"
+        );
 
         // Step 5: Decrypt — C_DecryptInit then C_Decrypt
         // (C_DecryptInit → C_Decrypt(NULL, &decLen) → C_Decrypt(decryptedData, &decLen))
@@ -190,13 +199,19 @@ fn ckm_aes_cbc_pad() {
         assert_eq!(
             C_Decrypt(
                 h_session,
-                encrypted_data.as_ptr(), enc_len,
-                decrypted_data.as_mut_ptr(), &mut dec_len,
+                encrypted_data.as_ptr(),
+                enc_len,
+                decrypted_data.as_mut_ptr(),
+                &mut dec_len,
             ),
             CKR_OK,
         );
         decrypted_data.truncate(dec_len as usize);
-        assert_eq!(decrypted_data, plain_data.as_slice(), "decrypted must equal original plaintext");
+        assert_eq!(
+            decrypted_data,
+            plain_data.as_slice(),
+            "decrypted must equal original plaintext"
+        );
 
         // Step 6: Logout and close session
         disconnect_from_slot(h_session);
@@ -227,11 +242,14 @@ fn ckm_aes_gcm() {
 
         // Step 4: Initialize GCM parameters
         // (IV[] = "1234567812345678", AAD[] = "127.0.0.1", ulTagBits = 128)
-        let iv  = b"1234567812345678";
+        let iv = b"1234567812345678";
         let aad = b"127.0.0.1";
         let gcm_params = GcmParams {
-            pIv: iv.as_ptr(), ulIvLen: 16, ulIvBits: 128,
-            pAAD: aad.as_ptr(), ulAADLen: aad.len() as u64,
+            pIv: iv.as_ptr(),
+            ulIvLen: 16,
+            ulIvBits: 128,
+            pAAD: aad.as_ptr(),
+            ulAADLen: aad.len() as u64,
             ulTagBits: 128,
         };
         let mech = CK_MECHANISM {
@@ -250,14 +268,20 @@ fn ckm_aes_gcm() {
         assert_eq!(
             C_Encrypt(
                 h_session,
-                plain_data.as_ptr(), plain_data.len() as CK_ULONG,
-                encrypted_data.as_mut_ptr(), &mut enc_len,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                encrypted_data.as_mut_ptr(),
+                &mut enc_len,
             ),
             CKR_OK,
         );
         encrypted_data.truncate(enc_len as usize);
         // GCM output = plaintext_len + 16-byte tag
-        assert_eq!(enc_len as usize, plain_data.len() + 16, "GCM output must be plaintext + 16-byte tag");
+        assert_eq!(
+            enc_len as usize,
+            plain_data.len() + 16,
+            "GCM output must be plaintext + 16-byte tag"
+        );
 
         // Step 6: Decrypt with same GCM params (AAD must match for auth to pass)
         // (initGCMParam() → C_DecryptInit → C_Decrypt(NULL, &decLen) → C_Decrypt(buf, &decLen))
@@ -267,8 +291,10 @@ fn ckm_aes_gcm() {
         assert_eq!(
             C_Decrypt(
                 h_session,
-                encrypted_data.as_ptr(), enc_len,
-                decrypted_data.as_mut_ptr(), &mut dec_len,
+                encrypted_data.as_ptr(),
+                enc_len,
+                decrypted_data.as_mut_ptr(),
+                &mut dec_len,
             ),
             CKR_OK,
         );
@@ -280,7 +306,13 @@ fn ckm_aes_gcm() {
         assert_eq!(C_DecryptInit(h_session, &mech, obj_handle), CKR_OK);
         let mut bad_len: CK_ULONG = 256;
         let mut bad = vec![0u8; 256];
-        let rv = C_Decrypt(h_session, encrypted_data.as_ptr(), enc_len, bad.as_mut_ptr(), &mut bad_len);
+        let rv = C_Decrypt(
+            h_session,
+            encrypted_data.as_ptr(),
+            enc_len,
+            bad.as_mut_ptr(),
+            &mut bad_len,
+        );
         assert_ne!(rv, CKR_OK, "tampered GCM ciphertext must not decrypt successfully");
 
         // Step 8: Logout and close session
@@ -325,8 +357,10 @@ fn ckm_rsa_pkcs() {
         assert_eq!(
             C_Encrypt(
                 h_session,
-                plain_data.as_ptr(), plain_data.len() as CK_ULONG,
-                encrypted_data.as_mut_ptr(), &mut enc_len,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                encrypted_data.as_mut_ptr(),
+                &mut enc_len,
             ),
             CKR_OK,
         );
@@ -342,13 +376,19 @@ fn ckm_rsa_pkcs() {
         assert_eq!(
             C_Decrypt(
                 h_session,
-                encrypted_data.as_ptr(), enc_len,
-                decrypted_data.as_mut_ptr(), &mut dec_len,
+                encrypted_data.as_ptr(),
+                enc_len,
+                decrypted_data.as_mut_ptr(),
+                &mut dec_len,
             ),
             CKR_OK,
         );
         decrypted_data.truncate(dec_len as usize);
-        assert_eq!(decrypted_data, plain_data.as_slice(), "decrypted must equal original plaintext");
+        assert_eq!(
+            decrypted_data,
+            plain_data.as_slice(),
+            "decrypted must equal original plaintext"
+        );
 
         // Step 6: Logout and close session
         disconnect_from_slot(h_session);
@@ -394,8 +434,10 @@ fn ckm_rsa_pkcs_oaep() {
         assert_eq!(
             C_Encrypt(
                 h_session,
-                plain_data.as_ptr(), plain_data.len() as CK_ULONG,
-                encrypted_data.as_mut_ptr(), &mut enc_len,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                encrypted_data.as_mut_ptr(),
+                &mut enc_len,
             ),
             CKR_OK,
         );
@@ -409,13 +451,19 @@ fn ckm_rsa_pkcs_oaep() {
         assert_eq!(
             C_Decrypt(
                 h_session,
-                encrypted_data.as_ptr(), enc_len,
-                decrypted_data.as_mut_ptr(), &mut dec_len,
+                encrypted_data.as_ptr(),
+                enc_len,
+                decrypted_data.as_mut_ptr(),
+                &mut dec_len,
             ),
             CKR_OK,
         );
         decrypted_data.truncate(dec_len as usize);
-        assert_eq!(decrypted_data, plain_data.as_slice(), "OAEP decrypted must equal original plaintext");
+        assert_eq!(
+            decrypted_data,
+            plain_data.as_slice(),
+            "OAEP decrypted must equal original plaintext"
+        );
 
         // Step 6: Logout and close session
         disconnect_from_slot(h_session);

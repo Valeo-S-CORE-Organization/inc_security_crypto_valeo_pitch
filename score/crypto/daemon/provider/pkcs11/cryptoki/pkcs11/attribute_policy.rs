@@ -45,41 +45,32 @@ use score_log::warn;
 ///
 /// Returns `Err(AttributeReadOnly)` if the change violates a ratchet or an
 /// immutability rule, `Ok(())` if the change is permitted.
-pub fn validate_attribute_change(
-    attr:    CK_ATTRIBUTE_TYPE,
-    old_val: Option<&[u8]>,
-    new_val: &[u8],
-) -> Result<()> {
+pub fn validate_attribute_change(attr: CK_ATTRIBUTE_TYPE, old_val: Option<&[u8]>, new_val: &[u8]) -> Result<()> {
     match attr {
         // ── One-way: FALSE → TRUE only ───────────────────────────────────────
         CKA_SENSITIVE | CKA_WRAP_WITH_TRUSTED => {
-            let was_true   = old_val.is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
+            let was_true = old_val.is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
             let going_false = !new_val.is_empty() && new_val[0] == CK_FALSE;
             if was_true && going_false {
                 warn!(context: "ATTR", "Attribute policy violation: cannot set CKA_SENSITIVE/CKA_WRAP_WITH_TRUSTED to FALSE after it was TRUE");
                 return Err(Pkcs11Error::AttributeReadOnly);
             }
-        }
+        },
         // ── One-way: TRUE → FALSE only ───────────────────────────────────────
         CKA_EXTRACTABLE => {
-            let was_false  = old_val.is_some_and(|v| v.is_empty() || v[0] == CK_FALSE);
-            let going_true  = !new_val.is_empty() && new_val[0] == CK_TRUE;
+            let was_false = old_val.is_some_and(|v| v.is_empty() || v[0] == CK_FALSE);
+            let going_true = !new_val.is_empty() && new_val[0] == CK_TRUE;
             if was_false && going_true {
                 warn!(context: "ATTR", "Attribute policy violation: cannot set CKA_EXTRACTABLE to TRUE after it was FALSE");
                 return Err(Pkcs11Error::AttributeReadOnly);
             }
-        }
+        },
         // ── Immutable after creation ─────────────────────────────────────────
-        CKA_CLASS
-        | CKA_KEY_TYPE
-        | CKA_MODULUS
-        | CKA_EC_PARAMS
-        | CKA_MODULUS_BITS
-        | CKA_VALUE_LEN => {
+        CKA_CLASS | CKA_KEY_TYPE | CKA_MODULUS | CKA_EC_PARAMS | CKA_MODULUS_BITS | CKA_VALUE_LEN => {
             warn!(context: "ATTR", "Attribute policy violation: attempted to change immutable attribute type={}", attr);
             return Err(Pkcs11Error::AttributeReadOnly);
-        }
-        _ => {}
+        },
+        _ => {},
     }
     Ok(())
 }
@@ -95,33 +86,33 @@ pub fn validate_attribute_change(
 /// All other attribute types are returned unconditionally.
 pub fn check_attribute_access(attr: CK_ATTRIBUTE_TYPE, obj: &KeyObject) -> Result<()> {
     // Check if the requested attribute is a secret payload
-    let is_secret_attribute = matches!(attr,
-        CKA_VALUE |
-        CKA_PRIVATE_EXPONENT |
-        CKA_PRIME_1 |
-        CKA_PRIME_2 |
-        CKA_EXPONENT_1 |
-        CKA_EXPONENT_2 |
-        CKA_COEFFICIENT
+    let is_secret_attribute = matches!(
+        attr,
+        CKA_VALUE
+            | CKA_PRIVATE_EXPONENT
+            | CKA_PRIME_1
+            | CKA_PRIME_2
+            | CKA_EXPONENT_1
+            | CKA_EXPONENT_2
+            | CKA_COEFFICIENT
     );
     if !is_secret_attribute {
         return Ok(());
     }
 
-    let class = obj.attributes
-        .get(&CKA_CLASS)
-        .map(|v| {
-            let mut arr = [0u8; 8];
-            let n = v.len().min(8);
-            arr[..n].copy_from_slice(&v[..n]);
-            CK_ULONG::from_le_bytes(arr)
-        });
+    let class = obj.attributes.get(&CKA_CLASS).map(|v| {
+        let mut arr = [0u8; 8];
+        let n = v.len().min(8);
+        arr[..n].copy_from_slice(&v[..n]);
+        CK_ULONG::from_le_bytes(arr)
+    });
     if matches!(class, Some(CKO_DATA | CKO_PUBLIC_KEY)) {
         return Ok(());
     }
 
     // Evaluate SENSITIVE (Defaults to FALSE if missing)
-    let is_sensitive = obj.attributes
+    let is_sensitive = obj
+        .attributes
         .get(&CKA_SENSITIVE)
         .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
     if is_sensitive {
@@ -130,7 +121,8 @@ pub fn check_attribute_access(attr: CK_ATTRIBUTE_TYPE, obj: &KeyObject) -> Resul
     }
 
     // Evaluate EXTRACTABLE (FAIL-CLOSED: Defaults to FALSE if missing)
-    let is_extractable = obj.attributes
+    let is_extractable = obj
+        .attributes
         .get(&CKA_EXTRACTABLE)
         .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
 
@@ -161,22 +153,24 @@ pub fn update_derived_attributes(obj: &mut KeyObject, changed_attr: CK_ATTRIBUTE
     match changed_attr {
         CKA_SENSITIVE => {
             // If CKA_SENSITIVE is now FALSE, the key was not always sensitive.
-            let now_false = obj.attributes
+            let now_false = obj
+                .attributes
                 .get(&CKA_SENSITIVE)
                 .is_some_and(|v| !v.is_empty() && v[0] == CK_FALSE);
             if now_false {
                 obj.always_sensitive = false;
             }
-        }
+        },
         CKA_EXTRACTABLE => {
             // If CKA_EXTRACTABLE is now TRUE, the key was not never-extractable.
-            let now_true = obj.attributes
+            let now_true = obj
+                .attributes
                 .get(&CKA_EXTRACTABLE)
                 .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
             if now_true {
                 obj.never_extractable = false;
             }
-        }
-        _ => {}
+        },
+        _ => {},
     }
 }

@@ -127,11 +127,11 @@ impl HashAlgorithm {
     /// Digest output length in bytes.
     pub fn digest_len(self) -> usize {
         match self {
-            HashAlgorithm::Md5      => 16,
-            HashAlgorithm::Sha1     => 20,
-            HashAlgorithm::Sha256   => 32,
-            HashAlgorithm::Sha384   => 48,
-            HashAlgorithm::Sha512   => 64,
+            HashAlgorithm::Md5 => 16,
+            HashAlgorithm::Sha1 => 20,
+            HashAlgorithm::Sha256 => 32,
+            HashAlgorithm::Sha384 => 48,
+            HashAlgorithm::Sha512 => 64,
             HashAlgorithm::Sha3_256 => 32,
             HashAlgorithm::Sha3_384 => 48,
             HashAlgorithm::Sha3_512 => 64,

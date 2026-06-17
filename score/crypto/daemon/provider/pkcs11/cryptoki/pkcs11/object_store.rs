@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use score_log::{debug, error, trace, warn, info};
+use score_log::{debug, error, info, trace, warn};
 
 use crate::traits::EngineKeyRef;
 
@@ -39,25 +39,25 @@ pub enum KeyType {
     EcPublic,
     AesSecret,
     GenericSecret,
-    EdPrivate,  // v3.0 — Ed25519, Ed448
-    EdPublic,   // v3.0 — Ed25519, Ed448
+    EdPrivate,      // v3.0 — Ed25519, Ed448
+    EdPublic,       // v3.0 — Ed25519, Ed448
     ChaCha20Secret, // v3.0
     /// `CKO_PROFILE` — not a key; holds `CKA_PROFILE_ID` describing which
     /// PKCS#11 v3.0 profile this token claims to implement.  `key_ref` is empty.
-    Profile,    // v3.0
+    Profile, // v3.0
 }
 
 // ── KeyObject ─────────────────────────────────────────────────────────────
 
 pub struct KeyObject {
-    pub handle:     CK_OBJECT_HANDLE,
+    pub handle: CK_OBJECT_HANDLE,
     /// The slot this object belongs to.
-    pub slot_id:    CK_SLOT_ID,
-    pub key_type:   KeyType,
+    pub slot_id: CK_SLOT_ID,
+    pub key_type: KeyType,
     /// Opaque key reference used by the `CryptoProvider`.
     /// For software engines this wraps DER-encoded bytes; for HSM/TPM backends
     /// it could be a handle.  The PKCS#11 layer never inspects the contents.
-    pub key_ref:    EngineKeyRef,
+    pub key_ref: EngineKeyRef,
     /// All CKA_* attributes encoded as raw bytes:
     /// - `CK_ULONG` → 8-byte little-endian
     /// - `CK_BBOOL` → 1 byte (0 = false, 1 = true)
@@ -68,25 +68,25 @@ pub struct KeyObject {
     /// persisted and this field is ignored for them.
     pub creating_session: Option<CK_SESSION_HANDLE>,
     /// CKA_ALWAYS_AUTHENTICATE — user must re-authenticate before each use.
-    pub always_authenticate:  bool,
+    pub always_authenticate: bool,
     /// CKA_LOCAL — true when the key was generated on the token (not imported).
-    pub local:                bool,
+    pub local: bool,
     /// CKA_ALWAYS_SENSITIVE — has been sensitive since creation (never changed).
-    pub always_sensitive:     bool,
+    pub always_sensitive: bool,
     /// CKA_NEVER_EXTRACTABLE — has never been extractable since creation.
-    pub never_extractable:    bool,
+    pub never_extractable: bool,
     /// CKA_KEY_GEN_MECHANISM — mechanism used to generate the key, or
     /// `CK_UNAVAILABLE_INFORMATION` if not applicable / unknown.
-    pub key_gen_mechanism:    CK_MECHANISM_TYPE,
+    pub key_gen_mechanism: CK_MECHANISM_TYPE,
 }
 
 impl KeyObject {
     pub fn new(
-        handle:   CK_OBJECT_HANDLE,
-        slot_id:  CK_SLOT_ID,
+        handle: CK_OBJECT_HANDLE,
+        slot_id: CK_SLOT_ID,
         key_type: KeyType,
-        key_ref:  EngineKeyRef,
-        attrs:    HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
+        key_ref: EngineKeyRef,
+        attrs: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     ) -> Self {
         let mut attributes = attrs;
         attributes.entry(CKA_TOKEN).or_insert_with(|| vec![CK_FALSE]);
@@ -96,12 +96,12 @@ impl KeyObject {
             key_type,
             key_ref,
             attributes,
-            creating_session:  None,
+            creating_session: None,
             always_authenticate: false,
-            local:               false,
-            always_sensitive:    false,
-            never_extractable:   false,
-            key_gen_mechanism:   CK_UNAVAILABLE_INFORMATION,
+            local: false,
+            always_sensitive: false,
+            never_extractable: false,
+            key_gen_mechanism: CK_UNAVAILABLE_INFORMATION,
         }
     }
 
@@ -131,7 +131,7 @@ impl KeyObject {
             match self.attributes.get(attr_type) {
                 // Success case: The attribute exists AND the bytes match exactly.
                 // We use a 'Match Guard' (if v == expected) to verify the contents.
-                Some(v) if v == expected => {}
+                Some(v) if v == expected => {},
                 // Failure case: The attribute is either missing (None)
                 // or the value did not match the guard condition.
                 _ => return false,
@@ -147,8 +147,7 @@ impl KeyObject {
 
 // ── Global store ──────────────────────────────────────────────────────────
 
-static OBJECT_STORE: Lazy<RwLock<HashMap<CK_OBJECT_HANDLE, KeyObject>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static OBJECT_STORE: Lazy<RwLock<HashMap<CK_OBJECT_HANDLE, KeyObject>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 static NEXT_HANDLE: AtomicU64 = AtomicU64::new(1);
 
@@ -221,18 +220,14 @@ where
 /// Private objects (CKA_PRIVATE = CK_TRUE) are only visible when `logged_in`
 /// is true.
 pub fn find_objects(
-    slot_id:   CK_SLOT_ID,
-    template:  &[(CK_ATTRIBUTE_TYPE, Vec<u8>)],
+    slot_id: CK_SLOT_ID,
+    template: &[(CK_ATTRIBUTE_TYPE, Vec<u8>)],
     logged_in: bool,
 ) -> Vec<CK_OBJECT_HANDLE> {
     OBJECT_STORE
         .read()
         .values()
-        .filter(|o| {
-            o.slot_id == slot_id
-                && o.matches_template(template)
-                && (logged_in || !is_private_object(o))
-        })
+        .filter(|o| o.slot_id == slot_id && o.matches_template(template) && (logged_in || !is_private_object(o)))
         .map(|o| o.handle)
         .collect()
 }
@@ -273,7 +268,9 @@ pub fn clear_objects_for_slot(slot_id: CK_SLOT_ID) {
     persist_if_needed();
 }
 
-pub fn object_count() -> usize { OBJECT_STORE.read().len() }
+pub fn object_count() -> usize {
+    OBJECT_STORE.read().len()
+}
 
 /// Ensure a `CKP_BASELINE_PROVIDER` profile object exists for `slot_id`.
 ///
@@ -296,11 +293,14 @@ pub fn ensure_baseline_profile(slot_id: CK_SLOT_ID) -> CK_OBJECT_HANDLE {
     }
     let handle = next_handle();
     let mut attrs: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>> = HashMap::new();
-    attrs.insert(CKA_CLASS,       (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec());
-    attrs.insert(CKA_TOKEN,       vec![CK_TRUE]);
-    attrs.insert(CKA_PRIVATE,     vec![CK_FALSE]);
+    attrs.insert(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec());
+    attrs.insert(CKA_TOKEN, vec![CK_TRUE]);
+    attrs.insert(CKA_PRIVATE, vec![CK_FALSE]);
     attrs.insert(CKA_DESTROYABLE, vec![CK_FALSE]);
-    attrs.insert(CKA_PROFILE_ID,  (CKP_BASELINE_PROVIDER as CK_ULONG).to_le_bytes().to_vec());
+    attrs.insert(
+        CKA_PROFILE_ID,
+        (CKP_BASELINE_PROVIDER as CK_ULONG).to_le_bytes().to_vec(),
+    );
 
     let obj = KeyObject::new(
         handle,
@@ -331,11 +331,11 @@ pub fn is_session_object(obj: &KeyObject) -> bool {
 
 /// Check if CKA_TOKEN = CK_TRUE
 pub fn is_token_object(obj: &KeyObject) -> bool {
-        obj.attributes
-            .get(&CKA_TOKEN)
-            .map(|v| !v.is_empty() && v[0] == CK_TRUE)
-            .unwrap_or(false)
-    }
+    obj.attributes
+        .get(&CKA_TOKEN)
+        .map(|v| !v.is_empty() && v[0] == CK_TRUE)
+        .unwrap_or(false)
+}
 
 /// Returns the length of the RSA modulus in bytes.
 /// Used to validate signature length in C_Verify.
@@ -349,24 +349,24 @@ pub fn get_modulus_len(obj: &KeyObject) -> Result<usize> {
 /// Destroy session objects owned by a specific session.
 /// Called by C_CloseSession when that session closes.
 pub fn destroy_objects_for_session(session_handle: CK_SESSION_HANDLE) {
-    OBJECT_STORE.write().retain(|_, obj| {
-        obj.creating_session != Some(session_handle)
-    });
+    OBJECT_STORE
+        .write()
+        .retain(|_, obj| obj.creating_session != Some(session_handle));
 }
 
 /// Destroy all session objects belonging to a specific slot.
 /// Called by C_CloseAllSessions.
 pub fn destroy_session_objects_for_slot(slot_id: CK_SLOT_ID) {
-    OBJECT_STORE.write().retain(|_, obj| {
-        !(obj.slot_id == slot_id && is_session_object(obj))
-    });
+    OBJECT_STORE
+        .write()
+        .retain(|_, obj| !(obj.slot_id == slot_id && is_session_object(obj)));
 }
 
 /// Destroy private session objects on a slot (called by C_Logout).
 pub fn destroy_private_session_objects(slot_id: CK_SLOT_ID) {
-    OBJECT_STORE.write().retain(|_, obj| {
-        !(obj.slot_id == slot_id && is_session_object(obj) && is_private_object(obj))
-    });
+    OBJECT_STORE
+        .write()
+        .retain(|_, obj| !(obj.slot_id == slot_id && is_session_object(obj) && is_private_object(obj)));
 }
 
 // ── Persistence integration ──────────────────────────────────────────────
@@ -382,7 +382,10 @@ pub fn persist_to_disk() {
 fn persist_if_needed() {
     let store = OBJECT_STORE.read();
     let mut objects: Vec<storage::StoredObject> = Vec::new();
-    for obj in store.values().filter(|o| storage::is_token_object(o) && o.key_type != KeyType::Profile) {
+    for obj in store
+        .values()
+        .filter(|o| storage::is_token_object(o) && o.key_type != KeyType::Profile)
+    {
         match crate::registry::engine_for_slot(obj.slot_id) {
             Ok((engine, _)) => match storage::StoredObject::from_key_object(obj, engine.as_ref()) {
                 Ok(stored) => objects.push(stored),
@@ -400,9 +403,9 @@ fn persist_if_needed() {
     }
 
     let state = storage::StoredState {
-        version:     1,
+        version: 1,
         tokens,
-        token:       None,
+        token: None,
         objects,
         next_handle: NEXT_HANDLE.load(Ordering::SeqCst),
     };
@@ -421,11 +424,13 @@ pub fn load_persisted_objects() {
         let mut store = OBJECT_STORE.write();
         for stored in state.objects {
             let slot_id = stored.slot_id;
-            let h       = stored.handle;
+            let h = stored.handle;
             match crate::registry::engine_for_slot(slot_id) {
                 Ok((engine, _)) => match stored.into_key_object_with_engine(engine.as_ref()) {
-                    Ok(obj) => { store.insert(h, obj); }
-                    Err(_)  => error!(context: "STORE", "deserialize failed handle={}", h),
+                    Ok(obj) => {
+                        store.insert(h, obj);
+                    },
+                    Err(_) => error!(context: "STORE", "deserialize failed handle={}", h),
                 },
                 Err(_) => warn!(context: "STORE", "no engine for slot={} skipping object={} on load", slot_id, h),
             }

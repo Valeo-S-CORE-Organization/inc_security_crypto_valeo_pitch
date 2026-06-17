@@ -16,16 +16,16 @@ use super::*;
 
 pub(crate) unsafe fn collect_template(
     p_template: *const CK_ATTRIBUTE,
-    ul_count:   CK_ULONG,
+    ul_count: CK_ULONG,
 ) -> HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>> {
     let mut map = HashMap::new();
-    if p_template.is_null() { return map; }
+    if p_template.is_null() {
+        return map;
+    }
     let attrs = std::slice::from_raw_parts(p_template, ul_count as usize);
     for attr in attrs {
         if !attr.pValue.is_null() && attr.ulValueLen > 0 {
-            let bytes = std::slice::from_raw_parts(
-                attr.pValue as *const u8, attr.ulValueLen as usize,
-            );
+            let bytes = std::slice::from_raw_parts(attr.pValue as *const u8, attr.ulValueLen as usize);
             map.insert(attr.r#type, bytes.to_vec());
         } else if attr.ulValueLen == 0 {
             map.insert(attr.r#type, vec![]);
@@ -36,16 +36,16 @@ pub(crate) unsafe fn collect_template(
 
 pub(crate) unsafe fn collect_template_vec(
     p_template: *const CK_ATTRIBUTE,
-    ul_count:   CK_ULONG,
+    ul_count: CK_ULONG,
 ) -> Vec<(CK_ATTRIBUTE_TYPE, Vec<u8>)> {
-    if p_template.is_null() { return Vec::new(); }
+    if p_template.is_null() {
+        return Vec::new();
+    }
     let attrs = std::slice::from_raw_parts(p_template, ul_count as usize);
     let mut out = Vec::with_capacity(attrs.len());
     for attr in attrs {
         if !attr.pValue.is_null() && attr.ulValueLen > 0 {
-            let bytes = std::slice::from_raw_parts(
-                attr.pValue as *const u8, attr.ulValueLen as usize,
-            );
+            let bytes = std::slice::from_raw_parts(attr.pValue as *const u8, attr.ulValueLen as usize);
             out.push((attr.r#type, bytes.to_vec()));
         } else if attr.ulValueLen == 0 {
             out.push((attr.r#type, vec![]));
@@ -63,7 +63,7 @@ pub(crate) unsafe fn extract_cipher_params(mech: &CK_MECHANISM) -> (Vec<u8>, Opt
                 vec![0u8; 16]
             };
             (iv, None, 0)
-        }
+        },
         CKM_DES_CBC | CKM_DES3_CBC => {
             let iv = if !mech.pParameter.is_null() && mech.ulParameterLen >= 8 {
                 std::slice::from_raw_parts(mech.pParameter as *const u8, 8).to_vec()
@@ -71,7 +71,7 @@ pub(crate) unsafe fn extract_cipher_params(mech: &CK_MECHANISM) -> (Vec<u8>, Opt
                 vec![0u8; 8]
             };
             (iv, None, 0)
-        }
+        },
         CKM_AES_GCM => {
             if mech.pParameter.is_null() {
                 return (vec![0u8; 12], None, 16);
@@ -89,7 +89,7 @@ pub(crate) unsafe fn extract_cipher_params(mech: &CK_MECHANISM) -> (Vec<u8>, Opt
             };
             let tag_len = (p.ulTagBits / 8) as usize;
             (iv, aad, if tag_len == 0 { 16 } else { tag_len })
-        }
+        },
         CKM_CHACHA20_POLY1305 => {
             // Reuse GCM_PARAMS structure for nonce/AAD (common pattern)
             if mech.pParameter.is_null() {
@@ -107,7 +107,7 @@ pub(crate) unsafe fn extract_cipher_params(mech: &CK_MECHANISM) -> (Vec<u8>, Opt
                 None
             };
             (nonce, aad, 16)
-        }
+        },
         _ => (Vec::new(), None, 0),
     }
 }

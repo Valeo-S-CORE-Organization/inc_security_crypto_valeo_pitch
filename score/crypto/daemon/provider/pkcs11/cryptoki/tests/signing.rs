@@ -20,12 +20,8 @@
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
 use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_SignInit, C_Sign, C_SignUpdate, C_SignFinal,
-    C_VerifyInit, C_Verify, C_VerifyUpdate, C_VerifyFinal,
-    C_GenerateKeyPair,
+    C_CloseSession, C_GenerateKeyPair, C_Initialize, C_Login, C_Logout, C_OpenSession, C_Sign, C_SignFinal, C_SignInit,
+    C_SignUpdate, C_Verify, C_VerifyFinal, C_VerifyInit, C_VerifyUpdate,
 };
 use std::ffi::c_void;
 use std::ptr;
@@ -54,7 +50,10 @@ unsafe fn connect_to_slot() -> CK_SESSION_HANDLE {
         CKR_OK,
     );
     let rv = C_Login(h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN, "C_Login failed: {rv:#x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#x}"
+    );
     h
 }
 
@@ -83,7 +82,16 @@ unsafe fn generate_rsa_key_pair(h: CK_SESSION_HANDLE) -> (CK_OBJECT_HANDLE, CK_O
     let mut h_public: CK_OBJECT_HANDLE = 0;
     let mut h_private: CK_OBJECT_HANDLE = 0;
     assert_eq!(
-        C_GenerateKeyPair(h, &mech, pub_attrs.as_mut_ptr(), 1, priv_attrs.as_mut_ptr(), 0, &mut h_public, &mut h_private),
+        C_GenerateKeyPair(
+            h,
+            &mech,
+            pub_attrs.as_mut_ptr(),
+            1,
+            priv_attrs.as_mut_ptr(),
+            0,
+            &mut h_public,
+            &mut h_private
+        ),
         CKR_OK,
     );
     (h_public, h_private)
@@ -109,7 +117,16 @@ unsafe fn generate_ec_key_pair(h: CK_SESSION_HANDLE) -> (CK_OBJECT_HANDLE, CK_OB
     let mut h_public: CK_OBJECT_HANDLE = 0;
     let mut h_private: CK_OBJECT_HANDLE = 0;
     assert_eq!(
-        C_GenerateKeyPair(h, &mech, pub_attrs.as_mut_ptr(), 1, priv_attrs.as_mut_ptr(), 0, &mut h_public, &mut h_private),
+        C_GenerateKeyPair(
+            h,
+            &mech,
+            pub_attrs.as_mut_ptr(),
+            1,
+            priv_attrs.as_mut_ptr(),
+            0,
+            &mut h_public,
+            &mut h_private
+        ),
         CKR_OK,
     );
     (h_public, h_private)
@@ -151,7 +168,13 @@ fn ckm_sha256_rsa_pkcs() {
         let mut sig_len: CK_ULONG = 512;
         let mut signature = vec![0u8; 512];
         assert_eq!(
-            C_Sign(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_mut_ptr(), &mut sig_len),
+            C_Sign(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_mut_ptr(),
+                &mut sig_len
+            ),
             CKR_OK,
         );
         signature.truncate(sig_len as usize);
@@ -161,7 +184,13 @@ fn ckm_sha256_rsa_pkcs() {
         // (CK_MECHANISM mech = {CKM_SHA256_RSA_PKCS}; C_VerifyInit → C_Verify(data, sig))
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_OK,
             "signature verification must succeed",
         );
@@ -170,7 +199,13 @@ fn ckm_sha256_rsa_pkcs() {
         let wrong_data = b"Mars is the fourth planet of our Solar System.";
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, wrong_data.as_ptr(), wrong_data.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                wrong_data.as_ptr(),
+                wrong_data.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_SIGNATURE_INVALID,
             "tampered data must fail verification",
         );
@@ -204,7 +239,7 @@ fn ckm_sha256_rsa_pkcs_multipart() {
         };
         let part1 = b"Earth is the third ";
         let part2 = b"planet of our Solar System.";
-        let full  = b"Earth is the third planet of our Solar System.";
+        let full = b"Earth is the third planet of our Solar System.";
 
         // Step 4: Multi-part sign — C_SignInit → C_SignUpdate × N → C_SignFinal
         assert_eq!(C_SignInit(h_session, &mech, h_private), CKR_OK);
@@ -218,15 +253,27 @@ fn ckm_sha256_rsa_pkcs_multipart() {
         // Step 5: One-shot verify against the full concatenated message
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, full.as_ptr(), full.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                full.as_ptr(),
+                full.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_OK,
             "one-shot verify of multi-part signature must succeed",
         );
 
         // Step 6: Multi-part verify — C_VerifyInit → C_VerifyUpdate × N → C_VerifyFinal
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
-        assert_eq!(C_VerifyUpdate(h_session, part1.as_ptr(), part1.len() as CK_ULONG), CKR_OK);
-        assert_eq!(C_VerifyUpdate(h_session, part2.as_ptr(), part2.len() as CK_ULONG), CKR_OK);
+        assert_eq!(
+            C_VerifyUpdate(h_session, part1.as_ptr(), part1.len() as CK_ULONG),
+            CKR_OK
+        );
+        assert_eq!(
+            C_VerifyUpdate(h_session, part2.as_ptr(), part2.len() as CK_ULONG),
+            CKR_OK
+        );
         assert_eq!(C_VerifyFinal(h_session, signature.as_ptr(), sig_len), CKR_OK);
 
         // Step 7: Logout and close session
@@ -271,7 +318,13 @@ fn ckm_sha256_rsa_pkcs_pss() {
         let mut sig_len: CK_ULONG = 512;
         let mut signature = vec![0u8; 512];
         assert_eq!(
-            C_Sign(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_mut_ptr(), &mut sig_len),
+            C_Sign(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_mut_ptr(),
+                &mut sig_len
+            ),
             CKR_OK,
         );
         signature.truncate(sig_len as usize);
@@ -281,7 +334,13 @@ fn ckm_sha256_rsa_pkcs_pss() {
         // (C_VerifyInit(hSession, &mech, hPublic) → C_Verify(plainData, sigLen, signature, sigLen))
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_OK,
             "PSS signature verification must succeed",
         );
@@ -327,7 +386,13 @@ fn ckm_ecdsa() {
         let mut sig_len: CK_ULONG = 128;
         let mut signature = vec![0u8; 128];
         assert_eq!(
-            C_Sign(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_mut_ptr(), &mut sig_len),
+            C_Sign(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_mut_ptr(),
+                &mut sig_len
+            ),
             CKR_OK,
         );
         signature.truncate(sig_len as usize);
@@ -337,7 +402,13 @@ fn ckm_ecdsa() {
         // (C_VerifyInit(hSession, &mech, hPublic) → C_Verify(plainData, ..., signature, sigLen))
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_OK,
             "ECDSA verification must succeed",
         );
@@ -346,7 +417,13 @@ fn ckm_ecdsa() {
         let wrong_data = b"Mars is the fourth planet of our Solar System.";
         assert_eq!(C_VerifyInit(h_session, &mech, h_public), CKR_OK);
         assert_eq!(
-            C_Verify(h_session, wrong_data.as_ptr(), wrong_data.len() as CK_ULONG, signature.as_ptr(), sig_len),
+            C_Verify(
+                h_session,
+                wrong_data.as_ptr(),
+                wrong_data.len() as CK_ULONG,
+                signature.as_ptr(),
+                sig_len
+            ),
             CKR_SIGNATURE_INVALID,
             "tampered data must fail ECDSA verification",
         );

@@ -39,11 +39,11 @@ cc_library(
         "pkcs11_provider_factory.hpp",
         "pkcs11_session_guard.hpp",
     ],
-    includes = ["."],
     defines = select({
         ":use_rust_pkcs11": ["USE_RUST_PKCS11=1"],
         "//conditions:default": [],
     }),
+    includes = ["."],
     visibility = [
         "//:__subpackages__",
     ],
@@ -83,7 +83,7 @@ cc_library(
         ":use_rust_pkcs11": [
             "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
             "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
-            "//third_party/openssl:openssl",
+            "//third_party/openssl",
         ],
         "//conditions:default": ["//third_party/soft_hsm:libsofthsm_shared"],
     }),

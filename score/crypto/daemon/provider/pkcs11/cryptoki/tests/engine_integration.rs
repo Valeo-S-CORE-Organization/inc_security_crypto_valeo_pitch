@@ -17,8 +17,7 @@
 //! avoid `CKR_CRYPTOKI_ALREADY_INITIALIZED` on the second test that runs.
 
 use cryptoki::{
-    engine, register_engine, try_engine, AttributeType, EcCurve, EngineKeyRef, HashAlgorithm,
-    OpenSslEngine,
+    engine, register_engine, try_engine, AttributeType, EcCurve, EngineKeyRef, HashAlgorithm, OpenSslEngine,
 };
 
 fn init() {
@@ -61,7 +60,7 @@ fn test_generate_rsa_key_pair_2048() {
     assert_eq!(kp.bits, 2048);
     assert!(!kp.private_der.is_empty());
     assert!(!kp.public_der.is_empty());
-    assert_eq!(kp.modulus.len(), 256);          // 2048 bits / 8
+    assert_eq!(kp.modulus.len(), 256); // 2048 bits / 8
     assert!(!kp.public_exponent.is_empty());
 }
 
@@ -89,7 +88,7 @@ fn test_aes_cbc_roundtrip() {
     let plaintext = b"C_EncryptInit(CKM_AES_CBC_PAD) + C_Encrypt + C_Decrypt";
 
     let ciphertext = eng.aes_cbc_encrypt(&key, &iv, plaintext).unwrap();
-    let recovered  = eng.aes_cbc_decrypt(&key, &iv, &ciphertext).unwrap();
+    let recovered = eng.aes_cbc_decrypt(&key, &iv, &ciphertext).unwrap();
     assert_eq!(&*recovered, plaintext);
 }
 
@@ -102,7 +101,7 @@ fn test_aes_cbc_256_roundtrip() {
     eng.generate_random(&mut iv).unwrap();
 
     let ciphertext = eng.aes_cbc_encrypt(&key, &iv, b"hello world").unwrap();
-    let recovered  = eng.aes_cbc_decrypt(&key, &iv, &ciphertext).unwrap();
+    let recovered = eng.aes_cbc_decrypt(&key, &iv, &ciphertext).unwrap();
     assert_eq!(&*recovered, b"hello world");
 }
 
@@ -118,7 +117,7 @@ fn test_aes_ctr_roundtrip() {
     let plaintext = b"C_EncryptInit(CKM_AES_CTR) stream cipher";
 
     let ciphertext = eng.aes_ctr_crypt(&key, &iv, plaintext).unwrap();
-    let recovered  = eng.aes_ctr_crypt(&key, &iv, &ciphertext).unwrap(); // CTR decrypt == encrypt
+    let recovered = eng.aes_ctr_crypt(&key, &iv, &ciphertext).unwrap(); // CTR decrypt == encrypt
     assert_eq!(&*recovered, plaintext);
 }
 
@@ -146,7 +145,7 @@ fn test_aes_gcm_tampered_ciphertext_fails() {
     init();
     let eng = engine().unwrap();
     let key = eng.generate_aes_key(16).unwrap();
-    let iv  = vec![0u8; 12];
+    let iv = vec![0u8; 12];
 
     let (mut ct, tag) = eng.aes_gcm_encrypt(&key, &iv, b"", b"secret").unwrap();
     ct[0] ^= 0xFF; // tamper
@@ -166,9 +165,9 @@ fn test_rsa_pkcs1_encrypt_decrypt() {
     let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let plaintext = b"RSA PKCS1 v1.5 encrypt test";
 
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let ct        = eng.rsa_pkcs1_encrypt(&pub_ref, plaintext).unwrap();
+    let ct = eng.rsa_pkcs1_encrypt(&pub_ref, plaintext).unwrap();
     let recovered = eng.rsa_pkcs1_decrypt(&priv_ref, &ct).unwrap();
     assert_eq!(&*recovered, plaintext);
 }
@@ -180,9 +179,9 @@ fn test_rsa_oaep_encrypt_decrypt() {
     let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let plaintext = b"RSA OAEP encrypt test";
 
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let ct        = eng.rsa_oaep_encrypt(&pub_ref, plaintext).unwrap();
+    let ct = eng.rsa_oaep_encrypt(&pub_ref, plaintext).unwrap();
     let recovered = eng.rsa_oaep_decrypt(&priv_ref, &ct).unwrap();
     assert_eq!(&*recovered, plaintext);
 }
@@ -193,12 +192,12 @@ fn test_rsa_oaep_encrypt_decrypt() {
 fn test_rsa_pkcs1_sign_verify() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let msg = b"C_Sign(CKM_SHA256_RSA_PKCS)";
 
-    let sig   = eng.rsa_pkcs1_sign(&priv_ref, msg).unwrap();
+    let sig = eng.rsa_pkcs1_sign(&priv_ref, msg).unwrap();
     let valid = eng.rsa_pkcs1_verify(&pub_ref, msg, &sig).unwrap();
     assert!(valid);
     assert_eq!(sig.len(), 256); // 2048-bit key → 256-byte signature
@@ -208,9 +207,9 @@ fn test_rsa_pkcs1_sign_verify() {
 fn test_rsa_pkcs1_tampered_message_fails() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let sig = eng.rsa_pkcs1_sign(&priv_ref, b"original").unwrap();
     let valid = eng.rsa_pkcs1_verify(&pub_ref, b"tampered", &sig).unwrap();
     assert!(!valid);
@@ -220,12 +219,12 @@ fn test_rsa_pkcs1_tampered_message_fails() {
 fn test_rsa_pss_sign_verify() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let msg = b"C_Sign(CKM_SHA256_RSA_PKCS_PSS)";
 
-    let sig   = eng.rsa_pss_sign(&priv_ref, msg).unwrap();
+    let sig = eng.rsa_pss_sign(&priv_ref, msg).unwrap();
     let valid = eng.rsa_pss_verify(&pub_ref, msg, &sig).unwrap();
     assert!(valid);
 }
@@ -234,7 +233,7 @@ fn test_rsa_pss_sign_verify() {
 fn test_rsa_pss_is_randomised() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
     let msg = b"same message";
 
@@ -249,12 +248,12 @@ fn test_rsa_pss_is_randomised() {
 fn test_ecdsa_sign_verify() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
+    let kp = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
     let msg = b"C_Sign(CKM_ECDSA) over P-256";
 
-    let sig   = eng.ecdsa_sign(&priv_ref, msg).unwrap();
+    let sig = eng.ecdsa_sign(&priv_ref, msg).unwrap();
     let valid = eng.ecdsa_verify(&pub_ref, msg, &sig).unwrap();
     assert!(valid);
 }
@@ -263,11 +262,11 @@ fn test_ecdsa_sign_verify() {
 fn test_ecdsa_tampered_message_fails() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
+    let kp = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
 
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
-    let pub_ref  = EngineKeyRef::from_bytes(kp.public_der.clone());
-    let sig   = eng.ecdsa_sign(&priv_ref, b"original").unwrap();
+    let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
+    let sig = eng.ecdsa_sign(&priv_ref, b"original").unwrap();
     let valid = eng.ecdsa_verify(&pub_ref, b"tampered", &sig).unwrap();
     assert!(!valid);
 }
@@ -285,7 +284,7 @@ fn test_hash_sha256_known_vector() {
 fn test_multi_part_hash_matches_single_part() {
     init();
     let eng = engine().unwrap();
-    let full  = b"hello world";
+    let full = b"hello world";
     let reference = eng.hash(HashAlgorithm::Sha256, full).unwrap();
 
     // C_DigestInit → C_DigestUpdate × 2 → C_DigestFinal
@@ -304,7 +303,7 @@ fn test_rsa_attribute_modulus_bits() {
     use cryptoki::AttributeValue;
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
 
     let val = eng.rsa_attribute(&pub_ref, false, AttributeType::ModulusBits).unwrap();
@@ -316,7 +315,7 @@ fn test_rsa_attribute_modulus() {
     use cryptoki::AttributeValue;
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
 
     let val = eng.rsa_attribute(&pub_ref, false, AttributeType::Modulus).unwrap();
@@ -331,7 +330,7 @@ fn test_rsa_attribute_modulus() {
 fn test_rsa_private_key_value_is_sensitive() {
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_rsa_key_pair(2048).unwrap();
+    let kp = eng.generate_rsa_key_pair(2048).unwrap();
     let priv_ref = EngineKeyRef::from_bytes(kp.private_der.to_vec());
 
     let err = eng.rsa_attribute(&priv_ref, true, AttributeType::Value).unwrap_err();
@@ -343,7 +342,7 @@ fn test_ec_attribute_params_and_point() {
     use cryptoki::AttributeValue;
     init();
     let eng = engine().unwrap();
-    let kp  = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
+    let kp = eng.generate_ec_key_pair(EcCurve::P256).unwrap();
     let pub_ref = EngineKeyRef::from_bytes(kp.public_der.clone());
 
     let params = eng.ec_attribute(&pub_ref, false, AttributeType::EcParams).unwrap();
@@ -391,6 +390,8 @@ fn test_already_initialized_error_code() {
 #[test]
 fn test_decrypt_failed_maps_to_encrypted_data_invalid() {
     use cryptoki::CryptoError;
-    let err = CryptoError::DecryptFailed { message: "tag mismatch".into() };
+    let err = CryptoError::DecryptFailed {
+        message: "tag mismatch".into(),
+    };
     assert_eq!(err.ckr_code(), 0x00000040); // CKR_ENCRYPTED_DATA_INVALID
 }

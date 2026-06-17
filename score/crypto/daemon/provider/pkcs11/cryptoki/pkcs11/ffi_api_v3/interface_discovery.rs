@@ -15,11 +15,10 @@ use super::*;
 // ── C_GetInterfaceList / C_GetInterface (v3.0 interface discovery) ────────
 
 #[no_mangle]
-pub unsafe extern "C" fn C_GetInterfaceList(
-    p_interfaces_list: *mut CK_INTERFACE,
-    pul_count:         *mut CK_ULONG,
-) -> CK_RV {
-    if pul_count.is_null() { return CKR_ARGUMENTS_BAD; }
+pub unsafe extern "C" fn C_GetInterfaceList(p_interfaces_list: *mut CK_INTERFACE, pul_count: *mut CK_ULONG) -> CK_RV {
+    if pul_count.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     if p_interfaces_list.is_null() {
         *pul_count = 1;
         return CKR_OK;
@@ -30,8 +29,8 @@ pub unsafe extern "C" fn C_GetInterfaceList(
     }
     *p_interfaces_list = CK_INTERFACE {
         pInterfaceName: PKCS11_INTERFACE_NAME.as_ptr(),
-        pFunctionList:  &FUNCTION_LIST_3_0 as *const _ as *const c_void,
-        flags:          CKF_INTERFACE_FORK_SAFE,
+        pFunctionList: &FUNCTION_LIST_3_0 as *const _ as *const c_void,
+        flags: CKF_INTERFACE_FORK_SAFE,
     };
     *pul_count = 1;
     CKR_OK
@@ -40,11 +39,13 @@ pub unsafe extern "C" fn C_GetInterfaceList(
 #[no_mangle]
 pub unsafe extern "C" fn C_GetInterface(
     p_interface_name: *const CK_UTF8CHAR,
-    p_version:        *mut CK_VERSION,
-    pp_interface:     *mut *const CK_INTERFACE,
-    flags:            CK_FLAGS,
+    p_version: *mut CK_VERSION,
+    pp_interface: *mut *const CK_INTERFACE,
+    flags: CK_FLAGS,
 ) -> CK_RV {
-    if pp_interface.is_null() { return CKR_ARGUMENTS_BAD; }
+    if pp_interface.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
 
     // If name is NULL, return the default (latest) interface
     if !p_interface_name.is_null() {

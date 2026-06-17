@@ -20,10 +20,8 @@
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
 use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_DigestInit, C_Digest, C_DigestUpdate, C_DigestFinal,
+    C_CloseSession, C_Digest, C_DigestFinal, C_DigestInit, C_DigestUpdate, C_Initialize, C_Login, C_Logout,
+    C_OpenSession,
 };
 use std::ptr;
 use std::sync::Once;
@@ -51,7 +49,10 @@ unsafe fn connect_to_slot() -> CK_SESSION_HANDLE {
         CKR_OK,
     );
     let rv = C_Login(h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN, "C_Login failed: {rv:#x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#x}"
+    );
     h
 }
 
@@ -97,7 +98,13 @@ fn ckm_sha256() {
         // (C_Digest(hSession, plainData, sizeof(plainData)-1, NULL, &digestLen))
         let mut digest_len: CK_ULONG = 0;
         assert_eq!(
-            C_Digest(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, ptr::null_mut(), &mut digest_len),
+            C_Digest(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                ptr::null_mut(),
+                &mut digest_len
+            ),
             CKR_OK,
         );
         assert_eq!(digest_len, 32, "SHA-256 output must be 32 bytes");
@@ -107,7 +114,13 @@ fn ckm_sha256() {
         let mut digest = vec![0u8; 32];
         let mut digest_len2: CK_ULONG = 32;
         assert_eq!(
-            C_Digest(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, digest.as_mut_ptr(), &mut digest_len2),
+            C_Digest(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                digest.as_mut_ptr(),
+                &mut digest_len2
+            ),
             CKR_OK,
         );
         assert_ne!(digest, [0u8; 32], "hash output must not be all zeros");
@@ -118,12 +131,13 @@ fn ckm_sha256() {
         let abc = b"abc";
         let mut abc_hash = vec![0u8; 32];
         let mut abc_len: CK_ULONG = 32;
-        assert_eq!(C_Digest(h_session, abc.as_ptr(), 3, abc_hash.as_mut_ptr(), &mut abc_len), CKR_OK);
+        assert_eq!(
+            C_Digest(h_session, abc.as_ptr(), 3, abc_hash.as_mut_ptr(), &mut abc_len),
+            CKR_OK
+        );
         let expected_sha256_abc = [
-            0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
-            0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
-            0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
-            0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+            0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23, 0xb0, 0x03,
+            0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
         ];
         assert_eq!(abc_hash, expected_sha256_abc, "SHA-256('abc') vector mismatch");
 
@@ -168,7 +182,13 @@ fn ckm_sha1() {
         // (C_Digest(hSession, plainData, sizeof(plainData)-1, NULL, &digestLen))
         let mut digest_len: CK_ULONG = 0;
         assert_eq!(
-            C_Digest(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, ptr::null_mut(), &mut digest_len),
+            C_Digest(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                ptr::null_mut(),
+                &mut digest_len
+            ),
             CKR_OK,
         );
         assert_eq!(digest_len, 20, "SHA-1 output must be 20 bytes");
@@ -178,7 +198,13 @@ fn ckm_sha1() {
         let mut digest = vec![0u8; 20];
         let mut digest_len2: CK_ULONG = 20;
         assert_eq!(
-            C_Digest(h_session, plain_data.as_ptr(), plain_data.len() as CK_ULONG, digest.as_mut_ptr(), &mut digest_len2),
+            C_Digest(
+                h_session,
+                plain_data.as_ptr(),
+                plain_data.len() as CK_ULONG,
+                digest.as_mut_ptr(),
+                &mut digest_len2
+            ),
             CKR_OK,
         );
         assert_ne!(digest, [0u8; 20], "hash output must not be all zeros");
@@ -188,11 +214,13 @@ fn ckm_sha1() {
         assert_eq!(C_DigestInit(h_session, &mech), CKR_OK);
         let mut abc_hash = vec![0u8; 20];
         let mut abc_len: CK_ULONG = 20;
-        assert_eq!(C_Digest(h_session, b"abc".as_ptr(), 3, abc_hash.as_mut_ptr(), &mut abc_len), CKR_OK);
+        assert_eq!(
+            C_Digest(h_session, b"abc".as_ptr(), 3, abc_hash.as_mut_ptr(), &mut abc_len),
+            CKR_OK
+        );
         let expected_sha1_abc = [
-            0xa9u8, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a,
-            0xba, 0x3e, 0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c,
-            0x9c, 0xd0, 0xd8, 0x9d,
+            0xa9u8, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c, 0x9c,
+            0xd0, 0xd8, 0x9d,
         ];
         assert_eq!(abc_hash, expected_sha1_abc, "SHA-1('abc') vector mismatch");
 
@@ -232,17 +260,22 @@ fn ckm_md5() {
 
         // Step 4: Query output length
         let mut digest_len: CK_ULONG = 0;
-        assert_eq!(C_Digest(h_session, b"".as_ptr(), 0, ptr::null_mut(), &mut digest_len), CKR_OK);
+        assert_eq!(
+            C_Digest(h_session, b"".as_ptr(), 0, ptr::null_mut(), &mut digest_len),
+            CKR_OK
+        );
         assert_eq!(digest_len, 16, "MD5 output must be 16 bytes");
 
         // Step 5: Known MD5("") = d41d8cd9 8f00b204 e9800998 ecf8427e
         // (digest = new CK_BYTE[digestLen]; C_Digest(..., digest, &digestLen))
         let mut digest_empty = vec![0u8; 16];
         let mut len1: CK_ULONG = 16;
-        assert_eq!(C_Digest(h_session, b"".as_ptr(), 0, digest_empty.as_mut_ptr(), &mut len1), CKR_OK);
+        assert_eq!(
+            C_Digest(h_session, b"".as_ptr(), 0, digest_empty.as_mut_ptr(), &mut len1),
+            CKR_OK
+        );
         let expected_md5_empty = [
-            0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04,
-            0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8, 0x42, 0x7e,
+            0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04, 0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8, 0x42, 0x7e,
         ];
         assert_eq!(digest_empty, expected_md5_empty, "MD5('') vector mismatch");
 
@@ -250,10 +283,12 @@ fn ckm_md5() {
         assert_eq!(C_DigestInit(h_session, &mech), CKR_OK);
         let mut digest_abc = vec![0u8; 16];
         let mut len2: CK_ULONG = 16;
-        assert_eq!(C_Digest(h_session, b"abc".as_ptr(), 3, digest_abc.as_mut_ptr(), &mut len2), CKR_OK);
+        assert_eq!(
+            C_Digest(h_session, b"abc".as_ptr(), 3, digest_abc.as_mut_ptr(), &mut len2),
+            CKR_OK
+        );
         let expected_md5_abc = [
-            0x90u8, 0x01, 0x50, 0x98, 0x3c, 0xd2, 0x4f, 0xb0,
-            0xd6, 0x96, 0x3f, 0x7d, 0x28, 0xe1, 0x7f, 0x72,
+            0x90u8, 0x01, 0x50, 0x98, 0x3c, 0xd2, 0x4f, 0xb0, 0xd6, 0x96, 0x3f, 0x7d, 0x28, 0xe1, 0x7f, 0x72,
         ];
         assert_eq!(digest_abc, expected_md5_abc, "MD5('abc') vector mismatch");
 
@@ -289,7 +324,7 @@ fn multi_part_digest_sha256() {
         let chunk1 = b"Earth is the third ";
         let chunk2 = b"planet of our ";
         let chunk3 = b"Solar System.";
-        let full   = b"Earth is the third planet of our Solar System.";
+        let full = b"Earth is the third planet of our Solar System.";
 
         let mech = CK_MECHANISM {
             mechanism: CKM_SHA256,
@@ -303,9 +338,18 @@ fn multi_part_digest_sha256() {
 
         // Step 4: Feed chunks via C_DigestUpdate
         // ([loop] C_DigestUpdate(hSession, buffer, bufferLen))
-        assert_eq!(C_DigestUpdate(h_session, chunk1.as_ptr(), chunk1.len() as CK_ULONG), CKR_OK);
-        assert_eq!(C_DigestUpdate(h_session, chunk2.as_ptr(), chunk2.len() as CK_ULONG), CKR_OK);
-        assert_eq!(C_DigestUpdate(h_session, chunk3.as_ptr(), chunk3.len() as CK_ULONG), CKR_OK);
+        assert_eq!(
+            C_DigestUpdate(h_session, chunk1.as_ptr(), chunk1.len() as CK_ULONG),
+            CKR_OK
+        );
+        assert_eq!(
+            C_DigestUpdate(h_session, chunk2.as_ptr(), chunk2.len() as CK_ULONG),
+            CKR_OK
+        );
+        assert_eq!(
+            C_DigestUpdate(h_session, chunk3.as_ptr(), chunk3.len() as CK_ULONG),
+            CKR_OK
+        );
 
         // Step 5: Finalize — first call with NULL to get output length
         // (C_DigestFinal(hSession, NULL, &digestLen))
@@ -317,14 +361,23 @@ fn multi_part_digest_sha256() {
         // (digest = new CK_BYTE[digestLen]; C_DigestFinal(hSession, digest, &digestLen))
         let mut multi_digest = vec![0u8; 32];
         let mut multi_len: CK_ULONG = 32;
-        assert_eq!(C_DigestFinal(h_session, multi_digest.as_mut_ptr(), &mut multi_len), CKR_OK);
+        assert_eq!(
+            C_DigestFinal(h_session, multi_digest.as_mut_ptr(), &mut multi_len),
+            CKR_OK
+        );
 
         // Step 7: One-shot reference digest of the same full data
         assert_eq!(C_DigestInit(h_session, &mech), CKR_OK);
         let mut one_digest = vec![0u8; 32];
         let mut one_len: CK_ULONG = 32;
         assert_eq!(
-            C_Digest(h_session, full.as_ptr(), full.len() as CK_ULONG, one_digest.as_mut_ptr(), &mut one_len),
+            C_Digest(
+                h_session,
+                full.as_ptr(),
+                full.len() as CK_ULONG,
+                one_digest.as_mut_ptr(),
+                &mut one_len
+            ),
             CKR_OK,
         );
 
@@ -365,9 +418,8 @@ fn multi_part_digest_sha1() {
 
         // SHA-1("abc") = a9993e36 4706816a ba3e2571 7850c26c 9cd0d89d
         let expected = [
-            0xa9u8, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a,
-            0xba, 0x3e, 0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c,
-            0x9c, 0xd0, 0xd8, 0x9d,
+            0xa9u8, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c, 0x9c,
+            0xd0, 0xd8, 0x9d,
         ];
         assert_eq!(digest, expected, "multi-part SHA-1('abc') vector mismatch");
 

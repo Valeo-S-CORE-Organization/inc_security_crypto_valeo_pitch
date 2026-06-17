@@ -23,15 +23,15 @@
 
 use std::collections::HashMap;
 
+use argon2::password_hash::{rand_core::OsRng, SaltString};
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
-use argon2::password_hash::{SaltString, rand_core::OsRng};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
 use super::types::*;
-use score_log::{info, warn, debug, trace};
+use score_log::{debug, info, trace, warn};
 
 // ── PIN hashing ─────────────────────────────────────────────────────────
 
@@ -52,11 +52,7 @@ impl HashedPin {
             argon2::Params::new(65_536, 3, 4, Some(32)).expect("invalid prod Argon2 params")
         };
 
-        let argon2 = Argon2::new(
-            argon2::Algorithm::Argon2id,
-            argon2::Version::V0x13,
-            params,
-        );
+        let argon2 = Argon2::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params);
         let phc_string = argon2
             .hash_password(pin, &salt)
             .expect("Argon2 hashing failed")
@@ -97,19 +93,18 @@ const MAX_PIN_FAILURES: u32 = 10;
 /// Represents the full state of a PKCS#11 token.
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub slot_id:         CK_SLOT_ID,
-    pub label:           [CK_UTF8CHAR; 32],
-    pub state:           TokenState,
-    pub so_pin:          Option<HashedPin>,
-    pub user_pin:        Option<HashedPin>,
+    pub slot_id: CK_SLOT_ID,
+    pub label: [CK_UTF8CHAR; 32],
+    pub state: TokenState,
+    pub so_pin: Option<HashedPin>,
+    pub user_pin: Option<HashedPin>,
     pub so_pin_failures: u32,
     pub user_pin_failures: u32,
-    pub login_required:  bool,
-    pub min_pin_len:     usize,
-    pub max_pin_len:     usize,
-    pub serial_number:   [CK_CHAR; 16],
+    pub login_required: bool,
+    pub min_pin_len: usize,
+    pub max_pin_len: usize,
+    pub serial_number: [CK_CHAR; 16],
 }
-
 
 impl Token {
     /// Create a new uninitialized token for the given slot.
@@ -203,11 +198,11 @@ impl Token {
             CKU_SO => {
                 self.so_pin = Some(HashedPin::new(new_pin));
                 self.so_pin_failures = 0;
-            }
+            },
             CKU_USER => {
                 self.user_pin = Some(HashedPin::new(new_pin));
                 self.user_pin_failures = 0;
-            }
+            },
             _ => return Err(Pkcs11Error::UserTypeInvalid),
         }
         Ok(())
@@ -231,7 +226,7 @@ impl Token {
                     return Err(Pkcs11Error::PinIncorrect);
                 }
                 self.so_pin_failures = 0;
-            }
+            },
             CKU_USER => {
                 if self.user_pin_failures >= MAX_PIN_FAILURES {
                     return Err(Pkcs11Error::PinLocked);
@@ -242,7 +237,7 @@ impl Token {
                     return Err(Pkcs11Error::PinIncorrect);
                 }
                 self.user_pin_failures = 0;
-            }
+            },
             _ => return Err(Pkcs11Error::ArgumentsBad),
         };
         Ok(())
@@ -251,7 +246,11 @@ impl Token {
     /// Verify user PIN for context-specific re-auth without touching lockout counters.
     pub fn verify_user_pin_no_lockout(&self, pin: &[u8]) -> Result<()> {
         let ok = self.user_pin.as_ref().is_some_and(|p| p.verify(pin));
-        if !ok { Err(Pkcs11Error::PinIncorrect) } else { Ok(()) }
+        if !ok {
+            Err(Pkcs11Error::PinIncorrect)
+        } else {
+            Ok(())
+        }
     }
 
     /// Build the CK_FLAGS for CK_TOKEN_INFO.

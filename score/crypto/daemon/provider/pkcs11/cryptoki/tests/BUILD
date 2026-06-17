@@ -41,33 +41,51 @@ _TESTS_NO_COMMON = [
 
 [rust_test(
     name = name,
-    crate_root = name + ".rs",
     srcs = [
         name + ".rs",
         "common/mod.rs",
     ],
     aliases = aliases(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
         normal_dev = True,
         proc_macro_dev = True,
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
     ),
-    deps = _COMMON_DEPS + all_crate_deps(normal = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki") + all_crate_deps(normal_dev = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki"),
-    proc_macro_deps = all_crate_deps(proc_macro_dev = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki"),
+    crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    proc_macro_deps = all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        proc_macro_dev = True,
+    ),
+    deps = _COMMON_DEPS + all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        normal = True,
+    ) + all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        normal_dev = True,
+    ),
 ) for name in _TESTS_WITH_COMMON]
 
 [rust_test(
     name = name,
-    crate_root = name + ".rs",
     srcs = [name + ".rs"],
     aliases = aliases(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
         normal_dev = True,
         proc_macro_dev = True,
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
     ),
-    deps = _COMMON_DEPS + all_crate_deps(normal = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki") + all_crate_deps(normal_dev = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki"),
-    proc_macro_deps = all_crate_deps(proc_macro_dev = True, package_name = "score/crypto/daemon/provider/pkcs11/cryptoki"),
+    crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    proc_macro_deps = all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        proc_macro_dev = True,
+    ),
+    deps = _COMMON_DEPS + all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        normal = True,
+    ) + all_crate_deps(
+        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        normal_dev = True,
+    ),
 ) for name in _TESTS_NO_COMMON]
 
 test_suite(
