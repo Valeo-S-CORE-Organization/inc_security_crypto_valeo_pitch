@@ -17,6 +17,7 @@
 API Dynamic Architecture
 ========================
 
+<<<<<<< HEAD
 .. code-block:: rst
    
    .. comp_arc_dyn:: Dynamic View
@@ -25,6 +26,15 @@ API Dynamic Architecture
       :safety: QM
       :status: invalid
       :fulfils:
+=======
+.. comp_arc_dyn:: Dynamic View
+   :id: comp_arc_dyn__crypto__dynamic_view
+   :security: YES
+   :safety: QM
+   :status: invalid
+   :belongs_to: comp__crypto
+   :fulfils: comp_req__dummy
+>>>>>>> 8c17d44 (Initial Cryptoki integration into ETAS)
 
       Dynamic interactions for typical crypto operations.
 

@@ -1,0 +1,29 @@
+--- build/main.rs
++++ build/main.rs
+@@ -130,2 +130,25 @@
+ 
+ fn main() {
++    println!("cargo:rustc-cfg=openssl");
++    println!("cargo:rustc-cfg=ossl101");
++    println!("cargo:rustc-cfg=ossl102");
++    println!("cargo:rustc-cfg=ossl102f");
++    println!("cargo:rustc-cfg=ossl102h");
++    println!("cargo:rustc-cfg=ossl110");
++    println!("cargo:rustc-cfg=ossl110f");
++    println!("cargo:rustc-cfg=ossl110g");
++    println!("cargo:rustc-cfg=ossl110h");
++    println!("cargo:rustc-cfg=ossl111");
++    println!("cargo:rustc-cfg=ossl111b");
++    println!("cargo:rustc-cfg=ossl111c");
++    println!("cargo:rustc-cfg=ossl111d");
++    println!("cargo:rustc-cfg=ossl300");
++    println!("cargo:rustc-cfg=ossl310");
++    println!("cargo:rustc-cfg=ossl320");
++    println!("cargo:rustc-cfg=ossl330");
++    println!("cargo:rustc-cfg=ossl340");
++    
++    println!("cargo:version_number=30400000"); // 3.4.0 (highest openssl-sys 0.9.116 officially supports)
++    println!("cargo:conf=");
++    return;
++
+     let target = env::var("TARGET").unwrap();

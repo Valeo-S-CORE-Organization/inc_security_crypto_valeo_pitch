@@ -82,5 +82,6 @@ ubproject.toml
 /cpp/build/*
 
 # Rust
+# Cargo
 target/
 **/*.rs.bk
