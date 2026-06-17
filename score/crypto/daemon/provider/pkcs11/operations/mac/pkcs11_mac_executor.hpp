@@ -20,8 +20,11 @@
 #include "score/crypto/daemon/provider/pkcs11/operations/mac/pkcs11_mac_context.hpp"
 #include "score/mw/crypto/api/common/types.hpp"  // OperationMode
 
-#include <cryptoki.h>
+#ifdef USE_RUST_PKCS11
 #include <pkcs11.h>
+#else
+#include <cryptoki.h>
+#endif
 
 #include <cstddef>
 

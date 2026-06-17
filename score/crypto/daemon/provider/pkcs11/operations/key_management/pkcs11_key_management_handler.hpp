@@ -22,8 +22,11 @@
 #include "score/crypto/daemon/provider/executors/key_mgmt_executor.hpp"
 #include "score/crypto/daemon/provider/handler/i_handler.hpp"
 
-#include <cryptoki.h>
+#ifdef USE_RUST_PKCS11
 #include <pkcs11.h>
+#else
+#include <cryptoki.h>
+#endif
 
 #include <cstdint>
 #include <memory>

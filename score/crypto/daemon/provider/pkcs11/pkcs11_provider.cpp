@@ -22,6 +22,9 @@
 
 #include "score/mw/log/logging.h"
 
+#include <cstdlib>
+#include <vector>
+
 namespace score::crypto::daemon::provider::pkcs11
 {
 
@@ -133,6 +136,29 @@ bool Pkcs11Provider::AutodiscoverSlot() noexcept
     const auto result = Pkcs11Module::FindSlotByToken(*m_module, m_config.tokenLabel, m_config.tokenModel);
     if (!result.has_value())
     {
+        // Rust mode fallback: if persisted state contains an older token label,
+        // still allow bring-up by selecting the first present slot.
+#ifdef USE_RUST_PKCS11
+        {
+            CK_ULONG slot_count{0U};
+            CK_FUNCTION_LIST* const fl = m_module->GetFunctionList();
+            CK_RV rv = fl->C_GetSlotList(CK_TRUE, nullptr, &slot_count);
+            if ((rv == CKR_OK) && (slot_count > 0U))
+            {
+                std::vector<CK_SLOT_ID> slots(slot_count);
+                rv = fl->C_GetSlotList(CK_TRUE, slots.data(), &slot_count);
+                if ((rv == CKR_OK) && !slots.empty())
+                {
+                    m_config.slotId = slots.front();
+                    score::mw::log::LogWarn() << "[PKCS#11] Warning: token label autodetect failed for '"
+                                              << m_config.tokenLabel
+                                              << "'. Falling back to first present slot id=" << m_config.slotId;
+                    return true;
+                }
+            }
+        }
+#endif
+
         score::mw::log::LogError() << "[PKCS#11] Error: Failed to find slot for token '" << m_config.tokenLabel
                                    << "' (error:" << static_cast<int>(result.error()) << ")";
         return false;

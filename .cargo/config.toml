@@ -1,3 +1,0 @@
-[target.aarch64-unknown-nto-qnx800]
-linker = "qcc"
-rustflags = ["-C", "link-arg=-Vgcc_ntoaarch64le"]

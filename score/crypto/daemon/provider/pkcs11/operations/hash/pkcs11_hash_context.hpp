@@ -14,8 +14,11 @@
 #ifndef SCORE_CRYPTO_DAEMON_PROVIDER_PKCS11_HASH_CONTEXT_HPP
 #define SCORE_CRYPTO_DAEMON_PROVIDER_PKCS11_HASH_CONTEXT_HPP
 
-#include <cryptoki.h>
-#include <pkcs11.h>
+#ifdef USE_RUST_PKCS11
+    #include <pkcs11.h>
+#else
+    #include <cryptoki.h>
+#endif
 
 #include <cstddef>
 

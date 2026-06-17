@@ -23,8 +23,11 @@
 #include "score/crypto/daemon/provider/pkcs11/operations/mac/pkcs11_mac_executor.hpp"
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_module.hpp"
 
-#include <cryptoki.h>
+#ifdef USE_RUST_PKCS11
 #include <pkcs11.h>
+#else
+#include <cryptoki.h>
+#endif
 
 #include <cstddef>
 #include <cstdint>

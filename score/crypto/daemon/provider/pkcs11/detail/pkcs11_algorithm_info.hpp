@@ -16,8 +16,11 @@
 
 #include "score/crypto/daemon/common/types.hpp"
 
-#include <cryptoki.h>
-#include <pkcs11.h>
+#ifdef USE_RUST_PKCS11
+    #include <pkcs11.h>
+#else
+    #include <cryptoki.h>
+#endif
 
 #include <cstdint>
 #include <optional>

@@ -18,6 +18,9 @@
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_module.hpp"
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_provider_factory.hpp"
 
+#include <cstdlib>
+#include <string_view>
+
 namespace score::crypto::daemon::provider::pkcs11
 {
 
@@ -27,12 +30,23 @@ void Pkcs11Config::PopulateDefaults()
     {
         return;  // Entries already present (from config file or test fixture).
     }
+
+#ifdef USE_RUST_PKCS11
+    Pkcs11TokenEntry rustToken{};
+    // Match score/crypto/provider default token identity.
+    rustToken.tokenLabel = "ValeoCryptokiToken";
+    rustToken.userPin = "1234";
+    rustToken.providerName = "SCORE_CRYPTO_PROVIDER";  // Used for key slot bindings
+    rustToken.useHardCleanup = true;
+    m_tokens.push_back(std::move(rustToken));
+#else
     Pkcs11TokenEntry softHsm{};
     softHsm.tokenLabel = "SoftHSM";
     softHsm.userPin = "1234";
     softHsm.providerName = "SOFTHSM";
     softHsm.useHardCleanup = true;
     m_tokens.push_back(std::move(softHsm));
+#endif
 }
 
 void Pkcs11Config::Configure(Pkcs11ProviderFactory& factory) const

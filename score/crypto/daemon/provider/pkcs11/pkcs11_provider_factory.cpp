@@ -20,6 +20,7 @@
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_module.hpp"
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_provider.hpp"
 #include "score/crypto/daemon/provider/provider_manager.hpp"
+#include "score/mw/log/logging.h"
 
 namespace score::crypto::daemon::provider::pkcs11
 {
@@ -48,6 +49,8 @@ bool Pkcs11ProviderFactory::CreateAndRegister(ProviderManager& manager)
     const auto initResult = pkcs11Module->Init();
     if (!initResult.has_value())
     {
+        score::mw::log::LogError() << "[PKCS11_FACTORY] ERROR: Failed to initialize PKCS#11 module. Error code: "
+                                   << static_cast<int>(initResult.error());
         return false;
     }
 

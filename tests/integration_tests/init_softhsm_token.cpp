@@ -29,8 +29,11 @@
 /// Designed to run inside a Docker container as part of integration-test setup,
 /// avoiding any dependency on the host-side `softhsm2-util` package.
 
-#include <cryptoki.h>
+#if USE_RUST_PKCS11
 #include <pkcs11.h>
+#else
+#include <cryptoki.h>
+#endif
 
 #include <algorithm>
 #include <cstdlib>

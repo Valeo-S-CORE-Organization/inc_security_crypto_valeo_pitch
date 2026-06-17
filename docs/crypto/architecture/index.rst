@@ -85,6 +85,7 @@ Static Architecture
 The components are designed to cover the expectations from the feature architecture
 (i.e. if already exists a definition it should be taken over and enriched).
 
+<<<<<<< HEAD
 .. code-block:: rst
 
    .. comp:: Crypto
@@ -93,6 +94,15 @@ The components are designed to cover the expectations from the feature architect
       :safety: QM
       :status: invalid
       :implements:
+=======
+.. comp:: Crypto
+   :id: comp__crypto
+   :security: YES
+   :safety: QM
+   :status: invalid
+   :belongs_to: feat__dummy
+   :implements:
+>>>>>>> 8c17d44 (Initial Cryptoki integration into ETAS)
 
 .. image:: component_overview.png
    :align: center
@@ -190,6 +200,12 @@ Interfaces
 ----------
 
 See :ref:`crypto_interfaces` for the full interface descriptions.
+
+Design Decisions
+----------------
+
+See :ref:`crypto_design_decisions` for the full design decision records.
+to_interfaces` for the full interface descriptions.
 
 Design Decisions
 ----------------

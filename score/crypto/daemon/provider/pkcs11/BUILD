@@ -13,6 +13,11 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+config_setting(
+    name = "use_rust_pkcs11",
+    define_values = {"use_rust_pkcs11": "true"},
+)
+
 cc_library(
     name = "provider_pkcs11_headers",
     hdrs = [
@@ -35,6 +40,10 @@ cc_library(
         "pkcs11_session_guard.hpp",
     ],
     includes = ["."],
+    defines = select({
+        ":use_rust_pkcs11": ["USE_RUST_PKCS11=1"],
+        "//conditions:default": [],
+    }),
     visibility = [
         "//:__subpackages__",
     ],
@@ -69,9 +78,15 @@ cc_library(
         "//score/crypto/daemon/provider/handler:handler_utils_impl",
         "//score/crypto/daemon/provider/handler:hash_handler_operations",
         "//score/crypto/daemon/provider/handler:mac_handler_operations",
-        "//third_party/soft_hsm:libsofthsm_shared",
         "@score_baselibs//score/result",
-    ],
+    ] + select({
+        ":use_rust_pkcs11": [
+            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
+            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
+            "//third_party/openssl:openssl",
+        ],
+        "//conditions:default": ["//third_party/soft_hsm:libsofthsm_shared"],
+    }),
 )
 
 cc_library(

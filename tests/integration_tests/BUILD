@@ -28,9 +28,20 @@ cc_binary(
 cc_binary(
     name = "init_softhsm_token",
     srcs = ["init_softhsm_token.cpp"],
-    deps = [
-        "//third_party/soft_hsm:libsofthsm_shared",
-    ],
+    local_defines = select({
+        "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": ["USE_RUST_PKCS11=1"],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": [
+            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
+            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
+            "//third_party/openssl:openssl",
+        ],
+        "//conditions:default": [
+            "//third_party/soft_hsm:libsofthsm_shared",
+        ],
+    }),
 )
 
 cc_binary(
@@ -74,6 +85,15 @@ cc_binary(
     deps = [
         "//score/mw/crypto/api:crypto_stack",
         "//tests/utility",
+    ],
+)
+
+cc_binary(
+    name = "cryptoki_demo_client",
+    srcs = ["cryptoki_demo_client.cpp"],
+    dynamic_deps = ["//third_party/grpc:libgrpc_shared"],
+    deps = [
+        "//score/mw/crypto/api:crypto_stack",
     ],
 )
 

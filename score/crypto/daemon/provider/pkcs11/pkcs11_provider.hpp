@@ -23,8 +23,11 @@
 #include "score/crypto/daemon/provider/pkcs11/operations/factory/pkcs11_handler_factory.hpp"
 #include "score/crypto/daemon/provider/pkcs11/operations/key_management/pkcs11_key_management_handler.hpp"
 #include "score/crypto/daemon/provider/pkcs11/pkcs11_module.hpp"
-#include <cryptoki.h>
-#include <pkcs11.h>
+#ifdef USE_RUST_PKCS11
+    #include <pkcs11.h>
+#else
+    #include <cryptoki.h>
+#endif
 
 #include <cstdint>
 #include <memory>
