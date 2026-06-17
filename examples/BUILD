@@ -12,6 +12,33 @@
 # *******************************************************************************
 
 load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "examples",
+    srcs = glob(["**/*.rs"]),
+)
+
+rust_binary(
+    name = "pkcs11_demo",
+    crate_root = "pkcs11_demo.rs",
+    srcs = ["pkcs11_demo.rs"],
+    aliases = aliases(package_name = ""),
+    deps = ["//src:cryptoki_lib"] + all_crate_deps(normal = True, package_name = ""),
+    proc_macro_deps = all_crate_deps(proc_macro = True, package_name = ""),
+)
+
+rust_binary(
+    name = "pkcs11_business_demo",
+    crate_root = "pkcs11_business_demo.rs",
+    srcs = ["pkcs11_business_demo.rs"],
+    aliases = aliases(package_name = ""),
+    deps = ["//src:cryptoki_lib"] + all_crate_deps(normal = True, package_name = ""),
+    proc_macro_deps = all_crate_deps(proc_macro = True, package_name = ""),
+)
 
 cc_binary(
     name = "hashing_example",
@@ -33,13 +60,3 @@ cc_binary(
         "//score/mw/crypto/api/contexts:crypto_contexts",
     ],
 )
-
-# =============================================================================
-# FUTURE: Examples below depend on APIs not yet in scope.
-# =============================================================================
-# cc_binary(name = "encryption_example",   srcs = ["encryption_example.cpp"],   ...)
-# cc_binary(name = "pqc_signing_example",  srcs = ["pqc_signing_example.cpp"],  ...)
-# cc_binary(name = "certificate_example",  srcs = ["certificate_example.cpp"],  ...)
-# cc_binary(name = "ephemeral_key_example",srcs = ["ephemeral_key_example.cpp"],...) # needs cipher context
-# cc_binary(name = "cross_provider_example",srcs = ["cross_provider_example.cpp"],...)
-# cc_binary(name = "key_lifecycle_complete",srcs = ["key_lifecycle_complete.cpp"],..)
