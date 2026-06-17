@@ -110,8 +110,8 @@ configure_make(
     lib_source = "@openssl_source//:all",
     out_lib_dir = "lib",
     out_static_libs = [
-        "libcrypto.a",
         "libssl.a",
+        "libcrypto.a",
     ],
     tags = ["no-sandbox"],
     targets = [
