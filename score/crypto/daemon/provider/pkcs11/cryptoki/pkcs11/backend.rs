@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 
 use crate::traits::EngineKeyRef;
-use score_log::{trace, warn, debug, info};
+use score_log::{debug, info, trace, warn};
 
 use super::constants::*;
 use super::error::{Pkcs11Error, Result};
@@ -51,9 +51,9 @@ pub use symmetric::*;
 /// The caller assigns a handle, constructs the `KeyObject`, stamps policy
 /// fields, and calls `object_store::store_object()`.
 pub struct GeneratedKey {
-    pub key_type:          KeyType,
-    pub key_ref:           EngineKeyRef,
-    pub attrs:             HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
+    pub key_type: KeyType,
+    pub key_ref: EngineKeyRef,
+    pub attrs: HashMap<CK_ATTRIBUTE_TYPE, Vec<u8>>,
     pub key_gen_mechanism: CK_MECHANISM_TYPE,
 }
 
@@ -66,7 +66,9 @@ fn eng(slot_id: CK_SLOT_ID) -> Result<std::sync::Arc<dyn crate::traits::CryptoPr
     Ok(engine)
 }
 
-pub fn ulong_bytes(v: CK_ULONG) -> Vec<u8> { v.to_le_bytes().to_vec() }
+pub fn ulong_bytes(v: CK_ULONG) -> Vec<u8> {
+    v.to_le_bytes().to_vec()
+}
 
 pub fn bytes_to_ulong(b: &[u8]) -> CK_ULONG {
     let mut arr = [0u8; 8];

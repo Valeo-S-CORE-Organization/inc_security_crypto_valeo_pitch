@@ -19,12 +19,7 @@
 
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
-use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_GenerateRandom,
-};
+use cryptoki::pkcs11::{C_CloseSession, C_GenerateRandom, C_Initialize, C_Login, C_Logout, C_OpenSession};
 use std::ptr;
 use std::sync::Once;
 
@@ -49,7 +44,10 @@ unsafe fn connect_to_slot() -> CK_SESSION_HANDLE {
         CKR_OK,
     );
     let rv = C_Login(h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN, "C_Login failed: {rv:#x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#x}"
+    );
     h
 }
 
@@ -104,7 +102,10 @@ fn c_generate_random() {
         let mut buf_b = vec![0u8; 16];
         assert_eq!(C_GenerateRandom(h_session, buf_a.as_mut_ptr(), 16), CKR_OK);
         assert_eq!(C_GenerateRandom(h_session, buf_b.as_mut_ptr(), 16), CKR_OK);
-        assert_ne!(buf_a, buf_b, "consecutive C_GenerateRandom calls should produce different data");
+        assert_ne!(
+            buf_a, buf_b,
+            "consecutive C_GenerateRandom calls should produce different data"
+        );
 
         // Step 6: Logout and close session
         // (disconnectFromSlot() → C_Logout + C_CloseSession + C_Finalize)

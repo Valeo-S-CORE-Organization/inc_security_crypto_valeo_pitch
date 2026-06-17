@@ -26,8 +26,12 @@ pub fn encrypt_message(
         slot_id, mechanism, key.handle, iv.len(), aad.len(), plaintext.len());
     let e = eng(slot_id)?;
     match mechanism {
-        CKM_AES_GCM => e.aes_gcm_encrypt(&key.key_ref, iv, aad, plaintext).map_err(Pkcs11Error::from),
-        CKM_CHACHA20_POLY1305 => e.chacha20_poly1305_encrypt(&key.key_ref, iv, aad, plaintext).map_err(Pkcs11Error::from),
+        CKM_AES_GCM => e
+            .aes_gcm_encrypt(&key.key_ref, iv, aad, plaintext)
+            .map_err(Pkcs11Error::from),
+        CKM_CHACHA20_POLY1305 => e
+            .chacha20_poly1305_encrypt(&key.key_ref, iv, aad, plaintext)
+            .map_err(Pkcs11Error::from),
         _ => Err(Pkcs11Error::MechanismUnsupported),
     }
 }
@@ -45,8 +49,12 @@ pub fn decrypt_message(
         slot_id, mechanism, key.handle, iv.len(), aad.len(), ciphertext.len(), tag.len());
     let e = eng(slot_id)?;
     match mechanism {
-        CKM_AES_GCM => e.aes_gcm_decrypt(&key.key_ref, iv, aad, ciphertext, tag).map_err(Pkcs11Error::from),
-        CKM_CHACHA20_POLY1305 => e.chacha20_poly1305_decrypt(&key.key_ref, iv, aad, ciphertext, tag).map_err(Pkcs11Error::from),
+        CKM_AES_GCM => e
+            .aes_gcm_decrypt(&key.key_ref, iv, aad, ciphertext, tag)
+            .map_err(Pkcs11Error::from),
+        CKM_CHACHA20_POLY1305 => e
+            .chacha20_poly1305_decrypt(&key.key_ref, iv, aad, ciphertext, tag)
+            .map_err(Pkcs11Error::from),
         _ => Err(Pkcs11Error::MechanismUnsupported),
     }
 }

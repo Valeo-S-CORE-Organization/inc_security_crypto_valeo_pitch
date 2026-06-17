@@ -34,18 +34,24 @@ pub fn encrypt_symmetric(
     match mechanism {
         CKM_DES_ECB | CKM_DES_CBC | CKM_DES3_ECB | CKM_DES3_CBC | CKM_AES_ECB | CKM_AES_CBC => {
             block_cipher_crypt(mechanism, key.key_ref.as_bytes(), iv, plaintext, Mode::Encrypt, false)
-        }
-        CKM_AES_CBC_PAD => e.aes_cbc_encrypt(&key.key_ref, iv, plaintext).map_err(Pkcs11Error::from),
+        },
+        CKM_AES_CBC_PAD => e
+            .aes_cbc_encrypt(&key.key_ref, iv, plaintext)
+            .map_err(Pkcs11Error::from),
         CKM_AES_GCM => {
-            let (mut ct, tag) = e.aes_gcm_encrypt(&key.key_ref, iv, aad.unwrap_or(&[]), plaintext).map_err(Pkcs11Error::from)?;
+            let (mut ct, tag) = e
+                .aes_gcm_encrypt(&key.key_ref, iv, aad.unwrap_or(&[]), plaintext)
+                .map_err(Pkcs11Error::from)?;
             ct.extend_from_slice(&tag);
             Ok(ct)
-        }
+        },
         CKM_CHACHA20_POLY1305 => {
-            let (mut ct, tag) = e.chacha20_poly1305_encrypt(&key.key_ref, iv, aad.unwrap_or(&[]), plaintext).map_err(Pkcs11Error::from)?;
+            let (mut ct, tag) = e
+                .chacha20_poly1305_encrypt(&key.key_ref, iv, aad.unwrap_or(&[]), plaintext)
+                .map_err(Pkcs11Error::from)?;
             ct.extend_from_slice(&tag);
             Ok(ct)
-        }
+        },
         _ => Err(Pkcs11Error::MechanismUnsupported),
     }
 }
@@ -64,23 +70,28 @@ pub fn decrypt_symmetric(
     let e = eng(slot_id)?;
     match mechanism {
         CKM_DES_ECB | CKM_DES_CBC | CKM_DES3_ECB | CKM_DES3_CBC | CKM_AES_ECB | CKM_AES_CBC => {
-            block_cipher_crypt(mechanism, key.key_ref.as_bytes(), iv, ciphertext, Mode::Decrypt, false).map(Zeroizing::new)
-        }
-        CKM_AES_CBC_PAD => e.aes_cbc_decrypt(&key.key_ref, iv, ciphertext).map_err(Pkcs11Error::from),
+            block_cipher_crypt(mechanism, key.key_ref.as_bytes(), iv, ciphertext, Mode::Decrypt, false)
+                .map(Zeroizing::new)
+        },
+        CKM_AES_CBC_PAD => e
+            .aes_cbc_decrypt(&key.key_ref, iv, ciphertext)
+            .map_err(Pkcs11Error::from),
         CKM_AES_GCM => {
             if ciphertext.len() < tag_len {
                 return Err(Pkcs11Error::EncryptedDataInvalid);
             }
             let (ct, tag) = ciphertext.split_at(ciphertext.len() - tag_len);
-            e.aes_gcm_decrypt(&key.key_ref, iv, aad.unwrap_or(&[]), ct, tag).map_err(Pkcs11Error::from)
-        }
+            e.aes_gcm_decrypt(&key.key_ref, iv, aad.unwrap_or(&[]), ct, tag)
+                .map_err(Pkcs11Error::from)
+        },
         CKM_CHACHA20_POLY1305 => {
             if ciphertext.len() < tag_len {
                 return Err(Pkcs11Error::EncryptedDataInvalid);
             }
             let (ct, tag) = ciphertext.split_at(ciphertext.len() - tag_len);
-            e.chacha20_poly1305_decrypt(&key.key_ref, iv, aad.unwrap_or(&[]), ct, tag).map_err(Pkcs11Error::from)
-        }
+            e.chacha20_poly1305_decrypt(&key.key_ref, iv, aad.unwrap_or(&[]), ct, tag)
+                .map_err(Pkcs11Error::from)
+        },
         _ => Err(Pkcs11Error::MechanismUnsupported),
     }
 }

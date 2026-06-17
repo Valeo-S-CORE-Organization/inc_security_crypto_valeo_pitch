@@ -42,9 +42,7 @@ pub fn classify(mech: CK_MECHANISM_TYPE, key_bits: Option<u32>) -> MechanismTier
     let _ = key_bits;
     match mech {
         // Weak / legacy hash and signature mechanisms.
-        CKM_MD5 | CKM_SHA_1 | CKM_SHA1_RSA_PKCS | CKM_SHA1_RSA_PKCS_PSS => {
-            MechanismTier::Legacy
-        }
+        CKM_MD5 | CKM_SHA_1 | CKM_SHA1_RSA_PKCS | CKM_SHA1_RSA_PKCS_PSS => MechanismTier::Legacy,
         _ => MechanismTier::Standard,
     }
 }
@@ -62,7 +60,7 @@ pub fn legacy_enabled() -> bool {
 /// - `Legacy` mechanisms are allowed only when `CRYPTOKI_LEGACY=1`.
 pub fn is_mechanism_allowed(mech: CK_MECHANISM_TYPE, key_bits: Option<u32>) -> bool {
     match classify(mech, key_bits) {
-        MechanismTier::Standard  => true,
-        MechanismTier::Legacy    => legacy_enabled(),
+        MechanismTier::Standard => true,
+        MechanismTier::Legacy => legacy_enabled(),
     }
 }

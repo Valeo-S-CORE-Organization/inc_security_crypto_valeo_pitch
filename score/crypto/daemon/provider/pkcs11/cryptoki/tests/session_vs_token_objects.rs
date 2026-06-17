@@ -33,8 +33,10 @@ fn init() {
     INIT.call_once(|| unsafe {
         let fl = common::fn_list();
         let rv = p11!(fl, C_Initialize, ptr::null_mut());
-        assert!(rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
-            "C_Initialize failed: {rv:#010x}");
+        assert!(
+            rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
+            "C_Initialize failed: {rv:#010x}"
+        );
     });
 }
 
@@ -55,8 +57,8 @@ fn fresh_store_path(tag: &str) -> PathBuf {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 unsafe fn generate_aes_key(
-    fl:       &CK_FUNCTION_LIST,
-    session:  CK_SESSION_HANDLE,
+    fl: &CK_FUNCTION_LIST,
+    session: CK_SESSION_HANDLE,
     is_token: bool,
 ) -> (CK_RV, CK_OBJECT_HANDLE) {
     let key_len: CK_ULONG = 32;
@@ -65,25 +67,29 @@ unsafe fn generate_aes_key(
 
     let template = [
         CK_ATTRIBUTE {
-            r#type:     CKA_VALUE_LEN,
-            pValue:     key_len_bytes.as_ptr() as *mut _,
+            r#type: CKA_VALUE_LEN,
+            pValue: key_len_bytes.as_ptr() as *mut _,
             ulValueLen: key_len_bytes.len() as CK_ULONG,
         },
         CK_ATTRIBUTE {
-            r#type:     CKA_TOKEN,
-            pValue:     &token_byte as *const _ as *mut _,
+            r#type: CKA_TOKEN,
+            pValue: &token_byte as *const _ as *mut _,
             ulValueLen: 1,
         },
     ];
     let mech = CK_MECHANISM {
-        mechanism:      CKM_AES_KEY_GEN,
-        pParameter:     ptr::null_mut(),
+        mechanism: CKM_AES_KEY_GEN,
+        pParameter: ptr::null_mut(),
         ulParameterLen: 0,
     };
     let mut key_h: CK_OBJECT_HANDLE = 0;
-    let rv = p11!(fl, C_GenerateKey,
-        session, &mech,
-        template.as_ptr(), template.len() as CK_ULONG,
+    let rv = p11!(
+        fl,
+        C_GenerateKey,
+        session,
+        &mech,
+        template.as_ptr(),
+        template.len() as CK_ULONG,
         &mut key_h,
     );
     (rv, key_h)
@@ -168,8 +174,8 @@ fn session_object_set_attribute_does_not_write_disk() {
         // Mutate a non-sensitive attribute (CKA_LABEL).
         let label = b"test-label";
         let attr = CK_ATTRIBUTE {
-            r#type:     CKA_LABEL,
-            pValue:     label.as_ptr() as *mut _,
+            r#type: CKA_LABEL,
+            pValue: label.as_ptr() as *mut _,
             ulValueLen: label.len() as CK_ULONG,
         };
         let rv = p11!(fl, C_SetAttributeValue, h, key_h, &attr as *const _ as *mut _, 1u64);
@@ -272,8 +278,8 @@ fn token_object_set_attribute_writes_disk() {
 
         let label = b"persistent-label";
         let attr = CK_ATTRIBUTE {
-            r#type:     CKA_LABEL,
-            pValue:     label.as_ptr() as *mut _,
+            r#type: CKA_LABEL,
+            pValue: label.as_ptr() as *mut _,
             ulValueLen: label.len() as CK_ULONG,
         };
         let rv = p11!(fl, C_SetAttributeValue, h, key_h, &attr as *const _ as *mut _, 1u64);
@@ -322,18 +328,19 @@ fn session_object_gone_after_session_close_token_object_survives() {
         // Session object: handle should be invalid now.
         let mut class: CK_OBJECT_CLASS = 0;
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_CLASS,
-            pValue:     &mut class as *mut _ as *mut _,
+            r#type: CKA_CLASS,
+            pValue: &mut class as *mut _ as *mut _,
             ulValueLen: std::mem::size_of::<CK_OBJECT_CLASS>() as CK_ULONG,
         };
         let rv = p11!(fl, C_GetAttributeValue, h2, session_key_h, &mut attr, 1u64);
-        assert_eq!(rv, CKR_OBJECT_HANDLE_INVALID,
-            "session object must be gone after session close");
+        assert_eq!(
+            rv, CKR_OBJECT_HANDLE_INVALID,
+            "session object must be gone after session close"
+        );
 
         // Token object: must still be accessible.
         let rv = p11!(fl, C_GetAttributeValue, h2, token_key_h, &mut attr, 1u64);
-        assert_eq!(rv, CKR_OK,
-            "token object must survive session close");
+        assert_eq!(rv, CKR_OK, "token object must survive session close");
 
         p11!(fl, C_CloseSession, h2);
     }

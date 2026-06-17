@@ -73,12 +73,21 @@ macro_rules! p11 {
 /// Returns `(function_list, session_handle)`.
 pub unsafe fn init_and_open_session(fl: &CK_FUNCTION_LIST) -> CK_SESSION_HANDLE {
     let rv = (fl.C_Initialize.unwrap())(ptr::null_mut());
-    assert!(rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
-        "C_Initialize failed: {rv:#010x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
+        "C_Initialize failed: {rv:#010x}"
+    );
 
     let mut h: CK_SESSION_HANDLE = 0;
-    let rv = p11!(fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION,
-                  ptr::null_mut(), None, &mut h);
+    let rv = p11!(
+        fl,
+        C_OpenSession,
+        0,
+        CKF_SERIAL_SESSION | CKF_RW_SESSION,
+        ptr::null_mut(),
+        None,
+        &mut h
+    );
     assert_eq!(rv, CKR_OK, "C_OpenSession failed: {rv:#010x}");
     h
 }
@@ -86,8 +95,15 @@ pub unsafe fn init_and_open_session(fl: &CK_FUNCTION_LIST) -> CK_SESSION_HANDLE 
 /// Open a R/W session (assumes library is already initialized).
 pub unsafe fn open_session(fl: &CK_FUNCTION_LIST) -> CK_SESSION_HANDLE {
     let mut h: CK_SESSION_HANDLE = 0;
-    let rv = p11!(fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION,
-                  ptr::null_mut(), None, &mut h);
+    let rv = p11!(
+        fl,
+        C_OpenSession,
+        0,
+        CKF_SERIAL_SESSION | CKF_RW_SESSION,
+        ptr::null_mut(),
+        None,
+        &mut h
+    );
     assert_eq!(rv, CKR_OK, "C_OpenSession failed: {rv:#010x}");
     h
 }
@@ -97,7 +113,9 @@ pub unsafe fn open_logged_in_session(fl: &CK_FUNCTION_LIST) -> CK_SESSION_HANDLE
     let h = open_session(fl);
     let pin = b"1234";
     let rv = p11!(fl, C_Login, h, CKU_USER, pin.as_ptr(), pin.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
-        "C_Login failed: {rv:#010x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login failed: {rv:#010x}"
+    );
     h
 }

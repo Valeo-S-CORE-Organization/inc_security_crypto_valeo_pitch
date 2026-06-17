@@ -4,7 +4,10 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "src",
-    srcs = glob(["**/*.rs"]) + ["Cargo.toml", "Cargo.lock"],
+    srcs = glob(["**/*.rs"]) + [
+        "Cargo.lock",
+        "Cargo.toml",
+    ],
 )
 
 DEPS = [
@@ -37,25 +40,28 @@ CPP_LINKER_FLAGS = [
 
 rust_library(
     name = "cryptoki_lib",
+    srcs = glob(["**/*.rs"]),
     crate_name = "cryptoki",
     crate_root = "lib.rs",
-    srcs = glob(["**/*.rs"]),
     rustc_flags = CPP_LINKER_FLAGS,
     deps = DEPS,
 )
 
 rust_shared_library(
     name = "cryptoki_cdylib",
+    srcs = glob(["**/*.rs"]),
     crate_name = "cryptoki",
     crate_root = "lib.rs",
-    srcs = glob(["**/*.rs"]),
     rustc_flags = CPP_LINKER_FLAGS,
     deps = DEPS,
 )
 
 cc_library(
     name = "cryptoki_headers",
-    hdrs = ["cpp/pkcs11.h", "cpp/pkcs11_cpp.hpp"],
+    hdrs = [
+        "cpp/pkcs11.h",
+        "cpp/pkcs11_cpp.hpp",
+    ],
     includes = ["cpp"],
     visibility = ["//visibility:public"],
 )

@@ -48,8 +48,8 @@ unsafe fn open_ro_session() -> CK_SESSION_HANDLE {
 
 fn null_mech() -> CK_MECHANISM {
     CK_MECHANISM {
-        mechanism:      CKM_AES_KEY_GEN,
-        pParameter:     ptr::null_mut(),
+        mechanism: CKM_AES_KEY_GEN,
+        pParameter: ptr::null_mut(),
         ulParameterLen: 0,
     }
 }
@@ -70,7 +70,10 @@ fn ro_session_create_object_returns_session_read_only() {
             ulValueLen: 1,
         }];
         let rv = p11!(fl, C_CreateObject, h, template.as_ptr(), 1, &mut dummy);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -96,7 +99,10 @@ fn ro_session_copy_object_returns_session_read_only() {
 
         let mut new_h: CK_OBJECT_HANDLE = 0;
         let rv = p11!(fl, C_CopyObject, ro_h, src_h, template.as_ptr(), 1, &mut new_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, rw_h);
         p11!(fl, C_CloseSession, ro_h);
     }
@@ -121,7 +127,10 @@ fn ro_session_destroy_object_returns_session_read_only() {
         p11!(fl, C_GenerateKey, rw_h, &mech, template.as_ptr(), 1, &mut obj_h);
 
         let rv = p11!(fl, C_DestroyObject, h, obj_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, rw_h);
         p11!(fl, C_CloseSession, h);
     }
@@ -134,9 +143,16 @@ fn ro_session_set_attribute_value_returns_session_read_only() {
         let fl = common::fn_list();
         let h = open_ro_session();
         // Non-null template so the null-pointer argument check passes; RO fires first.
-        let mut attr = CK_ATTRIBUTE { r#type: CKA_LABEL, pValue: ptr::null_mut(), ulValueLen: 0 };
+        let mut attr = CK_ATTRIBUTE {
+            r#type: CKA_LABEL,
+            pValue: ptr::null_mut(),
+            ulValueLen: 0,
+        };
         let rv = p11!(fl, C_SetAttributeValue, h, 999, &mut attr, 1);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -157,7 +173,10 @@ fn ro_session_generate_key_returns_session_read_only() {
         }];
         let mut key_h: CK_OBJECT_HANDLE = 0;
         let rv = p11!(fl, C_GenerateKey, h, &mech, template.as_ptr(), 1, &mut key_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -177,12 +196,22 @@ fn ro_session_generate_key_pair_returns_session_read_only() {
         }];
         let mut pub_h: CK_OBJECT_HANDLE = 0;
         let mut priv_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_GenerateKeyPair,
-                      h, &mech,
-                      template.as_ptr(), 1,
-                      ptr::null(), 0,
-                      &mut pub_h, &mut priv_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_GenerateKeyPair,
+            h,
+            &mech,
+            template.as_ptr(),
+            1,
+            ptr::null(),
+            0,
+            &mut pub_h,
+            &mut priv_h
+        );
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -197,18 +226,27 @@ fn ro_session_unwrap_key_returns_session_read_only() {
         let wrapped: [u8; 8] = [0u8; 8];
         let token_true = [CK_TRUE];
         let template = [CK_ATTRIBUTE {
-            r#type:     CKA_TOKEN,
-            pValue:     token_true.as_ptr() as *mut _,
+            r#type: CKA_TOKEN,
+            pValue: token_true.as_ptr() as *mut _,
             ulValueLen: 1,
         }];
         let mut key_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_UnwrapKey,
-                      h, &mech,
-                      999,
-                      wrapped.as_ptr(), wrapped.len() as CK_ULONG,
-                      template.as_ptr(), template.len() as CK_ULONG,
-                      &mut key_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_UnwrapKey,
+            h,
+            &mech,
+            999,
+            wrapped.as_ptr(),
+            wrapped.len() as CK_ULONG,
+            template.as_ptr(),
+            template.len() as CK_ULONG,
+            &mut key_h
+        );
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -228,12 +266,11 @@ fn ro_session_derive_key_returns_session_read_only() {
             ulValueLen: 1,
         }];
         let mut key_h: CK_OBJECT_HANDLE = 0;
-        let rv = p11!(fl, C_DeriveKey,
-                      h, &mech,
-                      999,
-                      template.as_ptr(), 1,
-                      &mut key_h);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        let rv = p11!(fl, C_DeriveKey, h, &mech, 999, template.as_ptr(), 1, &mut key_h);
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -246,7 +283,10 @@ fn ro_session_init_pin_returns_session_read_only() {
         let h = open_ro_session();
         let pin = b"1234";
         let rv = p11!(fl, C_InitPIN, h, pin.as_ptr(), pin.len() as CK_ULONG);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -259,11 +299,19 @@ fn ro_session_set_pin_returns_session_read_only() {
         let h = open_ro_session();
         let old_pin = b"1234";
         let new_pin = b"5678";
-        let rv = p11!(fl, C_SetPIN,
-                      h,
-                      old_pin.as_ptr(), old_pin.len() as CK_ULONG,
-                      new_pin.as_ptr(), new_pin.len() as CK_ULONG);
-        assert_eq!(rv, CKR_SESSION_READ_ONLY, "expected CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_SetPIN,
+            h,
+            old_pin.as_ptr(),
+            old_pin.len() as CK_ULONG,
+            new_pin.as_ptr(),
+            new_pin.len() as CK_ULONG
+        );
+        assert_eq!(
+            rv, CKR_SESSION_READ_ONLY,
+            "expected CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }
@@ -274,12 +322,14 @@ fn rw_session_is_not_blocked() {
     init();
     unsafe {
         let fl = common::fn_list();
-        let h = common::open_session(fl);  // opens with CKF_RW_SESSION
+        let h = common::open_session(fl); // opens with CKF_RW_SESSION
         let mut dummy: CK_OBJECT_HANDLE = 0;
         // null template → CKR_ARGUMENTS_BAD (not CKR_SESSION_READ_ONLY)
         let rv = p11!(fl, C_CreateObject, h, ptr::null(), 0, &mut dummy);
-        assert_ne!(rv, CKR_SESSION_READ_ONLY,
-                   "RW session must not get CKR_SESSION_READ_ONLY, got {rv:#010x}");
+        assert_ne!(
+            rv, CKR_SESSION_READ_ONLY,
+            "RW session must not get CKR_SESSION_READ_ONLY, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, h);
     }
 }

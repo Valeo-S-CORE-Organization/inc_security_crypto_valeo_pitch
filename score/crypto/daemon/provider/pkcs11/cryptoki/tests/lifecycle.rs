@@ -26,7 +26,7 @@ mod common;
 
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
-use cryptoki::pkcs11::{C_Initialize, C_Finalize, C_OpenSession, C_CloseSession};
+use cryptoki::pkcs11::{C_CloseSession, C_Finalize, C_Initialize, C_OpenSession};
 use std::ffi::c_void;
 use std::ptr;
 use std::sync::OnceLock;
@@ -35,7 +35,9 @@ use std::sync::OnceLock;
 // All tests in this file mutate global library state; they must not overlap.
 static LOCK: OnceLock<std::sync::Mutex<()>> = OnceLock::new();
 fn serial_lock() -> std::sync::MutexGuard<'static, ()> {
-    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap_or_else(|e| e.into_inner())
+    LOCK.get_or_init(|| std::sync::Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
 }
 
 /// Bring the library to a known-uninitialised state regardless of where it
@@ -99,8 +101,10 @@ fn double_init_returns_already_initialized() {
         assert_eq!(rv, CKR_OK, "first init failed: {rv:#010x}");
 
         let rv = do_initialize();
-        assert_eq!(rv, CKR_CRYPTOKI_ALREADY_INITIALIZED,
-                   "second init must return CKR_CRYPTOKI_ALREADY_INITIALIZED, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_CRYPTOKI_ALREADY_INITIALIZED,
+            "second init must return CKR_CRYPTOKI_ALREADY_INITIALIZED, got {rv:#010x}"
+        );
 
         ensure_finalized();
     }
@@ -128,8 +132,10 @@ fn state_cleared_after_finalize() {
         // Any C_* call requiring initialization must now return NOT_INITIALIZED.
         let mut h2: CK_SESSION_HANDLE = 0;
         let rv = C_OpenSession(0, CKF_SERIAL_SESSION | CKF_RW_SESSION, ptr::null_mut(), None, &mut h2);
-        assert_eq!(rv, CKR_CRYPTOKI_NOT_INITIALIZED,
-                   "C_OpenSession after finalize must return CKR_CRYPTOKI_NOT_INITIALIZED, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_CRYPTOKI_NOT_INITIALIZED,
+            "C_OpenSession after finalize must return CKR_CRYPTOKI_NOT_INITIALIZED, got {rv:#010x}"
+        );
 
         // Re-initialize and verify a fresh session can be opened (old handle gone).
         let rv = do_initialize();
@@ -154,14 +160,18 @@ fn finalize_non_null_reserved_returns_arguments_bad() {
 
         let dummy: u32 = 0;
         let rv = C_Finalize(&dummy as *const _ as *mut c_void);
-        assert_eq!(rv, CKR_ARGUMENTS_BAD,
-                   "C_Finalize(non-null) must return CKR_ARGUMENTS_BAD, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_ARGUMENTS_BAD,
+            "C_Finalize(non-null) must return CKR_ARGUMENTS_BAD, got {rv:#010x}"
+        );
 
         // Library should still be initialized (Finalize was rejected).
         let mut h: CK_SESSION_HANDLE = 0;
         let rv = C_OpenSession(0, CKF_SERIAL_SESSION | CKF_RW_SESSION, ptr::null_mut(), None, &mut h);
-        assert_eq!(rv, CKR_OK,
-                   "library must still be usable after rejected Finalize, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_OK,
+            "library must still be usable after rejected Finalize, got {rv:#010x}"
+        );
         C_CloseSession(h);
 
         ensure_finalized();
@@ -176,8 +186,10 @@ fn finalize_when_not_initialized() {
         ensure_finalized();
 
         let rv = C_Finalize(ptr::null_mut());
-        assert_eq!(rv, CKR_CRYPTOKI_NOT_INITIALIZED,
-                   "C_Finalize when not initialized must return CKR_CRYPTOKI_NOT_INITIALIZED, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_CRYPTOKI_NOT_INITIALIZED,
+            "C_Finalize when not initialized must return CKR_CRYPTOKI_NOT_INITIALIZED, got {rv:#010x}"
+        );
     }
 }
 
@@ -218,12 +230,12 @@ fn os_locking_args_accepted() {
         ensure_finalized();
 
         let args = CK_C_INITIALIZE_ARGS {
-            CreateMutex:  None,
+            CreateMutex: None,
             DestroyMutex: None,
-            LockMutex:    None,
-            UnlockMutex:  None,
-            flags:        CKF_OS_LOCKING_OK,
-            pReserved:    ptr::null_mut(),
+            LockMutex: None,
+            UnlockMutex: None,
+            flags: CKF_OS_LOCKING_OK,
+            pReserved: ptr::null_mut(),
         };
         let rv = C_Initialize(&args as *const _ as *mut _);
         assert_eq!(rv, CKR_OK, "C_Initialize with OS locking failed: {rv:#010x}");
@@ -240,24 +252,30 @@ fn app_mutex_without_os_locking_returns_cant_lock() {
         ensure_finalized();
 
         // Provide a dummy non-null callback for CreateMutex without CKF_OS_LOCKING_OK.
-        unsafe extern "C" fn dummy_create(_: *mut *mut c_void) -> CK_RV { CKR_OK }
+        unsafe extern "C" fn dummy_create(_: *mut *mut c_void) -> CK_RV {
+            CKR_OK
+        }
 
         let args = CK_C_INITIALIZE_ARGS {
-            CreateMutex:  Some(dummy_create),
+            CreateMutex: Some(dummy_create),
             DestroyMutex: None,
-            LockMutex:    None,
-            UnlockMutex:  None,
-            flags:        0, // CKF_OS_LOCKING_OK intentionally absent
-            pReserved:    ptr::null_mut(),
+            LockMutex: None,
+            UnlockMutex: None,
+            flags: 0, // CKF_OS_LOCKING_OK intentionally absent
+            pReserved: ptr::null_mut(),
         };
         let rv = C_Initialize(&args as *const _ as *mut _);
-        assert_eq!(rv, CKR_CANT_LOCK,
-                   "app mutexes without OS locking must return CKR_CANT_LOCK, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_CANT_LOCK,
+            "app mutexes without OS locking must return CKR_CANT_LOCK, got {rv:#010x}"
+        );
 
         // Library must not have been initialized.
         let rv2 = C_Finalize(ptr::null_mut());
-        assert_eq!(rv2, CKR_CRYPTOKI_NOT_INITIALIZED,
-                   "library must not be initialized after CKR_CANT_LOCK, got {rv2:#010x}");
+        assert_eq!(
+            rv2, CKR_CRYPTOKI_NOT_INITIALIZED,
+            "library must not be initialized after CKR_CANT_LOCK, got {rv2:#010x}"
+        );
     }
 }
 
@@ -269,19 +287,23 @@ fn app_mutex_with_os_locking_accepted() {
     unsafe {
         ensure_finalized();
 
-        unsafe extern "C" fn dummy_create(_: *mut *mut c_void) -> CK_RV { CKR_OK }
+        unsafe extern "C" fn dummy_create(_: *mut *mut c_void) -> CK_RV {
+            CKR_OK
+        }
 
         let args = CK_C_INITIALIZE_ARGS {
-            CreateMutex:  Some(dummy_create),
+            CreateMutex: Some(dummy_create),
             DestroyMutex: None,
-            LockMutex:    None,
-            UnlockMutex:  None,
-            flags:        CKF_OS_LOCKING_OK, // prefer OS locking
-            pReserved:    ptr::null_mut(),
+            LockMutex: None,
+            UnlockMutex: None,
+            flags: CKF_OS_LOCKING_OK, // prefer OS locking
+            pReserved: ptr::null_mut(),
         };
         let rv = C_Initialize(&args as *const _ as *mut _);
-        assert_eq!(rv, CKR_OK,
-                   "app callbacks + CKF_OS_LOCKING_OK must be accepted, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_OK,
+            "app callbacks + CKF_OS_LOCKING_OK must be accepted, got {rv:#010x}"
+        );
         ensure_finalized();
     }
 }

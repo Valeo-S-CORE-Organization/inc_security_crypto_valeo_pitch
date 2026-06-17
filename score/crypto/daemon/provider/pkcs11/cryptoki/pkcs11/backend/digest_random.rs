@@ -13,7 +13,9 @@
 use super::*;
 
 pub fn key_value_for_digest(slot_id: CK_SLOT_ID, key: &KeyObject) -> Result<Vec<u8>> {
-    eng(slot_id)?.key_value_for_digest(&key.key_ref).map_err(Pkcs11Error::from)
+    eng(slot_id)?
+        .key_value_for_digest(&key.key_ref)
+        .map_err(Pkcs11Error::from)
 }
 
 pub fn digest(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, data: &[u8]) -> Result<Vec<u8>> {

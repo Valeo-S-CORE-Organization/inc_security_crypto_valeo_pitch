@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 // *******************************************************************************
+use score_log::{debug, error, info};
 use std::fs;
 use std::io::Write as _;
-use score_log::{info, error, debug};
 
 use super::locks::LOCK_FILE_FD;
 use super::models::StoredState;
@@ -58,7 +58,8 @@ pub fn save_state(state: &StoredState) -> Result<(), String> {
     let json = serde_json::to_string_pretty(state).map_err(|e| format!("serialize: {e}"))?;
 
     let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|e| format!("create tempfile: {e}"))?;
-    tmp.write_all(json.as_bytes()).map_err(|e| format!("write tempfile: {e}"))?;
+    tmp.write_all(json.as_bytes())
+        .map_err(|e| format!("write tempfile: {e}"))?;
 
     #[cfg(unix)]
     {

@@ -33,7 +33,9 @@ pub struct EngineKeyRef {
 impl EngineKeyRef {
     /// Construct from raw bytes (DER, handle, etc.).
     pub fn from_bytes(b: Vec<u8>) -> Self {
-        Self { inner: Zeroizing::new(b) }
+        Self {
+            inner: Zeroizing::new(b),
+        }
     }
 
     /// View the inner bytes. Only the engine should call this.
@@ -57,7 +59,7 @@ pub struct EngineMechanismInfo {
     /// Largest key size (in bits) supported by this mechanism on this slot.
     pub max_key_size: u32,
     /// `CKF_*` capability flags (e.g. `CKF_SIGN | CKF_VERIFY`).
-    pub flags:        u32,
+    pub flags: u32,
 }
 
 /// A stateful, streaming hash context for multi-part digest operations.
@@ -94,32 +96,39 @@ pub trait StreamHasher: Send {
 /// can return per-partition information.  Stateless crypto methods (signing,
 /// encryption, …) are slot-agnostic — they operate purely on key refs.
 pub trait CryptoProvider: Send + Sync {
-
     // ── Slot / capability discovery ─────────────────────────────────────
 
     /// How many virtual slots this engine provides.  Default: 1.
     ///
     /// Called once during [`register_engine`](crate::registry::register_engine)
     /// to allocate global slot IDs.
-    fn slot_count(&self) -> usize { 1 }
+    fn slot_count(&self) -> usize {
+        1
+    }
 
     /// Human-readable slot description (≤64 UTF-8 bytes, space-padded by caller).
     ///
     /// `internal_slot_id` is the engine's own 0-based slot index (not the
     /// global ID the application uses).
-    fn slot_description(&self, _internal_slot_id: u64) -> &str { "Virtual Slot" }
+    fn slot_description(&self, _internal_slot_id: u64) -> &str {
+        "Virtual Slot"
+    }
 
     /// Human-readable token model string (≤16 UTF-8 bytes).
     ///
     /// `internal_slot_id` is the engine's own 0-based slot index.
-    fn token_model(&self, _internal_slot_id: u64) -> &str { "SoftToken" }
+    fn token_model(&self, _internal_slot_id: u64) -> &str {
+        "SoftToken"
+    }
 
     /// The set of `CKM_*` mechanism types this engine supports on the given slot.
     ///
     /// `internal_slot_id` is the engine's own 0-based slot index.
     /// Default returns an empty slice — the PKCS#11 layer falls back to the
     /// global `SUPPORTED_MECHANISMS` list when this is empty (backward compat).
-    fn supported_mechanisms(&self, _internal_slot_id: u64) -> &[u64] { &[] }
+    fn supported_mechanisms(&self, _internal_slot_id: u64) -> &[u64] {
+        &[]
+    }
 
     /// Return capability information for one mechanism on one slot.
     ///
@@ -162,13 +171,31 @@ pub trait CryptoProvider: Send + Sync {
     /// AES-CBC encrypt with PKCS#7 padding. `iv`: 16 bytes.
     fn aes_cbc_encrypt(&self, key: &EngineKeyRef, iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, CryptoError>;
     /// AES-CBC decrypt, stripping PKCS#7 padding.
-    fn aes_cbc_decrypt(&self, key: &EngineKeyRef, iv: &[u8], ciphertext: &[u8]) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
+    fn aes_cbc_decrypt(
+        &self,
+        key: &EngineKeyRef,
+        iv: &[u8],
+        ciphertext: &[u8],
+    ) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
     /// AES-CTR encrypt/decrypt (symmetric XOR with keystream). `iv`: 16-byte counter block.
     fn aes_ctr_crypt(&self, key: &EngineKeyRef, iv: &[u8], input: &[u8]) -> Result<Vec<u8>, CryptoError>;
     /// AES-GCM authenticated encrypt. Returns `(ciphertext, 16-byte tag)`.
-    fn aes_gcm_encrypt(&self, key: &EngineKeyRef, iv: &[u8], aad: &[u8], plaintext: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError>;
+    fn aes_gcm_encrypt(
+        &self,
+        key: &EngineKeyRef,
+        iv: &[u8],
+        aad: &[u8],
+        plaintext: &[u8],
+    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError>;
     /// AES-GCM authenticated decrypt. `tag` must be 16 bytes.
-    fn aes_gcm_decrypt(&self, key: &EngineKeyRef, iv: &[u8], aad: &[u8], ciphertext: &[u8], tag: &[u8]) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
+    fn aes_gcm_decrypt(
+        &self,
+        key: &EngineKeyRef,
+        iv: &[u8],
+        aad: &[u8],
+        ciphertext: &[u8],
+        tag: &[u8],
+    ) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
 
     // ── RSA encryption ────────────────────────────────────────────────────
 
@@ -207,7 +234,9 @@ pub trait CryptoProvider: Send + Sync {
     /// that only implement `ecdsa_sign` continue to compile without changes.
     fn ecdsa_sign_prehashed(&self, key: &EngineKeyRef, digest: &[u8]) -> Result<Vec<u8>, CryptoError> {
         let _ = (key, digest);
-        Err(CryptoError::MechanismInvalid { name: "ecdsa_sign_prehashed not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "ecdsa_sign_prehashed not implemented",
+        })
     }
     /// ECDSA verify against a **pre-computed** digest. The caller is responsible
     /// for hashing the message before calling this method.
@@ -215,7 +244,9 @@ pub trait CryptoProvider: Send + Sync {
     /// Default: returns [`CryptoError::MechanismInvalid`].
     fn ecdsa_verify_prehashed(&self, key: &EngineKeyRef, digest: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
         let _ = (key, digest, signature);
-        Err(CryptoError::MechanismInvalid { name: "ecdsa_verify_prehashed not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "ecdsa_verify_prehashed not implemented",
+        })
     }
 
     // ── Hashing ───────────────────────────────────────────────────────────
@@ -237,11 +268,21 @@ pub trait CryptoProvider: Send + Sync {
     // ── HMAC ─────────────────────────────────────────────────────────────
 
     fn hmac_sign(&self, _algorithm: HashAlgorithm, _key: &EngineKeyRef, _data: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        Err(CryptoError::MechanismInvalid { name: "hmac_sign not supported" })
+        Err(CryptoError::MechanismInvalid {
+            name: "hmac_sign not supported",
+        })
     }
 
-    fn hmac_verify(&self, _algorithm: HashAlgorithm, _key: &EngineKeyRef, _data: &[u8], _mac: &[u8]) -> Result<bool, CryptoError> {
-        Err(CryptoError::MechanismInvalid { name: "hmac_verify not supported" })
+    fn hmac_verify(
+        &self,
+        _algorithm: HashAlgorithm,
+        _key: &EngineKeyRef,
+        _data: &[u8],
+        _mac: &[u8],
+    ) -> Result<bool, CryptoError> {
+        Err(CryptoError::MechanismInvalid {
+            name: "hmac_verify not supported",
+        })
     }
 
     // ── ChaCha20-Poly1305 (v3.0) ────────────────────────────────────────
@@ -249,46 +290,106 @@ pub trait CryptoProvider: Send + Sync {
     /// Generate a 256-bit ChaCha20 key.
     fn generate_chacha20_key(&self) -> Result<EngineKeyRef, CryptoError>;
     /// ChaCha20-Poly1305 AEAD encrypt. Returns `(ciphertext, 16-byte tag)`.
-    fn chacha20_poly1305_encrypt(&self, key: &EngineKeyRef, nonce: &[u8], aad: &[u8], plaintext: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError>;
+    fn chacha20_poly1305_encrypt(
+        &self,
+        key: &EngineKeyRef,
+        nonce: &[u8],
+        aad: &[u8],
+        plaintext: &[u8],
+    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError>;
     /// ChaCha20-Poly1305 AEAD decrypt.
-    fn chacha20_poly1305_decrypt(&self, key: &EngineKeyRef, nonce: &[u8], aad: &[u8], ciphertext: &[u8], tag: &[u8]) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
+    fn chacha20_poly1305_decrypt(
+        &self,
+        key: &EngineKeyRef,
+        nonce: &[u8],
+        aad: &[u8],
+        ciphertext: &[u8],
+        tag: &[u8],
+    ) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
 
     // ── HKDF (v3.0) ─────────────────────────────────────────────────────
 
     /// HKDF-Extract + HKDF-Expand. Returns derived key material of `okm_len` bytes.
-    fn hkdf_derive(&self, hash: HashAlgorithm, ikm: &EngineKeyRef, salt: &[u8], info: &[u8], okm_len: usize) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
+    fn hkdf_derive(
+        &self,
+        hash: HashAlgorithm,
+        ikm: &EngineKeyRef,
+        salt: &[u8],
+        info: &[u8],
+        okm_len: usize,
+    ) -> Result<Zeroizing<Vec<u8>>, CryptoError>;
 
     // ── Hash-parameterized RSA signing (v2.40 SHA-384/512 + v3.0) ─────
 
     /// RSA PKCS#1 v1.5 sign with caller-chosen hash.
-    fn rsa_pkcs1_sign_hash(&self, key: &EngineKeyRef, message: &[u8], hash: HashAlgorithm) -> Result<Vec<u8>, CryptoError> {
+    fn rsa_pkcs1_sign_hash(
+        &self,
+        key: &EngineKeyRef,
+        message: &[u8],
+        hash: HashAlgorithm,
+    ) -> Result<Vec<u8>, CryptoError> {
         let _ = (key, message, hash);
-        Err(CryptoError::MechanismInvalid { name: "rsa_pkcs1_sign_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "rsa_pkcs1_sign_hash not implemented",
+        })
     }
     /// RSA PKCS#1 v1.5 verify with caller-chosen hash.
-    fn rsa_pkcs1_verify_hash(&self, key: &EngineKeyRef, message: &[u8], signature: &[u8], hash: HashAlgorithm) -> Result<bool, CryptoError> {
+    fn rsa_pkcs1_verify_hash(
+        &self,
+        key: &EngineKeyRef,
+        message: &[u8],
+        signature: &[u8],
+        hash: HashAlgorithm,
+    ) -> Result<bool, CryptoError> {
         let _ = (key, message, signature, hash);
-        Err(CryptoError::MechanismInvalid { name: "rsa_pkcs1_verify_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "rsa_pkcs1_verify_hash not implemented",
+        })
     }
     /// RSA-PSS sign with caller-chosen hash.
-    fn rsa_pss_sign_hash(&self, key: &EngineKeyRef, message: &[u8], hash: HashAlgorithm) -> Result<Vec<u8>, CryptoError> {
+    fn rsa_pss_sign_hash(
+        &self,
+        key: &EngineKeyRef,
+        message: &[u8],
+        hash: HashAlgorithm,
+    ) -> Result<Vec<u8>, CryptoError> {
         let _ = (key, message, hash);
-        Err(CryptoError::MechanismInvalid { name: "rsa_pss_sign_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "rsa_pss_sign_hash not implemented",
+        })
     }
     /// RSA-PSS verify with caller-chosen hash.
-    fn rsa_pss_verify_hash(&self, key: &EngineKeyRef, message: &[u8], signature: &[u8], hash: HashAlgorithm) -> Result<bool, CryptoError> {
+    fn rsa_pss_verify_hash(
+        &self,
+        key: &EngineKeyRef,
+        message: &[u8],
+        signature: &[u8],
+        hash: HashAlgorithm,
+    ) -> Result<bool, CryptoError> {
         let _ = (key, message, signature, hash);
-        Err(CryptoError::MechanismInvalid { name: "rsa_pss_verify_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "rsa_pss_verify_hash not implemented",
+        })
     }
     /// ECDSA sign with caller-chosen hash.
     fn ecdsa_sign_hash(&self, key: &EngineKeyRef, message: &[u8], hash: HashAlgorithm) -> Result<Vec<u8>, CryptoError> {
         let _ = (key, message, hash);
-        Err(CryptoError::MechanismInvalid { name: "ecdsa_sign_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "ecdsa_sign_hash not implemented",
+        })
     }
     /// ECDSA verify with caller-chosen hash.
-    fn ecdsa_verify_hash(&self, key: &EngineKeyRef, message: &[u8], signature: &[u8], hash: HashAlgorithm) -> Result<bool, CryptoError> {
+    fn ecdsa_verify_hash(
+        &self,
+        key: &EngineKeyRef,
+        message: &[u8],
+        signature: &[u8],
+        hash: HashAlgorithm,
+    ) -> Result<bool, CryptoError> {
         let _ = (key, message, signature, hash);
-        Err(CryptoError::MechanismInvalid { name: "ecdsa_verify_hash not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "ecdsa_verify_hash not implemented",
+        })
     }
 
     // ── AES Key Wrap (RFC 3394) ─────────────────────────────────────────
@@ -296,12 +397,16 @@ pub trait CryptoProvider: Send + Sync {
     /// AES Key Wrap (encrypt). Returns wrapped key bytes.
     fn aes_key_wrap(&self, kek: &EngineKeyRef, plaintext_key: &EngineKeyRef) -> Result<Vec<u8>, CryptoError> {
         let _ = (kek, plaintext_key);
-        Err(CryptoError::MechanismInvalid { name: "aes_key_wrap not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "aes_key_wrap not implemented",
+        })
     }
     /// AES Key Unwrap (decrypt). Returns unwrapped key bytes.
     fn aes_key_unwrap(&self, kek: &EngineKeyRef, wrapped_key: &[u8]) -> Result<Zeroizing<Vec<u8>>, CryptoError> {
         let _ = (kek, wrapped_key);
-        Err(CryptoError::MechanismInvalid { name: "aes_key_unwrap not implemented" })
+        Err(CryptoError::MechanismInvalid {
+            name: "aes_key_unwrap not implemented",
+        })
     }
 
     /// Return the raw key value bytes to be fed into `C_DigestKey`.
@@ -315,19 +420,36 @@ pub trait CryptoProvider: Send + Sync {
     /// not extractable key material.
     fn key_value_for_digest(&self, key_ref: &EngineKeyRef) -> Result<Vec<u8>, CryptoError> {
         let _ = key_ref;
-        Err(CryptoError::MechanismInvalid { name: "key_value_for_digest not supported" })
+        Err(CryptoError::MechanismInvalid {
+            name: "key_value_for_digest not supported",
+        })
     }
 
     // ── Attribute access ──────────────────────────────────────────────────
 
     /// Return a crypto-derived attribute for an RSA key (modulus, bits, exponent, etc.).
-    fn rsa_attribute(&self, key: &EngineKeyRef, is_private: bool, attr: AttributeType) -> Result<AttributeValue, CryptoError>;
+    fn rsa_attribute(
+        &self,
+        key: &EngineKeyRef,
+        is_private: bool,
+        attr: AttributeType,
+    ) -> Result<AttributeValue, CryptoError>;
     /// Return a crypto-derived attribute for an EC key (ec_params, ec_point, etc.).
-    fn ec_attribute(&self, key: &EngineKeyRef, is_private: bool, attr: AttributeType) -> Result<AttributeValue, CryptoError>;
+    fn ec_attribute(
+        &self,
+        key: &EngineKeyRef,
+        is_private: bool,
+        attr: AttributeType,
+    ) -> Result<AttributeValue, CryptoError>;
     /// Return a crypto-derived attribute for an AES key (value_len, value).
     fn aes_attribute(&self, key: &EngineKeyRef, attr: AttributeType) -> Result<AttributeValue, CryptoError>;
     /// Return a crypto-derived attribute for an EdDSA key (ec_params, ec_point, etc.).
-    fn ed_attribute(&self, _key: &EngineKeyRef, _is_private: bool, _attr: AttributeType) -> Result<AttributeValue, CryptoError> {
+    fn ed_attribute(
+        &self,
+        _key: &EngineKeyRef,
+        _is_private: bool,
+        _attr: AttributeType,
+    ) -> Result<AttributeValue, CryptoError> {
         Err(CryptoError::AttributeTypeInvalid)
     }
 

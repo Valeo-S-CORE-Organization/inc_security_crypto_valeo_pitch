@@ -18,12 +18,7 @@
 
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
-use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_GetSessionInfo,
-};
+use cryptoki::pkcs11::{C_CloseSession, C_GetSessionInfo, C_Initialize, C_Login, C_Logout, C_OpenSession};
 use std::ptr;
 use std::sync::Once;
 
@@ -89,7 +84,10 @@ fn connect_disconnect() {
         // Step 4: Verify session state reflects logged-in user
         let mut info: CK_SESSION_INFO = std::mem::zeroed();
         assert_eq!(C_GetSessionInfo(h_session, &mut info), CKR_OK);
-        assert_eq!(info.state, CKS_RW_USER_FUNCTIONS, "state must be CKS_RW_USER_FUNCTIONS after login");
+        assert_eq!(
+            info.state, CKS_RW_USER_FUNCTIONS,
+            "state must be CKS_RW_USER_FUNCTIONS after login"
+        );
 
         // Step 5: Logout
         // (C_Logout(hSession))

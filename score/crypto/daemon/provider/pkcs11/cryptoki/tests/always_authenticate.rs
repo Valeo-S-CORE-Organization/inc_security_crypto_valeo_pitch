@@ -52,8 +52,10 @@ unsafe fn open_user_session() -> CK_SESSION_HANDLE {
     let fl = common::fn_list();
     let h = common::open_session(fl);
     let rv = p11!(fl, C_Login, h, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
-    assert!(rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
-            "C_Login(USER) failed: {rv:#010x}");
+    assert!(
+        rv == CKR_OK || rv == CKR_USER_ALREADY_LOGGED_IN,
+        "C_Login(USER) failed: {rv:#010x}"
+    );
     h
 }
 
@@ -62,7 +64,7 @@ unsafe fn open_user_session() -> CK_SESSION_HANDLE {
 /// `always_authenticate` controls whether `CKA_ALWAYS_AUTHENTICATE` is set on
 /// the private key template.
 unsafe fn generate_ec_keypair(
-    session:           CK_SESSION_HANDLE,
+    session: CK_SESSION_HANDLE,
     always_authenticate: bool,
 ) -> (CK_OBJECT_HANDLE, CK_OBJECT_HANDLE) {
     let fl = common::fn_list();
@@ -72,21 +74,48 @@ unsafe fn generate_ec_keypair(
     let always_auth_byte: &[u8] = &[if always_authenticate { CK_TRUE } else { CK_FALSE }];
 
     let mut pub_attrs = [
-        CK_ATTRIBUTE { r#type: CKA_EC_PARAMS, pValue: p256_oid.as_ptr() as *mut c_void,  ulValueLen: p256_oid.len() as CK_ULONG },
-        CK_ATTRIBUTE { r#type: CKA_TOKEN,     pValue: token_false.as_ptr() as *mut c_void, ulValueLen: 1 },
+        CK_ATTRIBUTE {
+            r#type: CKA_EC_PARAMS,
+            pValue: p256_oid.as_ptr() as *mut c_void,
+            ulValueLen: p256_oid.len() as CK_ULONG,
+        },
+        CK_ATTRIBUTE {
+            r#type: CKA_TOKEN,
+            pValue: token_false.as_ptr() as *mut c_void,
+            ulValueLen: 1,
+        },
     ];
     let mut priv_attrs = [
-        CK_ATTRIBUTE { r#type: CKA_TOKEN,               pValue: token_false.as_ptr() as *mut c_void,      ulValueLen: 1 },
-        CK_ATTRIBUTE { r#type: CKA_ALWAYS_AUTHENTICATE,  pValue: always_auth_byte.as_ptr() as *mut c_void, ulValueLen: 1 },
+        CK_ATTRIBUTE {
+            r#type: CKA_TOKEN,
+            pValue: token_false.as_ptr() as *mut c_void,
+            ulValueLen: 1,
+        },
+        CK_ATTRIBUTE {
+            r#type: CKA_ALWAYS_AUTHENTICATE,
+            pValue: always_auth_byte.as_ptr() as *mut c_void,
+            ulValueLen: 1,
+        },
     ];
-    let mech = CK_MECHANISM { mechanism: CKM_EC_KEY_PAIR_GEN, pParameter: ptr::null_mut(), ulParameterLen: 0 };
+    let mech = CK_MECHANISM {
+        mechanism: CKM_EC_KEY_PAIR_GEN,
+        pParameter: ptr::null_mut(),
+        ulParameterLen: 0,
+    };
     let mut pub_h: CK_OBJECT_HANDLE = 0;
     let mut priv_h: CK_OBJECT_HANDLE = 0;
-    let rv = p11!(fl, C_GenerateKeyPair,
-                  session, &mech,
-                  pub_attrs.as_mut_ptr(), pub_attrs.len() as CK_ULONG,
-                  priv_attrs.as_mut_ptr(), priv_attrs.len() as CK_ULONG,
-                  &mut pub_h, &mut priv_h);
+    let rv = p11!(
+        fl,
+        C_GenerateKeyPair,
+        session,
+        &mech,
+        pub_attrs.as_mut_ptr(),
+        pub_attrs.len() as CK_ULONG,
+        priv_attrs.as_mut_ptr(),
+        priv_attrs.len() as CK_ULONG,
+        &mut pub_h,
+        &mut priv_h
+    );
     assert_eq!(rv, CKR_OK, "C_GenerateKeyPair failed: {rv:#010x}");
     (priv_h, pub_h)
 }
@@ -94,22 +123,41 @@ unsafe fn generate_ec_keypair(
 /// Call C_SignInit + C_Sign with ECDSA on `priv_handle`. Returns the raw CK_RV.
 unsafe fn do_sign(session: CK_SESSION_HANDLE, priv_handle: CK_OBJECT_HANDLE) -> CK_RV {
     let fl = common::fn_list();
-    let mech = CK_MECHANISM { mechanism: CKM_ECDSA, pParameter: ptr::null_mut(), ulParameterLen: 0 };
+    let mech = CK_MECHANISM {
+        mechanism: CKM_ECDSA,
+        pParameter: ptr::null_mut(),
+        ulParameterLen: 0,
+    };
     let rv = p11!(fl, C_SignInit, session, &mech, priv_handle);
-    if rv != CKR_OK { return rv; }
+    if rv != CKR_OK {
+        return rv;
+    }
     // 32-byte prehashed digest (SHA-256 of b"test")
     let digest = [0u8; 32];
     let mut sig_buf = [0u8; 72];
     let mut sig_len: CK_ULONG = sig_buf.len() as CK_ULONG;
-    p11!(fl, C_Sign, session, digest.as_ptr(), digest.len() as CK_ULONG,
-         sig_buf.as_mut_ptr(), &mut sig_len)
+    p11!(
+        fl,
+        C_Sign,
+        session,
+        digest.as_ptr(),
+        digest.len() as CK_ULONG,
+        sig_buf.as_mut_ptr(),
+        &mut sig_len
+    )
 }
 
 /// Call C_Login(CKU_CONTEXT_SPECIFIC) on `session` with the correct PIN.
 unsafe fn context_login(session: CK_SESSION_HANDLE) -> CK_RV {
     let fl = common::fn_list();
-    p11!(fl, C_Login, session, CKU_CONTEXT_SPECIFIC,
-         SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG)
+    p11!(
+        fl,
+        C_Login,
+        session,
+        CKU_CONTEXT_SPECIFIC,
+        SLOT_PIN.as_ptr(),
+        SLOT_PIN.len() as CK_ULONG
+    )
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -138,8 +186,10 @@ fn always_auth_key_fails_sign_without_context_login() {
         let session = open_user_session();
         let (priv_h, _pub_h) = generate_ec_keypair(session, true);
         let rv = do_sign(session, priv_h);
-        assert_eq!(rv, CKR_USER_NOT_LOGGED_IN,
-                   "sign without context login must return CKR_USER_NOT_LOGGED_IN, got {rv:#010x}");
+        assert_eq!(
+            rv, CKR_USER_NOT_LOGGED_IN,
+            "sign without context login must return CKR_USER_NOT_LOGGED_IN, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -153,7 +203,11 @@ fn always_auth_key_succeeds_after_context_login() {
         let session = open_user_session();
         let (priv_h, _pub_h) = generate_ec_keypair(session, true);
 
-        let mech = CK_MECHANISM { mechanism: CKM_ECDSA, pParameter: ptr::null_mut(), ulParameterLen: 0 };
+        let mech = CK_MECHANISM {
+            mechanism: CKM_ECDSA,
+            pParameter: ptr::null_mut(),
+            ulParameterLen: 0,
+        };
         let rv = p11!(common::fn_list(), C_SignInit, session, &mech, priv_h);
         assert_eq!(rv, CKR_OK);
 
@@ -163,7 +217,15 @@ fn always_auth_key_succeeds_after_context_login() {
         let digest = [0u8; 32];
         let mut sig = [0u8; 72];
         let mut sig_len = sig.len() as CK_ULONG;
-        let rv = p11!(common::fn_list(), C_Sign, session, digest.as_ptr(), digest.len() as CK_ULONG, sig.as_mut_ptr(), &mut sig_len);
+        let rv = p11!(
+            common::fn_list(),
+            C_Sign,
+            session,
+            digest.as_ptr(),
+            digest.len() as CK_ULONG,
+            sig.as_mut_ptr(),
+            &mut sig_len
+        );
         assert_eq!(rv, CKR_OK);
 
         p11!(common::fn_list(), C_CloseSession, session);
@@ -180,7 +242,11 @@ fn always_auth_consumed_after_one_sign() {
         let session = open_user_session();
         let (priv_h, _pub_h) = generate_ec_keypair(session, true);
 
-        let mech = CK_MECHANISM { mechanism: CKM_ECDSA, pParameter: std::ptr::null_mut(), ulParameterLen: 0 };
+        let mech = CK_MECHANISM {
+            mechanism: CKM_ECDSA,
+            pParameter: std::ptr::null_mut(),
+            ulParameterLen: 0,
+        };
         p11!(common::fn_list(), C_SignInit, session, &mech, priv_h);
 
         let rv = context_login(session);
@@ -189,15 +255,33 @@ fn always_auth_consumed_after_one_sign() {
         let digest = [0u8; 32];
         let mut sig = [0u8; 72];
         let mut sig_len = sig.len() as CK_ULONG;
-        let rv = p11!(common::fn_list(), C_Sign, session, digest.as_ptr(), digest.len() as CK_ULONG, sig.as_mut_ptr(), &mut sig_len);
+        let rv = p11!(
+            common::fn_list(),
+            C_Sign,
+            session,
+            digest.as_ptr(),
+            digest.len() as CK_ULONG,
+            sig.as_mut_ptr(),
+            &mut sig_len
+        );
         assert_eq!(rv, CKR_OK, "first sign must succeed, got {rv:#010x}");
 
         p11!(common::fn_list(), C_SignInit, session, &mech, priv_h);
 
         let mut sig_len = sig.len() as CK_ULONG;
-        let rv = p11!(common::fn_list(), C_Sign, session, digest.as_ptr(), digest.len() as CK_ULONG, sig.as_mut_ptr(), &mut sig_len);
-        assert_eq!(rv, CKR_USER_NOT_LOGGED_IN,
-                   "second sign without re-login must fail, got {rv:#010x}");
+        let rv = p11!(
+            common::fn_list(),
+            C_Sign,
+            session,
+            digest.as_ptr(),
+            digest.len() as CK_ULONG,
+            sig.as_mut_ptr(),
+            &mut sig_len
+        );
+        assert_eq!(
+            rv, CKR_USER_NOT_LOGGED_IN,
+            "second sign without re-login must fail, got {rv:#010x}"
+        );
         p11!(common::fn_list(), C_CloseSession, session);
     }
 }
@@ -213,22 +297,53 @@ fn context_auth_is_per_session() {
         let session_a = open_user_session();
         let (priv_h, _pub_h) = generate_ec_keypair(session_a, true);
         let mut session_b: CK_SESSION_HANDLE = 0;
-        p11!(fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION, ptr::null_mut(), None, &mut session_b);
+        p11!(
+            fl,
+            C_OpenSession,
+            0,
+            CKF_SERIAL_SESSION | CKF_RW_SESSION,
+            ptr::null_mut(),
+            None,
+            &mut session_b
+        );
 
-        let mech = CK_MECHANISM { mechanism: CKM_ECDSA, pParameter: ptr::null_mut(), ulParameterLen: 0 };
+        let mech = CK_MECHANISM {
+            mechanism: CKM_ECDSA,
+            pParameter: ptr::null_mut(),
+            ulParameterLen: 0,
+        };
 
         p11!(fl, C_SignInit, session_a, &mech, priv_h);
         p11!(fl, C_SignInit, session_b, &mech, priv_h);
         let rv = context_login(session_a);
-        assert_eq!(rv, CKR_OK, "Login must succeed because session_a has an active operation");
+        assert_eq!(
+            rv, CKR_OK,
+            "Login must succeed because session_a has an active operation"
+        );
         let digest = [0u8; 32];
         let mut sig = [0u8; 72];
         let mut sig_len = sig.len() as CK_ULONG;
-        let rv = p11!(fl, C_Sign, session_b, digest.as_ptr(), digest.len() as CK_ULONG, sig.as_mut_ptr(), &mut sig_len);
+        let rv = p11!(
+            fl,
+            C_Sign,
+            session_b,
+            digest.as_ptr(),
+            digest.len() as CK_ULONG,
+            sig.as_mut_ptr(),
+            &mut sig_len
+        );
         assert_eq!(rv, CKR_USER_NOT_LOGGED_IN, "Session B should not be authorized");
 
         let mut sig_len = sig.len() as CK_ULONG;
-        let rv = p11!(fl, C_Sign, session_a, digest.as_ptr(), digest.len() as CK_ULONG, sig.as_mut_ptr(), &mut sig_len);
+        let rv = p11!(
+            fl,
+            C_Sign,
+            session_a,
+            digest.as_ptr(),
+            digest.len() as CK_ULONG,
+            sig.as_mut_ptr(),
+            &mut sig_len
+        );
         assert_eq!(rv, CKR_OK);
 
         p11!(fl, C_CloseSession, session_a);
@@ -245,10 +360,18 @@ fn context_login_wrong_pin_rejected() {
         let session = open_user_session();
         let wrong_pin = b"wrong";
         let fl = common::fn_list();
-        let rv = p11!(fl, C_Login, session, CKU_CONTEXT_SPECIFIC,
-                      wrong_pin.as_ptr(), wrong_pin.len() as CK_ULONG);
-        assert_eq!(rv, CKR_PIN_INCORRECT,
-                   "wrong PIN for context login must return CKR_PIN_INCORRECT, got {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_Login,
+            session,
+            CKU_CONTEXT_SPECIFIC,
+            wrong_pin.as_ptr(),
+            wrong_pin.len() as CK_ULONG
+        );
+        assert_eq!(
+            rv, CKR_PIN_INCORRECT,
+            "wrong PIN for context login must return CKR_PIN_INCORRECT, got {rv:#010x}"
+        );
         p11!(fl, C_CloseSession, session);
     }
 }

@@ -29,7 +29,7 @@ use super::types::*;
 /// State for an active C_SignInit / C_VerifyInit operation.
 #[derive(Debug, Clone)]
 pub struct SignContext {
-    pub mechanism:  CK_MECHANISM_TYPE,
+    pub mechanism: CK_MECHANISM_TYPE,
     pub key_handle: CK_OBJECT_HANDLE,
     /// Accumulated message bytes (multi-part).
     pub data: Vec<u8>,
@@ -38,11 +38,11 @@ pub struct SignContext {
 /// State for an active C_EncryptInit / C_DecryptInit operation.
 #[derive(Debug, Clone)]
 pub struct CipherContext {
-    pub mechanism:   CK_MECHANISM_TYPE,
-    pub key_handle:  CK_OBJECT_HANDLE,
-    pub iv:          Option<Vec<u8>>,
-    pub aad:         Option<Vec<u8>>,
-    pub tag_len:     usize,
+    pub mechanism: CK_MECHANISM_TYPE,
+    pub key_handle: CK_OBJECT_HANDLE,
+    pub iv: Option<Vec<u8>>,
+    pub aad: Option<Vec<u8>>,
+    pub tag_len: usize,
     pub accumulated: Vec<u8>,
 }
 
@@ -50,7 +50,7 @@ pub struct CipherContext {
 #[derive(Debug, Clone)]
 pub struct DigestContext {
     pub mechanism: CK_MECHANISM_TYPE,
-    pub data:      Vec<u8>,
+    pub data: Vec<u8>,
     pub is_single_part: bool,
     pub is_multi_part: bool,
 }
@@ -59,21 +59,21 @@ pub struct DigestContext {
 #[derive(Debug, Clone)]
 pub struct FindContext {
     pub results: Vec<CK_OBJECT_HANDLE>,
-    pub index:   usize,
+    pub index: usize,
 }
 
 /// State for v3.0 message-based encrypt/decrypt/sign/verify operations.
 #[derive(Debug, Clone)]
 pub struct MessageCipherContext {
-    pub mechanism:   CK_MECHANISM_TYPE,
-    pub key_handle:  CK_OBJECT_HANDLE,
+    pub mechanism: CK_MECHANISM_TYPE,
+    pub key_handle: CK_OBJECT_HANDLE,
 }
 
 /// State for v3.0 message-based signing/verification operations.
 #[derive(Debug, Clone)]
 pub struct MessageSignContext {
-    pub mechanism:   CK_MECHANISM_TYPE,
-    pub key_handle:  CK_OBJECT_HANDLE,
+    pub mechanism: CK_MECHANISM_TYPE,
+    pub key_handle: CK_OBJECT_HANDLE,
 }
 
 // ── Session ───────────────────────────────────────────────────────────────
@@ -87,9 +87,9 @@ pub enum LoginState {
 
 #[derive(Debug)]
 pub struct Session {
-    pub handle:      CK_SESSION_HANDLE,
-    pub slot_id:     CK_SLOT_ID,
-    pub flags:       CK_FLAGS,
+    pub handle: CK_SESSION_HANDLE,
+    pub slot_id: CK_SLOT_ID,
+    pub flags: CK_FLAGS,
     pub login_state: LoginState,
 
     /// Set to `true` after a successful `C_Login(CKU_CONTEXT_SPECIFIC)`.
@@ -97,18 +97,18 @@ pub struct Session {
     /// Guards keys with `CKA_ALWAYS_AUTHENTICATE = TRUE`.
     pub context_specific_authed: bool,
 
-    pub sign_ctx:    Option<SignContext>,
-    pub verify_ctx:  Option<SignContext>,
+    pub sign_ctx: Option<SignContext>,
+    pub verify_ctx: Option<SignContext>,
     pub encrypt_ctx: Option<CipherContext>,
     pub decrypt_ctx: Option<CipherContext>,
-    pub digest_ctx:  Option<DigestContext>,
-    pub find_ctx:    Option<FindContext>,
+    pub digest_ctx: Option<DigestContext>,
+    pub find_ctx: Option<FindContext>,
 
     // v3.0 message-based operation contexts
     pub msg_encrypt_ctx: Option<MessageCipherContext>,
     pub msg_decrypt_ctx: Option<MessageCipherContext>,
-    pub msg_sign_ctx:    Option<MessageSignContext>,
-    pub msg_verify_ctx:  Option<MessageSignContext>,
+    pub msg_sign_ctx: Option<MessageSignContext>,
+    pub msg_verify_ctx: Option<MessageSignContext>,
 }
 
 impl Session {
@@ -119,23 +119,29 @@ impl Session {
             flags,
             login_state: LoginState::NotLoggedIn,
             context_specific_authed: false,
-            sign_ctx:    None,
-            verify_ctx:  None,
+            sign_ctx: None,
+            verify_ctx: None,
             encrypt_ctx: None,
             decrypt_ctx: None,
-            digest_ctx:  None,
-            find_ctx:    None,
+            digest_ctx: None,
+            find_ctx: None,
             msg_encrypt_ctx: None,
             msg_decrypt_ctx: None,
-            msg_sign_ctx:    None,
-            msg_verify_ctx:  None,
+            msg_sign_ctx: None,
+            msg_verify_ctx: None,
         }
     }
 
-    pub fn is_rw(&self) -> bool { self.flags & CKF_RW_SESSION != 0 }
+    pub fn is_rw(&self) -> bool {
+        self.flags & CKF_RW_SESSION != 0
+    }
 
     pub fn require_rw(&self) -> Result<()> {
-        if self.is_rw() { Ok(()) } else { Err(Pkcs11Error::SessionReadOnly) }
+        if self.is_rw() {
+            Ok(())
+        } else {
+            Err(Pkcs11Error::SessionReadOnly)
+        }
     }
 
     /// Gate a private-key operation on `CKA_ALWAYS_AUTHENTICATE`.
@@ -161,8 +167,7 @@ impl Session {
 
 // ── Global store ──────────────────────────────────────────────────────────
 
-static SESSIONS: Lazy<RwLock<HashMap<CK_SESSION_HANDLE, Session>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static SESSIONS: Lazy<RwLock<HashMap<CK_SESSION_HANDLE, Session>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 static NEXT_SESSION: AtomicU64 = AtomicU64::new(1);
 
@@ -182,7 +187,8 @@ pub fn open_session(slot_id: CK_SLOT_ID, flags: CK_FLAGS) -> Result<CK_SESSION_H
     let mut sessions = SESSIONS.write();
 
     // Determine the current login state for this token
-    let current_login_state = sessions.values()
+    let current_login_state = sessions
+        .values()
         .find(|s| s.slot_id == slot_id)
         .map(|s| s.login_state.clone())
         .unwrap_or(LoginState::NotLoggedIn);
@@ -202,7 +208,10 @@ pub fn open_session(slot_id: CK_SLOT_ID, flags: CK_FLAGS) -> Result<CK_SESSION_H
 }
 
 pub fn close_session(handle: CK_SESSION_HANDLE) -> Result<()> {
-    SESSIONS.write().remove(&handle).ok_or(Pkcs11Error::InvalidSessionHandle)?;
+    SESSIONS
+        .write()
+        .remove(&handle)
+        .ok_or(Pkcs11Error::InvalidSessionHandle)?;
     debug!(context: "SESSION", "closed session={}", handle);
     Ok(())
 }
@@ -235,14 +244,26 @@ where
 pub fn get_session_info(handle: CK_SESSION_HANDLE) -> Result<CK_SESSION_INFO> {
     with_session(handle, |s| {
         let state: CK_ULONG = match s.login_state {
-            LoginState::NotLoggedIn  => if s.is_rw() { CKS_RW_PUBLIC_SESSION } else { CKS_RO_PUBLIC_SESSION },
-            LoginState::UserLoggedIn => if s.is_rw() { CKS_RW_USER_FUNCTIONS } else { CKS_RO_USER_FUNCTIONS },
-            LoginState::SoLoggedIn   => CKS_RW_SO_FUNCTIONS,
+            LoginState::NotLoggedIn => {
+                if s.is_rw() {
+                    CKS_RW_PUBLIC_SESSION
+                } else {
+                    CKS_RO_PUBLIC_SESSION
+                }
+            },
+            LoginState::UserLoggedIn => {
+                if s.is_rw() {
+                    CKS_RW_USER_FUNCTIONS
+                } else {
+                    CKS_RO_USER_FUNCTIONS
+                }
+            },
+            LoginState::SoLoggedIn => CKS_RW_SO_FUNCTIONS,
         };
         Ok(CK_SESSION_INFO {
-            slotID:        s.slot_id,
+            slotID: s.slot_id,
             state,
-            flags:         s.flags,
+            flags: s.flags,
             ulDeviceError: 0,
         })
     })
@@ -255,7 +276,9 @@ pub fn clear_sessions() {
     debug!(context: "SESSION", "cleared all sessions count={}", n);
 }
 
-pub fn session_count() -> usize { SESSIONS.read().len() }
+pub fn session_count() -> usize {
+    SESSIONS.read().len()
+}
 
 /// Count sessions on a specific slot.
 pub fn session_count_for_slot(slot_id: CK_SLOT_ID) -> usize {
@@ -264,7 +287,11 @@ pub fn session_count_for_slot(slot_id: CK_SLOT_ID) -> usize {
 
 /// Count RW sessions on a specific slot.
 pub fn rw_session_count_for_slot(slot_id: CK_SLOT_ID) -> usize {
-    SESSIONS.read().values().filter(|s| s.slot_id == slot_id && s.is_rw()).count()
+    SESSIONS
+        .read()
+        .values()
+        .filter(|s| s.slot_id == slot_id && s.is_rw())
+        .count()
 }
 
 /// Check if any RO sessions exist on a specific slot.
@@ -297,7 +324,8 @@ pub fn release_find_contexts_on_slot(slot_id: CK_SLOT_ID) {
 
 /// Get the current login state for a slot (from any session on that slot).
 pub fn login_state_for_slot(slot_id: CK_SLOT_ID) -> LoginState {
-    SESSIONS.read()
+    SESSIONS
+        .read()
         .values()
         .find(|s| s.slot_id == slot_id)
         .map(|s| s.login_state.clone())
@@ -306,7 +334,5 @@ pub fn login_state_for_slot(slot_id: CK_SLOT_ID) -> LoginState {
 
 /// Check if any sessions (Read-Only or Read-Write) exist on a specific slot.
 pub fn has_open_sessions(slot_id: CK_SLOT_ID) -> bool {
-    SESSIONS.read()
-    .values()
-    .any(|s| s.slot_id == slot_id)
+    SESSIONS.read().values().any(|s| s.slot_id == slot_id)
 }

@@ -14,7 +14,12 @@ use zeroize::Zeroizing;
 
 use super::*;
 
-pub fn rsa_encrypt(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyObject, plaintext: &[u8]) -> Result<Vec<u8>> {
+pub fn rsa_encrypt(
+    slot_id: CK_SLOT_ID,
+    mechanism: CK_MECHANISM_TYPE,
+    key: &KeyObject,
+    plaintext: &[u8],
+) -> Result<Vec<u8>> {
     debug!(context: "BACKEND", "RSA encrypt: slot={} mechanism={} key_handle={} len={}", slot_id, mechanism, key.handle, plaintext.len());
     let e = eng(slot_id)?;
     match mechanism {
@@ -24,7 +29,12 @@ pub fn rsa_encrypt(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyO
     }
 }
 
-pub fn rsa_decrypt(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyObject, ciphertext: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
+pub fn rsa_decrypt(
+    slot_id: CK_SLOT_ID,
+    mechanism: CK_MECHANISM_TYPE,
+    key: &KeyObject,
+    ciphertext: &[u8],
+) -> Result<Zeroizing<Vec<u8>>> {
     debug!(context: "BACKEND", "RSA decrypt: slot={} mechanism={} key_handle={} len={}", slot_id, mechanism, key.handle, ciphertext.len());
     let e = eng(slot_id)?;
     match mechanism {
@@ -37,7 +47,8 @@ pub fn rsa_decrypt(slot_id: CK_SLOT_ID, mechanism: CK_MECHANISM_TYPE, key: &KeyO
 pub fn aes_wrap_key(slot_id: CK_SLOT_ID, wrapping_key: &KeyObject, target_key: &KeyObject) -> Result<Vec<u8>> {
     debug!(context: "BACKEND", "AES key wrap: slot={} wrapping_key={} target_key={}", slot_id, wrapping_key.handle, target_key.handle);
     let e = eng(slot_id)?;
-    e.aes_key_wrap(&wrapping_key.key_ref, &target_key.key_ref).map_err(Pkcs11Error::from)
+    e.aes_key_wrap(&wrapping_key.key_ref, &target_key.key_ref)
+        .map_err(Pkcs11Error::from)
 }
 
 pub fn aes_wrap_key_refs(
@@ -56,7 +67,8 @@ pub fn aes_unwrap_key(
 ) -> Result<Zeroizing<Vec<u8>>> {
     debug!(context: "BACKEND", "AES key unwrap: slot={} unwrapping_key={} len={}", slot_id, unwrapping_key.handle, wrapped_key.len());
     let e = eng(slot_id)?;
-    e.aes_key_unwrap(&unwrapping_key.key_ref, wrapped_key).map_err(Pkcs11Error::from)
+    e.aes_key_unwrap(&unwrapping_key.key_ref, wrapped_key)
+        .map_err(Pkcs11Error::from)
 }
 
 pub fn hkdf_derive(
@@ -69,5 +81,6 @@ pub fn hkdf_derive(
 ) -> Result<Zeroizing<Vec<u8>>> {
     debug!(context: "BACKEND", "HKDF derive: slot={} base_key={} prf={} okm_len={}", slot_id, base_key.handle, format!("{:?}", hash).as_str(), okm_len);
     let e = eng(slot_id)?;
-    e.hkdf_derive(hash, &base_key.key_ref, salt, info, okm_len).map_err(Pkcs11Error::from)
+    e.hkdf_derive(hash, &base_key.key_ref, salt, info, okm_len)
+        .map_err(Pkcs11Error::from)
 }

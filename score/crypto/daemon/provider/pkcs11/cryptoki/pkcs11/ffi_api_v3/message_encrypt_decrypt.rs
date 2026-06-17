@@ -17,21 +17,28 @@ use score_log::{debug, info, trace, warn};
 
 #[no_mangle]
 pub unsafe extern "C" fn C_MessageEncryptInit(
-    h_session:   CK_SESSION_HANDLE,
+    h_session: CK_SESSION_HANDLE,
     p_mechanism: *const CK_MECHANISM,
-    h_key:       CK_OBJECT_HANDLE,
+    h_key: CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "CRYPTO", "C_MessageEncryptInit called session={} key={}", h_session, h_key);
-    if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_mechanism.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     let mech_type = (*p_mechanism).mechanism;
     // Only AES-GCM and ChaCha20-Poly1305 support per-message IV semantics.
     if mech_type != CKM_AES_GCM && mech_type != CKM_CHACHA20_POLY1305 {
         return CKR_MECHANISM_INVALID;
     }
     ck_try!(session::with_session_mut(h_session, |s| {
-        if s.msg_encrypt_ctx.is_some() { return Err(Pkcs11Error::OperationActive); }
-        s.msg_encrypt_ctx = Some(MessageCipherContext { mechanism: mech_type, key_handle: h_key });
+        if s.msg_encrypt_ctx.is_some() {
+            return Err(Pkcs11Error::OperationActive);
+        }
+        s.msg_encrypt_ctx = Some(MessageCipherContext {
+            mechanism: mech_type,
+            key_handle: h_key,
+        });
         Ok(())
     }));
     CKR_OK
@@ -39,14 +46,14 @@ pub unsafe extern "C" fn C_MessageEncryptInit(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_EncryptMessage(
-    h_session:      CK_SESSION_HANDLE,
-    p_parameter:    *const c_void, // *const CK_GCM_MESSAGE_PARAMS or CK_CHACHA20_POLY1305_MESSAGE_PARAMS (tag written back via interior pointer)
-    ul_param_len:   CK_ULONG,
-    p_aad:          *const CK_BYTE,
-    ul_aad_len:     CK_ULONG,
-    p_plaintext:    *const CK_BYTE,
-    ul_plain_len:   CK_ULONG,
-    p_ciphertext:   *mut CK_BYTE,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void, // *const CK_GCM_MESSAGE_PARAMS or CK_CHACHA20_POLY1305_MESSAGE_PARAMS (tag written back via interior pointer)
+    ul_param_len: CK_ULONG,
+    p_aad: *const CK_BYTE,
+    ul_aad_len: CK_ULONG,
+    p_plaintext: *const CK_BYTE,
+    ul_plain_len: CK_ULONG,
+    p_ciphertext: *mut CK_BYTE,
     pul_cipher_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
@@ -57,18 +64,28 @@ pub unsafe extern "C" fn C_EncryptMessage(
     let plaintext = std::slice::from_raw_parts(p_plaintext, ul_plain_len as usize);
     let aad = if !p_aad.is_null() && ul_aad_len > 0 {
         std::slice::from_raw_parts(p_aad, ul_aad_len as usize)
-    } else { &[] };
+    } else {
+        &[]
+    };
 
     let (ctx, slot_id) = ck_try!(session::with_session(h_session, |s| {
-        Ok((s.msg_encrypt_ctx.as_ref().cloned().ok_or(Pkcs11Error::OperationNotInitialised)?, s.slot_id))
+        Ok((
+            s.msg_encrypt_ctx
+                .as_ref()
+                .cloned()
+                .ok_or(Pkcs11Error::OperationNotInitialised)?,
+            s.slot_id,
+        ))
     }));
 
     // Extract IV and tag buffer from the per-message params struct.
     // CK_GCM_MESSAGE_PARAMS and CK_CHACHA20_POLY1305_MESSAGE_PARAMS share the same layout.
     // Cast: params is the caller's mutable struct passed through a const void pointer.
     let params = p_parameter as *const CK_GCM_MESSAGE_PARAMS;
-    if (*params).pIv.is_null() || (*params).pTag.is_null() { return CKR_ARGUMENTS_BAD; }
-    let iv  = std::slice::from_raw_parts((*params).pIv, (*params).ulIvLen as usize);
+    if (*params).pIv.is_null() || (*params).pTag.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
+    let iv = std::slice::from_raw_parts((*params).pIv, (*params).ulIvLen as usize);
     let tag_len = ((*params).ulTagBits as usize).div_ceil(8);
 
     let (ct, tag) = ck_try!(with_object(ctx.key_handle, |obj| {
@@ -86,11 +103,11 @@ pub unsafe extern "C" fn C_EncryptMessage(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_EncryptMessageBegin(
-    h_session:    CK_SESSION_HANDLE,
-    p_parameter:  *const c_void,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void,
     ul_param_len: CK_ULONG,
-    p_aad:        *const CK_BYTE,
-    ul_aad_len:   CK_ULONG,
+    p_aad: *const CK_BYTE,
+    ul_aad_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     // For single-part AEAD messages, Begin is a no-op that just validates state
@@ -103,23 +120,21 @@ pub unsafe extern "C" fn C_EncryptMessageBegin(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_EncryptMessageNext(
-    h_session:       CK_SESSION_HANDLE,
-    p_parameter:     *const c_void,
-    ul_param_len:    CK_ULONG,
-    p_plaintext:     *const CK_BYTE,
-    ul_plain_len:    CK_ULONG,
-    p_ciphertext:    *mut CK_BYTE,
-    pul_cipher_len:  *mut CK_ULONG,
-    flags:           CK_FLAGS,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void,
+    ul_param_len: CK_ULONG,
+    p_plaintext: *const CK_BYTE,
+    ul_plain_len: CK_ULONG,
+    p_ciphertext: *mut CK_BYTE,
+    pul_cipher_len: *mut CK_ULONG,
+    flags: CK_FLAGS,
 ) -> CK_RV {
     // Streaming not supported for AEAD — use C_EncryptMessage for one-shot
     CKR_FUNCTION_NOT_SUPPORTED
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn C_MessageEncryptFinal(
-    h_session: CK_SESSION_HANDLE,
-) -> CK_RV {
+pub unsafe extern "C" fn C_MessageEncryptFinal(h_session: CK_SESSION_HANDLE) -> CK_RV {
     ck_try!(check_init());
     ck_try!(session::with_session_mut(h_session, |s| {
         s.msg_encrypt_ctx = None;
@@ -132,21 +147,28 @@ pub unsafe extern "C" fn C_MessageEncryptFinal(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_MessageDecryptInit(
-    h_session:   CK_SESSION_HANDLE,
+    h_session: CK_SESSION_HANDLE,
     p_mechanism: *const CK_MECHANISM,
-    h_key:       CK_OBJECT_HANDLE,
+    h_key: CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "CRYPTO", "C_MessageDecryptInit called session={} key={}", h_session, h_key);
-    if p_mechanism.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_mechanism.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     let mech_type = (*p_mechanism).mechanism;
     // Only AES-GCM and ChaCha20-Poly1305 support per-message IV semantics.
     if mech_type != CKM_AES_GCM && mech_type != CKM_CHACHA20_POLY1305 {
         return CKR_MECHANISM_INVALID;
     }
     ck_try!(session::with_session_mut(h_session, |s| {
-        if s.msg_decrypt_ctx.is_some() { return Err(Pkcs11Error::OperationActive); }
-        s.msg_decrypt_ctx = Some(MessageCipherContext { mechanism: mech_type, key_handle: h_key });
+        if s.msg_decrypt_ctx.is_some() {
+            return Err(Pkcs11Error::OperationActive);
+        }
+        s.msg_decrypt_ctx = Some(MessageCipherContext {
+            mechanism: mech_type,
+            key_handle: h_key,
+        });
         Ok(())
     }));
     CKR_OK
@@ -154,14 +176,14 @@ pub unsafe extern "C" fn C_MessageDecryptInit(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_DecryptMessage(
-    h_session:     CK_SESSION_HANDLE,
-    p_parameter:   *const c_void, // *const CK_GCM_MESSAGE_PARAMS or CK_CHACHA20_POLY1305_MESSAGE_PARAMS
-    ul_param_len:  CK_ULONG,
-    p_aad:         *const CK_BYTE,
-    ul_aad_len:    CK_ULONG,
-    p_ciphertext:  *const CK_BYTE,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void, // *const CK_GCM_MESSAGE_PARAMS or CK_CHACHA20_POLY1305_MESSAGE_PARAMS
+    ul_param_len: CK_ULONG,
+    p_aad: *const CK_BYTE,
+    ul_aad_len: CK_ULONG,
+    p_ciphertext: *const CK_BYTE,
     ul_cipher_len: CK_ULONG,
-    p_plaintext:   *mut CK_BYTE,
+    p_plaintext: *mut CK_BYTE,
     pul_plain_len: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
@@ -172,19 +194,29 @@ pub unsafe extern "C" fn C_DecryptMessage(
     let ciphertext = std::slice::from_raw_parts(p_ciphertext, ul_cipher_len as usize);
     let aad = if !p_aad.is_null() && ul_aad_len > 0 {
         std::slice::from_raw_parts(p_aad, ul_aad_len as usize)
-    } else { &[] };
+    } else {
+        &[]
+    };
 
     let (ctx, slot_id) = ck_try!(session::with_session(h_session, |s| {
-        Ok((s.msg_decrypt_ctx.as_ref().cloned().ok_or(Pkcs11Error::OperationNotInitialised)?, s.slot_id))
+        Ok((
+            s.msg_decrypt_ctx
+                .as_ref()
+                .cloned()
+                .ok_or(Pkcs11Error::OperationNotInitialised)?,
+            s.slot_id,
+        ))
     }));
 
     // Extract IV and tag from the per-message params struct.
     // CK_GCM_MESSAGE_PARAMS and CK_CHACHA20_POLY1305_MESSAGE_PARAMS share the same layout.
     let params = p_parameter as *const CK_GCM_MESSAGE_PARAMS;
-    if (*params).pIv.is_null() || (*params).pTag.is_null() { return CKR_ARGUMENTS_BAD; }
-    let iv      = std::slice::from_raw_parts((*params).pIv, (*params).ulIvLen as usize);
+    if (*params).pIv.is_null() || (*params).pTag.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
+    let iv = std::slice::from_raw_parts((*params).pIv, (*params).ulIvLen as usize);
     let tag_len = ((*params).ulTagBits as usize).div_ceil(8);
-    let tag     = std::slice::from_raw_parts((*params).pTag, tag_len);
+    let tag = std::slice::from_raw_parts((*params).pTag, tag_len);
 
     let pt = ck_try!(with_object(ctx.key_handle, |obj| {
         backend::decrypt_message(slot_id, ctx.mechanism, obj, iv, aad, ciphertext, tag)
@@ -194,11 +226,11 @@ pub unsafe extern "C" fn C_DecryptMessage(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_DecryptMessageBegin(
-    h_session:    CK_SESSION_HANDLE,
-    p_parameter:  *const c_void,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void,
     ul_param_len: CK_ULONG,
-    p_aad:        *const CK_BYTE,
-    ul_aad_len:   CK_ULONG,
+    p_aad: *const CK_BYTE,
+    ul_aad_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     ck_try!(session::with_session(h_session, |s| {
@@ -210,22 +242,20 @@ pub unsafe extern "C" fn C_DecryptMessageBegin(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_DecryptMessageNext(
-    h_session:       CK_SESSION_HANDLE,
-    p_parameter:     *const c_void,
-    ul_param_len:    CK_ULONG,
-    p_ciphertext:    *const CK_BYTE,
-    ul_cipher_len:   CK_ULONG,
-    p_plaintext:     *mut CK_BYTE,
-    pul_plain_len:   *mut CK_ULONG,
-    flags:           CK_FLAGS,
+    h_session: CK_SESSION_HANDLE,
+    p_parameter: *const c_void,
+    ul_param_len: CK_ULONG,
+    p_ciphertext: *const CK_BYTE,
+    ul_cipher_len: CK_ULONG,
+    p_plaintext: *mut CK_BYTE,
+    pul_plain_len: *mut CK_ULONG,
+    flags: CK_FLAGS,
 ) -> CK_RV {
     CKR_FUNCTION_NOT_SUPPORTED
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn C_MessageDecryptFinal(
-    h_session: CK_SESSION_HANDLE,
-) -> CK_RV {
+pub unsafe extern "C" fn C_MessageDecryptFinal(h_session: CK_SESSION_HANDLE) -> CK_RV {
     ck_try!(check_init());
     ck_try!(session::with_session_mut(h_session, |s| {
         s.msg_decrypt_ctx = None;

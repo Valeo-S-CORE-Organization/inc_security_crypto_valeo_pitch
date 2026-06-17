@@ -30,16 +30,25 @@ fn init() {
     INIT.call_once(|| unsafe {
         let fl = common::fn_list();
         let rv = p11!(fl, C_Initialize, ptr::null_mut());
-        assert!(rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
-                "C_Initialize failed: {rv:#010x}");
+        assert!(
+            rv == CKR_OK || rv == CKR_CRYPTOKI_ALREADY_INITIALIZED,
+            "C_Initialize failed: {rv:#010x}"
+        );
     });
 }
 
 unsafe fn open_rw_session() -> CK_SESSION_HANDLE {
     let fl = common::fn_list();
     let mut h: CK_SESSION_HANDLE = 0;
-    let rv = p11!(fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION,
-                  ptr::null_mut(), None, &mut h);
+    let rv = p11!(
+        fl,
+        C_OpenSession,
+        0,
+        CKF_SERIAL_SESSION | CKF_RW_SESSION,
+        ptr::null_mut(),
+        None,
+        &mut h
+    );
     assert_eq!(rv, CKR_OK, "C_OpenSession failed: {rv:#010x}");
     h
 }
@@ -49,13 +58,24 @@ unsafe fn find_all(h: CK_SESSION_HANDLE, template: &[(CK_ATTRIBUTE_TYPE, Vec<u8>
     let fl = common::fn_list();
     let raw: Vec<CK_ATTRIBUTE> = template
         .iter()
-        .map(|(t, v)| CK_ATTRIBUTE { r#type: *t, pValue: v.as_ptr() as *mut _, ulValueLen: v.len() as CK_ULONG })
+        .map(|(t, v)| CK_ATTRIBUTE {
+            r#type: *t,
+            pValue: v.as_ptr() as *mut _,
+            ulValueLen: v.len() as CK_ULONG,
+        })
         .collect();
     let rv = p11!(fl, C_FindObjectsInit, h, raw.as_ptr() as *mut _, raw.len() as CK_ULONG);
     assert_eq!(rv, CKR_OK, "C_FindObjectsInit failed: {rv:#010x}");
     let mut handles = [0u64; 32];
     let mut count: CK_ULONG = 0;
-    let rv = p11!(fl, C_FindObjects, h, handles.as_mut_ptr(), handles.len() as CK_ULONG, &mut count);
+    let rv = p11!(
+        fl,
+        C_FindObjects,
+        h,
+        handles.as_mut_ptr(),
+        handles.len() as CK_ULONG,
+        &mut count
+    );
     assert_eq!(rv, CKR_OK, "C_FindObjects failed: {rv:#010x}");
     let rv = p11!(fl, C_FindObjectsFinal, h);
     assert_eq!(rv, CKR_OK, "C_FindObjectsFinal failed: {rv:#010x}");
@@ -67,8 +87,8 @@ unsafe fn get_ulong(h: CK_SESSION_HANDLE, obj: CK_OBJECT_HANDLE, attr_type: CK_A
     let fl = common::fn_list();
     let mut buf = [0u8; 8];
     let mut attr = CK_ATTRIBUTE {
-        r#type:     attr_type,
-        pValue:     buf.as_mut_ptr() as *mut _,
+        r#type: attr_type,
+        pValue: buf.as_mut_ptr() as *mut _,
         ulValueLen: buf.len() as CK_ULONG,
     };
     let rv = p11!(fl, C_GetAttributeValue, h, obj, &mut attr, 1);
@@ -87,11 +107,12 @@ fn profile_object_discoverable_via_find() {
         let h = open_rw_session();
         let fl = common::fn_list();
 
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
-        assert!(!handles.is_empty(), "at least one CKO_PROFILE object must exist after C_Initialize");
+        assert!(
+            !handles.is_empty(),
+            "at least one CKO_PROFILE object must exist after C_Initialize"
+        );
 
         p11!(fl, C_CloseSession, h);
     }
@@ -105,15 +126,15 @@ fn profile_object_has_baseline_provider_id() {
         let h = open_rw_session();
         let fl = common::fn_list();
 
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
         assert!(!handles.is_empty());
 
         let profile_id = get_ulong(h, handles[0], CKA_PROFILE_ID);
-        assert_eq!(profile_id, CKP_BASELINE_PROVIDER,
-                   "profile object must advertise CKP_BASELINE_PROVIDER, got {profile_id:#010x}");
+        assert_eq!(
+            profile_id, CKP_BASELINE_PROVIDER,
+            "profile object must advertise CKP_BASELINE_PROVIDER, got {profile_id:#010x}"
+        );
 
         p11!(fl, C_CloseSession, h);
     }
@@ -127,9 +148,7 @@ fn profile_object_class_attribute_correct() {
         let h = open_rw_session();
         let fl = common::fn_list();
 
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
         assert!(!handles.is_empty());
 
@@ -150,17 +169,15 @@ fn profile_object_is_public() {
         let fl = common::fn_list();
 
         // Not logged in — find must still return the profile.
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
         assert!(!handles.is_empty(), "public profile must be visible without login");
 
         // Double-check by asking for CKA_PRIVATE directly.
         let mut priv_byte = [0u8; 1];
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_PRIVATE,
-            pValue:     priv_byte.as_mut_ptr() as *mut _,
+            r#type: CKA_PRIVATE,
+            pValue: priv_byte.as_mut_ptr() as *mut _,
             ulValueLen: 1,
         };
         let rv = p11!(fl, C_GetAttributeValue, h, handles[0], &mut attr, 1);
@@ -180,16 +197,14 @@ fn profile_object_is_token_object() {
         let h = open_rw_session();
         let fl = common::fn_list();
 
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
         assert!(!handles.is_empty());
 
         let mut tok_byte = [0u8; 1];
         let mut attr = CK_ATTRIBUTE {
-            r#type:     CKA_TOKEN,
-            pValue:     tok_byte.as_mut_ptr() as *mut _,
+            r#type: CKA_TOKEN,
+            pValue: tok_byte.as_mut_ptr() as *mut _,
             ulValueLen: 1,
         };
         let rv = p11!(fl, C_GetAttributeValue, h, handles[0], &mut attr, 1);
@@ -209,9 +224,7 @@ fn profile_object_survives_session_close() {
 
         // First session: find profile, grab handle.
         let h1 = open_rw_session();
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles1 = find_all(h1, &template);
         assert!(!handles1.is_empty());
         let original = handles1[0];
@@ -221,8 +234,10 @@ fn profile_object_survives_session_close() {
         let h2 = open_rw_session();
         let handles2 = find_all(h2, &template);
         assert!(!handles2.is_empty(), "profile must survive session close");
-        assert_eq!(handles2[0], original,
-                   "profile handle should remain stable across sessions");
+        assert_eq!(
+            handles2[0], original,
+            "profile handle should remain stable across sessions"
+        );
         p11!(fl, C_CloseSession, h2);
     }
 }
@@ -235,11 +250,14 @@ fn profile_object_is_unique_per_slot() {
         let h = open_rw_session();
         let fl = common::fn_list();
 
-        let template = vec![
-            (CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec()),
-        ];
+        let template = vec![(CKA_CLASS, (CKO_PROFILE as CK_ULONG).to_le_bytes().to_vec())];
         let handles = find_all(h, &template);
-        assert_eq!(handles.len(), 1, "exactly one baseline profile per slot, got {}", handles.len());
+        assert_eq!(
+            handles.len(),
+            1,
+            "exactly one baseline profile per slot, got {}",
+            handles.len()
+        );
 
         p11!(fl, C_CloseSession, h);
     }

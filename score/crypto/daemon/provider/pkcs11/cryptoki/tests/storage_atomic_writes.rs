@@ -67,10 +67,10 @@ fn fresh_store_path(tag: &str) -> PathBuf {
 /// Minimal valid `StoredState` with no objects and no token.
 fn empty_state() -> StoredState {
     StoredState {
-        version:     1,
-        tokens:      HashMap::new(),
-        token:       None,
-        objects:     vec![],
+        version: 1,
+        tokens: HashMap::new(),
+        token: None,
+        objects: vec![],
         next_handle: 1,
     }
 }
@@ -90,14 +90,9 @@ fn storage_file_has_0600_permissions() {
 
     save_state(&empty_state()).expect("save_state failed");
 
-    let meta = std::fs::metadata(&store_path)
-        .expect("metadata failed — file was not created");
+    let meta = std::fs::metadata(&store_path).expect("metadata failed — file was not created");
     let mode = meta.permissions().mode() & 0o777;
-    assert_eq!(
-        mode, 0o600,
-        "storage file must have 0600 permissions, got {:04o}",
-        mode
-    );
+    assert_eq!(mode, 0o600, "storage file must have 0600 permissions, got {:04o}", mode);
 
     // Cleanup
     std::env::remove_var("CRYPTOKI_STORE");
@@ -118,8 +113,8 @@ fn storage_dir_has_0700_permissions() {
     save_state(&empty_state()).expect("save_state failed");
 
     let parent = store_path.parent().unwrap();
-    let meta   = std::fs::metadata(parent).expect("dir metadata failed");
-    let mode   = meta.permissions().mode() & 0o777;
+    let meta = std::fs::metadata(parent).expect("dir metadata failed");
+    let mode = meta.permissions().mode() & 0o777;
     assert_eq!(
         mode, 0o700,
         "storage directory must have 0700 permissions, got {:04o}",
@@ -128,10 +123,7 @@ fn storage_dir_has_0700_permissions() {
 
     // Cleanup — restore world-readable so remove_dir_all works normally.
     std::env::remove_var("CRYPTOKI_STORE");
-    let _ = std::fs::set_permissions(
-        parent,
-        std::fs::Permissions::from_mode(0o700),
-    );
+    let _ = std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700));
     let _ = std::fs::remove_dir_all(parent);
 }
 
@@ -155,8 +147,11 @@ fn save_state_corrects_existing_dir_permissions() {
     save_state(&empty_state()).expect("save_state failed");
 
     let mode = std::fs::metadata(parent).unwrap().permissions().mode() & 0o777;
-    assert_eq!(mode, 0o700,
-        "save_state must tighten existing directory to 0700, got {:04o}", mode);
+    assert_eq!(
+        mode, 0o700,
+        "save_state must tighten existing directory to 0700, got {:04o}",
+        mode
+    );
 
     std::env::remove_var("CRYPTOKI_STORE");
     let _ = std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700));
@@ -176,8 +171,7 @@ fn save_state_produces_valid_json() {
     save_state(&empty_state()).expect("save_state failed");
 
     let raw = std::fs::read_to_string(&store_path).expect("file not created");
-    let _: serde_json::Value =
-        serde_json::from_str(&raw).expect("file does not contain valid JSON");
+    let _: serde_json::Value = serde_json::from_str(&raw).expect("file does not contain valid JSON");
 
     std::env::remove_var("CRYPTOKI_STORE");
     let _ = std::fs::remove_dir_all(store_path.parent().unwrap());
@@ -209,8 +203,7 @@ fn concurrent_saves_do_not_corrupt_file() {
 
     // File must be valid JSON regardless of which write won the rename race.
     let raw = std::fs::read_to_string(&store_path).expect("file not created");
-    let _: serde_json::Value =
-        serde_json::from_str(&raw).expect("concurrent saves corrupted the file");
+    let _: serde_json::Value = serde_json::from_str(&raw).expect("concurrent saves corrupted the file");
 
     std::env::remove_var("CRYPTOKI_STORE");
     let _ = std::fs::remove_dir_all(store_path.parent().unwrap());
@@ -250,7 +243,12 @@ fn flock_blocks_save_while_lock_held_then_unblocks() {
     #[cfg(unix)]
     {
         use std::os::unix::io::AsRawFd as _;
-        assert_eq!(unsafe { libc::flock(lock_file.as_raw_fd(), libc::LOCK_EX) }, 0, "could not acquire exclusive flock: {}", std::io::Error::last_os_error());
+        assert_eq!(
+            unsafe { libc::flock(lock_file.as_raw_fd(), libc::LOCK_EX) },
+            0,
+            "could not acquire exclusive flock: {}",
+            std::io::Error::last_os_error()
+        );
     }
 
     std::env::set_var("CRYPTOKI_STORE", &store_path);
@@ -275,10 +273,8 @@ fn flock_blocks_save_while_lock_held_then_unblocks() {
     result.expect("save_state() failed after lock was released");
 
     // The file must now exist and contain valid JSON.
-    let raw = std::fs::read_to_string(&store_path)
-        .expect("storage file was not created after flock released");
-    serde_json::from_str::<serde_json::Value>(&raw)
-        .expect("storage file is not valid JSON after flock-gated save");
+    let raw = std::fs::read_to_string(&store_path).expect("storage file was not created after flock released");
+    serde_json::from_str::<serde_json::Value>(&raw).expect("storage file is not valid JSON after flock-gated save");
 
     // Cleanup
     std::env::remove_var("CRYPTOKI_STORE");
@@ -298,8 +294,7 @@ fn save_state_is_idempotent() {
     save_state(&empty_state()).expect("second save failed");
 
     let raw = std::fs::read_to_string(&store_path).expect("file not found");
-    let v: serde_json::Value =
-        serde_json::from_str(&raw).expect("file is not valid JSON after two saves");
+    let v: serde_json::Value = serde_json::from_str(&raw).expect("file is not valid JSON after two saves");
     assert_eq!(v["version"], 1, "version field mismatch");
 
     std::env::remove_var("CRYPTOKI_STORE");

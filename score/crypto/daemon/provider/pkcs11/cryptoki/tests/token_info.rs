@@ -88,7 +88,8 @@ fn token_info_ckf_rng_is_set() {
     unsafe {
         let info = token_info();
         assert_ne!(
-            info.flags & CKF_RNG, 0,
+            info.flags & CKF_RNG,
+            0,
             "CKF_RNG must be set in token flags ({:#010x})",
             info.flags
         );
@@ -102,7 +103,8 @@ fn token_info_ckf_login_required_is_set() {
     unsafe {
         let info = token_info();
         assert_ne!(
-            info.flags & CKF_LOGIN_REQUIRED, 0,
+            info.flags & CKF_LOGIN_REQUIRED,
+            0,
             "CKF_LOGIN_REQUIRED must be set in token flags ({:#010x})",
             info.flags
         );
@@ -116,7 +118,8 @@ fn token_info_ckf_token_initialized_is_set() {
     unsafe {
         let info = token_info();
         assert_ne!(
-            info.flags & CKF_TOKEN_INITIALIZED, 0,
+            info.flags & CKF_TOKEN_INITIALIZED,
+            0,
             "CKF_TOKEN_INITIALIZED must be set after initialization ({:#010x})",
             info.flags
         );
@@ -130,7 +133,8 @@ fn token_info_ckf_user_pin_initialized_is_set() {
     unsafe {
         let info = token_info();
         assert_ne!(
-            info.flags & CKF_USER_PIN_INITIALIZED, 0,
+            info.flags & CKF_USER_PIN_INITIALIZED,
+            0,
             "CKF_USER_PIN_INITIALIZED must be set ({:#010x})",
             info.flags
         );
@@ -146,7 +150,8 @@ fn slot_info_ckf_hw_slot_is_not_set() {
         // CKF_HW_SLOT = 0x00000004 per PKCS#11 spec
         const CKF_HW_SLOT: CK_FLAGS = 0x00000004;
         assert_eq!(
-            info.flags & CKF_HW_SLOT, 0,
+            info.flags & CKF_HW_SLOT,
+            0,
             "CKF_HW_SLOT must not be set for a software token ({:#010x})",
             info.flags
         );
@@ -163,8 +168,13 @@ fn seed_random_returns_not_supported() {
         let fl = common::fn_list();
         let mut h: CK_SESSION_HANDLE = 0;
         let rv_open = p11!(
-            fl, C_OpenSession, 0, CKF_SERIAL_SESSION | CKF_RW_SESSION,
-            ptr::null_mut(), None, &mut h
+            fl,
+            C_OpenSession,
+            0,
+            CKF_SERIAL_SESSION | CKF_RW_SESSION,
+            ptr::null_mut(),
+            None,
+            &mut h
         );
         assert_eq!(rv_open, CKR_OK, "C_OpenSession failed");
         let seed = [0u8; 32];
@@ -186,10 +196,19 @@ fn digest_encrypt_update_not_supported() {
     unsafe {
         let fl = common::fn_list();
         let mut out_len: CK_ULONG = 0;
-        let rv = p11!(fl, C_DigestEncryptUpdate, 0u64,
-                      ptr::null(), 0u64, ptr::null_mut(), &mut out_len);
-        assert_eq!(rv, CKR_FUNCTION_NOT_SUPPORTED,
-                   "C_DigestEncryptUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_DigestEncryptUpdate,
+            0u64,
+            ptr::null(),
+            0u64,
+            ptr::null_mut(),
+            &mut out_len
+        );
+        assert_eq!(
+            rv, CKR_FUNCTION_NOT_SUPPORTED,
+            "C_DigestEncryptUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}"
+        );
     }
 }
 
@@ -200,10 +219,19 @@ fn decrypt_digest_update_not_supported() {
     unsafe {
         let fl = common::fn_list();
         let mut out_len: CK_ULONG = 0;
-        let rv = p11!(fl, C_DecryptDigestUpdate, 0u64,
-                      ptr::null(), 0u64, ptr::null_mut(), &mut out_len);
-        assert_eq!(rv, CKR_FUNCTION_NOT_SUPPORTED,
-                   "C_DecryptDigestUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_DecryptDigestUpdate,
+            0u64,
+            ptr::null(),
+            0u64,
+            ptr::null_mut(),
+            &mut out_len
+        );
+        assert_eq!(
+            rv, CKR_FUNCTION_NOT_SUPPORTED,
+            "C_DecryptDigestUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}"
+        );
     }
 }
 
@@ -214,10 +242,19 @@ fn sign_encrypt_update_not_supported() {
     unsafe {
         let fl = common::fn_list();
         let mut out_len: CK_ULONG = 0;
-        let rv = p11!(fl, C_SignEncryptUpdate, 0u64,
-                      ptr::null(), 0u64, ptr::null_mut(), &mut out_len);
-        assert_eq!(rv, CKR_FUNCTION_NOT_SUPPORTED,
-                   "C_SignEncryptUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_SignEncryptUpdate,
+            0u64,
+            ptr::null(),
+            0u64,
+            ptr::null_mut(),
+            &mut out_len
+        );
+        assert_eq!(
+            rv, CKR_FUNCTION_NOT_SUPPORTED,
+            "C_SignEncryptUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}"
+        );
     }
 }
 
@@ -228,9 +265,18 @@ fn decrypt_verify_update_not_supported() {
     unsafe {
         let fl = common::fn_list();
         let mut out_len: CK_ULONG = 0;
-        let rv = p11!(fl, C_DecryptVerifyUpdate, 0u64,
-                      ptr::null(), 0u64, ptr::null_mut(), &mut out_len);
-        assert_eq!(rv, CKR_FUNCTION_NOT_SUPPORTED,
-                   "C_DecryptVerifyUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}");
+        let rv = p11!(
+            fl,
+            C_DecryptVerifyUpdate,
+            0u64,
+            ptr::null(),
+            0u64,
+            ptr::null_mut(),
+            &mut out_len
+        );
+        assert_eq!(
+            rv, CKR_FUNCTION_NOT_SUPPORTED,
+            "C_DecryptVerifyUpdate should be CKR_FUNCTION_NOT_SUPPORTED: {rv:#010x}"
+        );
     }
 }

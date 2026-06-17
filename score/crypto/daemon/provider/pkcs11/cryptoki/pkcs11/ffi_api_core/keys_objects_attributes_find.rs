@@ -17,14 +17,14 @@ use score_log::{debug, info, trace, warn};
 
 #[no_mangle]
 pub unsafe extern "C" fn C_GenerateKeyPair(
-    h_session:      CK_SESSION_HANDLE,
-    p_mechanism:    *const CK_MECHANISM,
+    h_session: CK_SESSION_HANDLE,
+    p_mechanism: *const CK_MECHANISM,
     p_pub_template: *const CK_ATTRIBUTE,
-    ul_pub_count:   CK_ULONG,
+    ul_pub_count: CK_ULONG,
     p_priv_template: *const CK_ATTRIBUTE,
-    ul_priv_count:  CK_ULONG,
-    ph_pub_key:     *mut CK_OBJECT_HANDLE,
-    ph_priv_key:    *mut CK_OBJECT_HANDLE,
+    ul_priv_count: CK_ULONG,
+    ph_pub_key: *mut CK_OBJECT_HANDLE,
+    ph_priv_key: *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "MECH", "C_GenerateKeyPair session={}", h_session);
@@ -34,13 +34,17 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
     if (ul_pub_count > 0 && p_pub_template.is_null()) || (ul_priv_count > 0 && p_priv_template.is_null()) {
         return CKR_ARGUMENTS_BAD;
     }
-    let slot_id    = ck_try!(session_slot(h_session));
-    let mech       = &*p_mechanism;
-    let pub_attrs  = ffi_api_crypto::collect_template(p_pub_template, ul_pub_count);
+    let slot_id = ck_try!(session_slot(h_session));
+    let mech = &*p_mechanism;
+    let pub_attrs = ffi_api_crypto::collect_template(p_pub_template, ul_pub_count);
     let mut priv_attrs = ffi_api_crypto::collect_template(p_priv_template, ul_priv_count);
 
-    let pub_is_token = pub_attrs.get(&CKA_TOKEN).is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
-    let priv_is_token = priv_attrs.get(&CKA_TOKEN).is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
+    let pub_is_token = pub_attrs
+        .get(&CKA_TOKEN)
+        .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
+    let priv_is_token = priv_attrs
+        .get(&CKA_TOKEN)
+        .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
     if pub_is_token || priv_is_token {
         ck_try!(require_rw_session(h_session));
     }
@@ -48,33 +52,34 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
     // Inject security defaults for the private key.
     priv_attrs.entry(CKA_SENSITIVE).or_insert_with(|| vec![CK_TRUE]);
     priv_attrs.entry(CKA_EXTRACTABLE).or_insert_with(|| vec![CK_FALSE]);
-    let priv_always_sensitive    = priv_attrs.get(&CKA_SENSITIVE)
+    let priv_always_sensitive = priv_attrs
+        .get(&CKA_SENSITIVE)
         .map_or(true, |v| !v.is_empty() && v[0] == CK_TRUE);
-    let priv_never_extractable   = priv_attrs.get(&CKA_EXTRACTABLE)
+    let priv_never_extractable = priv_attrs
+        .get(&CKA_EXTRACTABLE)
         .map_or(true, |v| v.is_empty() || v[0] == CK_FALSE);
     // CKA_ALWAYS_AUTHENTICATE is a struct field, not stored in the HashMap.
-    let priv_always_authenticate = priv_attrs.remove(&CKA_ALWAYS_AUTHENTICATE)
+    let priv_always_authenticate = priv_attrs
+        .remove(&CKA_ALWAYS_AUTHENTICATE)
         .is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
 
     // Helper: stamp a GeneratedKey into the object store, returning its handle.
-    let store_pair = |gen: backend::GeneratedKey,
-                      always_sensitive: bool,
-                      never_extractable: bool,
-                      always_authenticate: bool| {
-        let h = object_store::next_handle();
-        let mut obj = object_store::KeyObject::new(h, slot_id, gen.key_type, gen.key_ref, gen.attrs);
-        obj.local               = true;
-        obj.key_gen_mechanism   = gen.key_gen_mechanism;
-        obj.always_sensitive    = always_sensitive;
-        obj.never_extractable   = never_extractable;
-        obj.always_authenticate = always_authenticate;
-        object_store::store_object(obj, Some(h_session));
-        h
-    };
+    let store_pair =
+        |gen: backend::GeneratedKey, always_sensitive: bool, never_extractable: bool, always_authenticate: bool| {
+            let h = object_store::next_handle();
+            let mut obj = object_store::KeyObject::new(h, slot_id, gen.key_type, gen.key_ref, gen.attrs);
+            obj.local = true;
+            obj.key_gen_mechanism = gen.key_gen_mechanism;
+            obj.always_sensitive = always_sensitive;
+            obj.never_extractable = never_extractable;
+            obj.always_authenticate = always_authenticate;
+            object_store::store_object(obj, Some(h_session));
+            h
+        };
     let store_pub = |gen: backend::GeneratedKey| {
         let h = object_store::next_handle();
         let mut obj = object_store::KeyObject::new(h, slot_id, gen.key_type, gen.key_ref, gen.attrs);
-        obj.local             = true;
+        obj.local = true;
         obj.key_gen_mechanism = gen.key_gen_mechanism;
         object_store::store_object(obj, Some(h_session));
         h
@@ -86,31 +91,47 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
                 .get(&CKA_MODULUS_BITS)
                 .map(|b| backend::bytes_to_ulong(b) as u32)
                 .unwrap_or(2048);
-            if bits < 1024 { return CKR_KEY_SIZE_RANGE; }
+            if bits < 1024 {
+                return CKR_KEY_SIZE_RANGE;
+            }
             let (priv_gen, pub_gen) = ck_try!(backend::generate_rsa_key_pair(
                 slot_id, bits, 65537, pub_attrs, priv_attrs,
             ));
-            *ph_pub_key  = store_pub(pub_gen);
-            *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
-        }
+            *ph_pub_key = store_pub(pub_gen);
+            *ph_priv_key = store_pair(
+                priv_gen,
+                priv_always_sensitive,
+                priv_never_extractable,
+                priv_always_authenticate,
+            );
+        },
         CKM_EC_KEY_PAIR_GEN => {
             let curve = ec_curve_from_params(pub_attrs.get(&CKA_EC_PARAMS).map(|v| v.as_slice()));
-            let (priv_gen, pub_gen) = ck_try!(backend::generate_ec_key_pair(
-                slot_id, curve, pub_attrs, priv_attrs,
-            ));
-            *ph_pub_key  = store_pub(pub_gen);
-            *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
-        }
+            let (priv_gen, pub_gen) = ck_try!(backend::generate_ec_key_pair(slot_id, curve, pub_attrs, priv_attrs,));
+            *ph_pub_key = store_pub(pub_gen);
+            *ph_priv_key = store_pair(
+                priv_gen,
+                priv_always_sensitive,
+                priv_never_extractable,
+                priv_always_authenticate,
+            );
+        },
         CKM_EC_EDWARDS_KEY_PAIR_GEN => {
             // Default to Ed25519; could inspect CKA_EC_PARAMS to choose Ed448
             let curve = crate::types::EdwardsCurve::Ed25519;
-            let (priv_gen, pub_gen) = ck_try!(backend::generate_ed_key_pair(
-                slot_id, curve, pub_attrs, priv_attrs,
-            ));
-            *ph_pub_key  = store_pub(pub_gen);
-            *ph_priv_key = store_pair(priv_gen, priv_always_sensitive, priv_never_extractable, priv_always_authenticate);
-        }
-        _ => { warn!(context: "MECH", "C_GenerateKeyPair rejected mechanism={}", mech.mechanism); return CKR_MECHANISM_INVALID; },
+            let (priv_gen, pub_gen) = ck_try!(backend::generate_ed_key_pair(slot_id, curve, pub_attrs, priv_attrs,));
+            *ph_pub_key = store_pub(pub_gen);
+            *ph_priv_key = store_pair(
+                priv_gen,
+                priv_always_sensitive,
+                priv_never_extractable,
+                priv_always_authenticate,
+            );
+        },
+        _ => {
+            warn!(context: "MECH", "C_GenerateKeyPair rejected mechanism={}", mech.mechanism);
+            return CKR_MECHANISM_INVALID;
+        },
     }
     info!(context: "MECH", "C_GenerateKeyPair created pub_handle={} priv_handle={} mech={}", *ph_pub_key, *ph_priv_key, mech.mechanism);
     CKR_OK
@@ -118,20 +139,24 @@ pub unsafe extern "C" fn C_GenerateKeyPair(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_GenerateKey(
-    h_session:   CK_SESSION_HANDLE,
+    h_session: CK_SESSION_HANDLE,
     p_mechanism: *const CK_MECHANISM,
-    p_template:  *const CK_ATTRIBUTE,
-    ul_count:    CK_ULONG,
-    ph_key:      *mut CK_OBJECT_HANDLE,
+    p_template: *const CK_ATTRIBUTE,
+    ul_count: CK_ULONG,
+    ph_key: *mut CK_OBJECT_HANDLE,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "MECH", "C_GenerateKey session={}", h_session);
 
-    if p_mechanism.is_null() || ph_key.is_null() { return CKR_ARGUMENTS_BAD; }
-    if ul_count > 0 && p_template.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_mechanism.is_null() || ph_key.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
+    if ul_count > 0 && p_template.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
 
     let slot_id = ck_try!(session_slot(h_session));
-    let mech  = &*p_mechanism;
+    let mech = &*p_mechanism;
     let mut attrs = ffi_api_crypto::collect_template(p_template, ul_count);
 
     // Evaluate Token Status for Session R/W requirements
@@ -148,12 +173,15 @@ pub unsafe extern "C" fn C_GenerateKey(
     }
 
     let expected_key_type = match mech.mechanism {
-        CKM_AES_KEY_GEN            => CKK_AES,
-        CKM_DES_KEY_GEN            => CKK_DES,
-        CKM_DES3_KEY_GEN           => CKK_DES3,
-        CKM_CHACHA20_KEY_GEN       => CKK_CHACHA20,
+        CKM_AES_KEY_GEN => CKK_AES,
+        CKM_DES_KEY_GEN => CKK_DES,
+        CKM_DES3_KEY_GEN => CKK_DES3,
+        CKM_CHACHA20_KEY_GEN => CKK_CHACHA20,
         CKM_GENERIC_SECRET_KEY_GEN => CKK_GENERIC_SECRET,
-        _ => { warn!(context: "MECH", "C_GenerateKey rejected mechanism={}", mech.mechanism); return CKR_MECHANISM_INVALID; },
+        _ => {
+            warn!(context: "MECH", "C_GenerateKey rejected mechanism={}", mech.mechanism);
+            return CKR_MECHANISM_INVALID;
+        },
     };
 
     if let Some(type_val) = attrs.get(&CKA_KEY_TYPE) {
@@ -164,38 +192,59 @@ pub unsafe extern "C" fn C_GenerateKey(
 
     attrs.entry(CKA_SENSITIVE).or_insert_with(|| vec![CK_TRUE]);
     attrs.entry(CKA_EXTRACTABLE).or_insert_with(|| vec![CK_FALSE]);
-    let always_sensitive  = attrs.get(&CKA_SENSITIVE)
+    let always_sensitive = attrs
+        .get(&CKA_SENSITIVE)
         .map_or(true, |v| !v.is_empty() && v[0] == CK_TRUE);
-    let never_extractable = attrs.get(&CKA_EXTRACTABLE)
+    let never_extractable = attrs
+        .get(&CKA_EXTRACTABLE)
         .map_or(true, |v| v.is_empty() || v[0] == CK_FALSE);
 
     let gen = match mech.mechanism {
         CKM_AES_KEY_GEN => {
-            let key_len = attrs.get(&CKA_VALUE_LEN).map(|b| backend::bytes_to_ulong(b) as usize).unwrap_or(32);
+            let key_len = attrs
+                .get(&CKA_VALUE_LEN)
+                .map(|b| backend::bytes_to_ulong(b) as usize)
+                .unwrap_or(32);
             ck_try!(backend::generate_aes_key(slot_id, key_len, attrs))
-        }
+        },
         CKM_DES_KEY_GEN => {
-            ck_try!(backend::generate_legacy_secret_key(slot_id, mech.mechanism, 8, CKK_DES, attrs))
-        }
+            ck_try!(backend::generate_legacy_secret_key(
+                slot_id,
+                mech.mechanism,
+                8,
+                CKK_DES,
+                attrs
+            ))
+        },
         CKM_DES3_KEY_GEN => {
-            ck_try!(backend::generate_legacy_secret_key(slot_id, mech.mechanism, 24, CKK_DES3, attrs))
-        }
+            ck_try!(backend::generate_legacy_secret_key(
+                slot_id,
+                mech.mechanism,
+                24,
+                CKK_DES3,
+                attrs
+            ))
+        },
         CKM_CHACHA20_KEY_GEN => {
             ck_try!(backend::generate_chacha20_key(slot_id, attrs))
-        }
+        },
         // Generate the generic key
         CKM_GENERIC_SECRET_KEY_GEN => {
-            let key_len = attrs.get(&CKA_VALUE_LEN).map(|b| backend::bytes_to_ulong(b) as usize).unwrap_or(32);
-            ck_try!(backend::generate_generic_secret_key(slot_id, key_len, attrs)) // <--- Make sure this exists in your backend!
-        }
+            let key_len = attrs
+                .get(&CKA_VALUE_LEN)
+                .map(|b| backend::bytes_to_ulong(b) as usize)
+                .unwrap_or(32);
+            ck_try!(backend::generate_generic_secret_key(slot_id, key_len, attrs))
+            // <--- Make sure this exists in your backend!
+        },
         _ => return CKR_MECHANISM_INVALID,
     };
 
     let handle = object_store::next_handle();
     let mut obj = object_store::KeyObject::new(handle, slot_id, gen.key_type, gen.key_ref, gen.attrs);
-    obj.local             = true;
+    obj.local = true;
     obj.key_gen_mechanism = gen.key_gen_mechanism;
-    obj.always_sensitive  = always_sensitive;
+    obj.always_sensitive = always_sensitive;
     obj.never_extractable = never_extractable;
     object_store::store_object(obj, Some(h_session));
     *ph_key = handle;
@@ -204,13 +253,15 @@ pub unsafe extern "C" fn C_GenerateKey(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_GenerateRandom(
-    h_session:     CK_SESSION_HANDLE,
-    p_random:      *mut CK_BYTE,
+    h_session: CK_SESSION_HANDLE,
+    p_random: *mut CK_BYTE,
     ul_random_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "MECH", "C_GenerateRandom session={} bytes={}", h_session, ul_random_len);
-    if p_random.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_random.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     let slot_id = ck_try!(session_slot(h_session));
     let buf = std::slice::from_raw_parts_mut(p_random, ul_random_len as usize);
     ck_try!(backend::generate_random(slot_id, buf));
@@ -228,8 +279,12 @@ pub unsafe extern "C" fn C_CreateObject(
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "ATTR", "C_CreateObject session={} attr_count={}", h_session, ul_count);
-    if ph_object.is_null() { return CKR_ARGUMENTS_BAD; }
-    if p_template.is_null() || ul_count == 0 { return CKR_TEMPLATE_INCOMPLETE; }
+    if ph_object.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
+    if p_template.is_null() || ul_count == 0 {
+        return CKR_TEMPLATE_INCOMPLETE;
+    }
     let slot_id = ck_try!(session_slot(h_session));
     let attrs = ffi_api_crypto::collect_template(p_template, ul_count);
     let is_token = attrs.get(&CKA_TOKEN).is_some_and(|v| !v.is_empty() && v[0] == CK_TRUE);
@@ -240,7 +295,7 @@ pub unsafe extern "C" fn C_CreateObject(
     let class = match attrs.get(&CKA_CLASS).map(|b| backend::bytes_to_ulong(b)) {
         Some(CKO_SECRET_KEY | CKO_PUBLIC_KEY | CKO_PRIVATE_KEY | CKO_DATA) => {
             attrs.get(&CKA_CLASS).map(|b| backend::bytes_to_ulong(b)).unwrap()
-        }
+        },
         None => return CKR_TEMPLATE_INCOMPLETE,
         _ => return CKR_TEMPLATE_INCONSISTENT,
     };
@@ -278,10 +333,7 @@ pub unsafe extern "C" fn C_CreateObject(
 // ── C_DestroyObject ───────────────────────────────────────────────────────
 
 #[no_mangle]
-pub extern "C" fn C_DestroyObject(
-    h_session: CK_SESSION_HANDLE,
-    h_object:  CK_OBJECT_HANDLE,
-) -> CK_RV {
+pub extern "C" fn C_DestroyObject(h_session: CK_SESSION_HANDLE, h_object: CK_OBJECT_HANDLE) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "STORE", "C_DestroyObject session={} object={}", h_session, h_object);
     let (slot_id, logged_in) = ck_try!(session::with_session(h_session, |s| {
@@ -316,11 +368,11 @@ pub extern "C" fn C_DestroyObject(
 fn key_object_field_attr(obj: &object_store::KeyObject, attr_type: CK_ATTRIBUTE_TYPE) -> Option<Vec<u8>> {
     let bool_byte = |b: bool| vec![if b { CK_TRUE } else { CK_FALSE }];
     match attr_type {
-        CKA_LOCAL               => Some(bool_byte(obj.local)),
-        CKA_ALWAYS_SENSITIVE    => Some(bool_byte(obj.always_sensitive)),
-        CKA_NEVER_EXTRACTABLE   => Some(bool_byte(obj.never_extractable)),
+        CKA_LOCAL => Some(bool_byte(obj.local)),
+        CKA_ALWAYS_SENSITIVE => Some(bool_byte(obj.always_sensitive)),
+        CKA_NEVER_EXTRACTABLE => Some(bool_byte(obj.never_extractable)),
         CKA_ALWAYS_AUTHENTICATE => Some(bool_byte(obj.always_authenticate)),
-        CKA_KEY_GEN_MECHANISM   => Some(obj.key_gen_mechanism.to_le_bytes().to_vec()),
+        CKA_KEY_GEN_MECHANISM => Some(obj.key_gen_mechanism.to_le_bytes().to_vec()),
         _ => None,
     }
 }
@@ -330,25 +382,25 @@ fn key_object_field_attr(obj: &object_store::KeyObject, attr_type: CK_ATTRIBUTE_
 #[no_mangle]
 pub unsafe extern "C" fn C_GetAttributeValue(
     h_session: CK_SESSION_HANDLE,
-    h_object:   CK_OBJECT_HANDLE,
+    h_object: CK_OBJECT_HANDLE,
     p_template: *mut CK_ATTRIBUTE,
-    ul_count:   CK_ULONG,
+    ul_count: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     trace!(context: "ATTR", "C_GetAttributeValue session={} object={} count={}", h_session, h_object, ul_count);
-    if p_template.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_template.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     let slot_id = ck_try!(session_slot(h_session));
     let attrs = std::slice::from_raw_parts_mut(p_template, ul_count as usize);
-    let mut any_too_small   = false;
-    let mut any_sensitive   = false;
+    let mut any_too_small = false;
+    let mut any_sensitive = false;
     let mut any_unavailable = false;
 
     ck_try!(object_store::with_object_for_slot(h_object, slot_id, |obj| {
         for attr in attrs.iter_mut() {
             // Access control: block CKA_VALUE for sensitive/non-extractable keys.
-            if let Err(Pkcs11Error::AttributeSensitive) =
-                attribute_policy::check_attribute_access(attr.r#type, obj)
-            {
+            if let Err(Pkcs11Error::AttributeSensitive) = attribute_policy::check_attribute_access(attr.r#type, obj) {
                 attr.ulValueLen = CK_UNAVAILABLE_INFORMATION;
                 any_sensitive = true;
                 continue;
@@ -362,7 +414,9 @@ pub unsafe extern "C" fn C_GetAttributeValue(
                 cached.clone()
             } else {
                 let is_private_key_object = obj.key_type == object_store::KeyType::RsaPrivate
-                    || obj.attributes.get(&CKA_CLASS)
+                    || obj
+                        .attributes
+                        .get(&CKA_CLASS)
                         .map(|v| backend::bytes_to_ulong(v) == CKO_PRIVATE_KEY)
                         .unwrap_or(false);
                 if is_private_key_object && is_private_component_attr(attr.r#type) {
@@ -377,10 +431,12 @@ pub unsafe extern "C" fn C_GetAttributeValue(
                         attr.ulValueLen = CK_UNAVAILABLE_INFORMATION;
                         any_sensitive = true;
                         continue;
-                    }
+                    },
                     Err(Pkcs11Error::InvalidAttributeType) => {
                         let is_private_key_object = obj.key_type == object_store::KeyType::RsaPrivate
-                            || obj.attributes.get(&CKA_CLASS)
+                            || obj
+                                .attributes
+                                .get(&CKA_CLASS)
                                 .map(|v| backend::bytes_to_ulong(v) == CKO_PRIVATE_KEY)
                                 .unwrap_or(false);
                         if is_private_key_object && is_private_component_attr(attr.r#type) {
@@ -391,7 +447,7 @@ pub unsafe extern "C" fn C_GetAttributeValue(
                         attr.ulValueLen = CK_UNAVAILABLE_INFORMATION;
                         any_unavailable = true;
                         continue;
-                    }
+                    },
                     Err(e) => return Err(e),
                 }
             };
@@ -402,9 +458,7 @@ pub unsafe extern "C" fn C_GetAttributeValue(
                 attr.ulValueLen = CK_UNAVAILABLE_INFORMATION;
                 any_too_small = true;
             } else {
-                std::ptr::copy_nonoverlapping(
-                    val_bytes.as_ptr(), attr.pValue as *mut u8, val_bytes.len(),
-                );
+                std::ptr::copy_nonoverlapping(val_bytes.as_ptr(), attr.pValue as *mut u8, val_bytes.len());
                 attr.ulValueLen = val_bytes.len() as CK_ULONG;
             }
         }
@@ -412,32 +466,39 @@ pub unsafe extern "C" fn C_GetAttributeValue(
     }));
 
     // PKCS#11 priority: sensitive > unavailable > buffer-too-small > ok
-    if any_sensitive        { CKR_ATTRIBUTE_SENSITIVE }
-    else if any_unavailable { CKR_ATTRIBUTE_TYPE_INVALID }
-    else if any_too_small   { CKR_BUFFER_TOO_SMALL }
-    else                    { CKR_OK }
+    if any_sensitive {
+        CKR_ATTRIBUTE_SENSITIVE
+    } else if any_unavailable {
+        CKR_ATTRIBUTE_TYPE_INVALID
+    } else if any_too_small {
+        CKR_BUFFER_TOO_SMALL
+    } else {
+        CKR_OK
+    }
 }
 
 // ── C_SetAttributeValue ───────────────────────────────────────────────────
 
 #[no_mangle]
 pub unsafe extern "C" fn C_SetAttributeValue(
-    h_session:  CK_SESSION_HANDLE,
-    h_object:   CK_OBJECT_HANDLE,
+    h_session: CK_SESSION_HANDLE,
+    h_object: CK_OBJECT_HANDLE,
     p_template: *mut CK_ATTRIBUTE,
-    ul_count:   CK_ULONG,
+    ul_count: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     ck_try!(require_rw_session(h_session));
-    if p_template.is_null() { return CKR_ARGUMENTS_BAD; }
+    if p_template.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     let attrs = std::slice::from_raw_parts(p_template, ul_count as usize);
     let mut mutated_token_object = false;
     ck_try!(object_store::with_object_mut(h_object, |obj| {
         for attr in attrs {
-            if attr.pValue.is_null() { continue; }
-            let bytes = std::slice::from_raw_parts(
-                attr.pValue as *const u8, attr.ulValueLen as usize,
-            );
+            if attr.pValue.is_null() {
+                continue;
+            }
+            let bytes = std::slice::from_raw_parts(attr.pValue as *const u8, attr.ulValueLen as usize);
             // Enforce one-way ratchets and immutability rules.
             let old_val = obj.attributes.get(&attr.r#type).map(|v| v.as_slice());
             attribute_policy::validate_attribute_change(attr.r#type, old_val, bytes)?;
@@ -460,9 +521,9 @@ pub unsafe extern "C" fn C_SetAttributeValue(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_FindObjectsInit(
-    h_session:  CK_SESSION_HANDLE,
+    h_session: CK_SESSION_HANDLE,
     p_template: *const CK_ATTRIBUTE,
-    ul_count:   CK_ULONG,
+    ul_count: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     debug!(context: "STORE", "C_FindObjectsInit called session={} count={}", h_session, ul_count);
@@ -472,7 +533,9 @@ pub unsafe extern "C" fn C_FindObjectsInit(
     let template = ffi_api_crypto::collect_template_vec(p_template, ul_count);
     let results = object_store::find_objects(slot_id, &template, logged_in);
     ck_try!(session::with_session_mut(h_session, |s| {
-        if s.find_ctx.is_some() { return Err(Pkcs11Error::OperationActive); }
+        if s.find_ctx.is_some() {
+            return Err(Pkcs11Error::OperationActive);
+        }
         s.find_ctx = Some(FindContext { results, index: 0 });
         Ok(())
     }));
@@ -481,18 +544,20 @@ pub unsafe extern "C" fn C_FindObjectsInit(
 
 #[no_mangle]
 pub unsafe extern "C" fn C_FindObjects(
-    h_session:    CK_SESSION_HANDLE,
-    ph_object:    *mut CK_OBJECT_HANDLE,
+    h_session: CK_SESSION_HANDLE,
+    ph_object: *mut CK_OBJECT_HANDLE,
     ul_max_count: CK_ULONG,
-    pul_count:    *mut CK_ULONG,
+    pul_count: *mut CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
     trace!(context: "STORE", "C_FindObjects called session={} max={}", h_session, ul_max_count);
-    if ph_object.is_null() || pul_count.is_null() { return CKR_ARGUMENTS_BAD; }
+    if ph_object.is_null() || pul_count.is_null() {
+        return CKR_ARGUMENTS_BAD;
+    }
     ck_try!(session::with_session_mut(h_session, |s| {
-        let ctx   = s.find_ctx.as_mut().ok_or(Pkcs11Error::OperationNotInitialised)?;
+        let ctx = s.find_ctx.as_mut().ok_or(Pkcs11Error::OperationNotInitialised)?;
         let avail = ctx.results.len().saturating_sub(ctx.index);
-        let n     = avail.min(ul_max_count as usize);
+        let n = avail.min(ul_max_count as usize);
         for i in 0..n {
             *ph_object.add(i) = ctx.results[ctx.index + i];
         }
@@ -525,6 +590,6 @@ fn ec_curve_from_params(ec_params: Option<&[u8]>) -> crate::types::EcCurve {
     match ec_params {
         Some(OID_P384) => crate::types::EcCurve::P384,
         Some(OID_P521) => crate::types::EcCurve::P521,
-        _              => crate::types::EcCurve::P256, // default / P256 OID
+        _ => crate::types::EcCurve::P256, // default / P256 OID
     }
 }

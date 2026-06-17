@@ -94,7 +94,13 @@ impl StoredObject {
         let key_ref = engine
             .deserialize_key(&self.key_der)
             .map_err(|e| format!("deserialize_key slot {}: {e}", self.slot_id))?;
-        Ok(KeyObject::new(self.handle, self.slot_id, self.key_type.into(), key_ref, self.attributes))
+        Ok(KeyObject::new(
+            self.handle,
+            self.slot_id,
+            self.key_type.into(),
+            key_ref,
+            self.attributes,
+        ))
     }
 }
 
@@ -182,7 +188,7 @@ impl StoredToken {
                 } else {
                     TokenState::ReadWrite
                 }
-            }
+            },
         };
 
         token.so_pin = match (&self.so_pin_hash, &self.so_pin) {

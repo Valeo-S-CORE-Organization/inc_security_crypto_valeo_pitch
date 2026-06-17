@@ -16,19 +16,16 @@ use super::*;
 
 /// C_SessionCancel — cancel active cryptographic operations on a session.
 #[no_mangle]
-pub unsafe extern "C" fn C_SessionCancel(
-    h_session: CK_SESSION_HANDLE,
-    flags:     CK_FLAGS,
-) -> CK_RV {
+pub unsafe extern "C" fn C_SessionCancel(h_session: CK_SESSION_HANDLE, flags: CK_FLAGS) -> CK_RV {
     ck_try!(check_init());
     ck_try!(session::with_session_mut(h_session, |s| {
         // Cancel all active operations
-        s.sign_ctx    = None;
-        s.verify_ctx  = None;
+        s.sign_ctx = None;
+        s.verify_ctx = None;
         s.encrypt_ctx = None;
         s.decrypt_ctx = None;
-        s.digest_ctx  = None;
-        s.find_ctx    = None;
+        s.digest_ctx = None;
+        s.find_ctx = None;
         Ok(())
     }));
     CKR_OK
@@ -37,11 +34,11 @@ pub unsafe extern "C" fn C_SessionCancel(
 /// C_LoginUser — extended login with username parameter (v3.0).
 #[no_mangle]
 pub unsafe extern "C" fn C_LoginUser(
-    h_session:       CK_SESSION_HANDLE,
-    user_type:       CK_USER_TYPE,
-    p_pin:           *const CK_UTF8CHAR,
-    ul_pin_len:      CK_ULONG,
-    p_username:      *const CK_UTF8CHAR,
+    h_session: CK_SESSION_HANDLE,
+    user_type: CK_USER_TYPE,
+    p_pin: *const CK_UTF8CHAR,
+    ul_pin_len: CK_ULONG,
+    p_username: *const CK_UTF8CHAR,
     ul_username_len: CK_ULONG,
 ) -> CK_RV {
     ck_try!(check_init());
@@ -72,8 +69,8 @@ pub unsafe extern "C" fn C_LoginUser(
     // Validate user type early.
     let new_state = match user_type {
         CKU_USER => LoginState::UserLoggedIn,
-        CKU_SO   => LoginState::SoLoggedIn,
-        _        => return CKR_USER_TYPE_INVALID,
+        CKU_SO => LoginState::SoLoggedIn,
+        _ => return CKR_USER_TYPE_INVALID,
     };
 
     // Check if already logged in on this token (any session).
