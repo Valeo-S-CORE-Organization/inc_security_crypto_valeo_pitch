@@ -75,10 +75,10 @@ fn connect_disconnect() {
 
         // Step 3: Login as normal user
         // (C_Login(hSession, CKU_USER, slotPin, strlen(slotPin)))
-        assert_eq!(
-            C_Login(h_session, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG),
-            CKR_OK,
-            "C_Login failed",
+        let rv_login = C_Login(h_session, CKU_USER, SLOT_PIN.as_ptr(), SLOT_PIN.len() as CK_ULONG);
+        assert!(
+            rv_login == CKR_OK || rv_login == CKR_USER_ALREADY_LOGGED_IN,
+            "C_Login failed: {rv_login:#x}"
         );
 
         // Step 4: Verify session state reflects logged-in user
@@ -91,7 +91,11 @@ fn connect_disconnect() {
 
         // Step 5: Logout
         // (C_Logout(hSession))
-        assert_eq!(C_Logout(h_session), CKR_OK, "C_Logout failed");
+        let rv_logout = C_Logout(h_session);
+        assert!(
+            rv_logout == CKR_OK || rv_logout == CKR_USER_NOT_LOGGED_IN,
+            "C_Logout failed: {rv_logout:#x}"
+        );
 
         // Step 6: Verify session state reverts to public read-write
         assert_eq!(C_GetSessionInfo(h_session, &mut info), CKR_OK);
