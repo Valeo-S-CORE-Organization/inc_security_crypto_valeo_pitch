@@ -17,7 +17,7 @@
 API Dynamic Architecture
 ========================
 
-<<<<<<< HEAD
+
 .. code-block:: rst
    
    .. comp_arc_dyn:: Dynamic View
@@ -26,15 +26,6 @@ API Dynamic Architecture
       :safety: QM
       :status: invalid
       :fulfils:
-=======
-.. comp_arc_dyn:: Dynamic View
-   :id: comp_arc_dyn__crypto__dynamic_view
-   :security: YES
-   :safety: QM
-   :status: invalid
-   :belongs_to: comp__crypto
-   :fulfils: wp__cmpt_request_dummy
->>>>>>> 94701aa (CI (fix docs))
 
 
       Dynamic interactions for typical crypto operations.
