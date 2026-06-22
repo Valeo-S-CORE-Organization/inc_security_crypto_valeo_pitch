@@ -17,6 +17,7 @@
 Component Architecture
 ======================
 
+<<<<<<< HEAD
 .. document:: Crypto Architecture
    :id: doc__crypto_architecture
    :version: 1
@@ -30,6 +31,8 @@ Component Architecture
    :version: 1
    :status: draft
 
+=======
+>>>>>>> 0f08964 (skip SoftHSM token initialization when using Rust PKCS#11)
 Overview
 --------
 
