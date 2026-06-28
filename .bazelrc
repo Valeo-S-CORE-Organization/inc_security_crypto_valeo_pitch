@@ -38,6 +38,7 @@ build --output_groups=+rules_lint_human
 build:lint --@aspect_rules_lint//lint:fail_on_violation=true
 build:lint --config=per-x86_64-linux
 test --test_output=errors
+test --test_env=CRYPTOKI_WEAK_PIN_HASHING=1
 
 # -------------------------------------------------------------------------------
 # Shared configuration

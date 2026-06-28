@@ -79,7 +79,7 @@ fn test_logging_output_captured() {
         .arg("--exact")
         .arg("--nocapture")
         .env("_PKCS11_LOG_TEST_CHILD", "1")
-        .env("PKCS11_LOG_CONFIG", &temp_dir)
+        .env("PKCS11_LOG_CONFIG", &config_path)
         .env("TEST_TMPDIR", &base_dir) // Ensure child sees the same tmpdir if needed
         .output()
         .expect("Failed to execute child process");
