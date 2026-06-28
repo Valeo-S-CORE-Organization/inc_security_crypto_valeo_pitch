@@ -29,6 +29,7 @@ common --action_env=QNX_LICENSE_EXTSERVER_DELAY=59
 # Disable for the moment as this leads to "warning: Cannot find Build server key, the value of QNX_LICENSE_QUEUE_TIMEOUT will be ignored."
 
 test --test_output=errors
+test --test_env=CRYPTOKI_WEAK_PIN_HASHING=1
 
 # Bazel registry configuration
 common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
