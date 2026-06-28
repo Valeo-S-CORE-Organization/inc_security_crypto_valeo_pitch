@@ -26,6 +26,7 @@ build --tool_java_runtime_version=remotejdk_17
 common --action_env=QNX_LICENSE_EXTSERVER_DELAY=59
 
 test --test_output=errors
+test --test_env=CRYPTOKI_WEAK_PIN_HASHING=1
 
 # Bazel registry configuration
 common --registry=https://raw.githubusercontent.com/eclipse-score/bazel_registry/main/
