@@ -341,3 +341,14 @@ pub fn reset_token(slot_id: CK_SLOT_ID) {
 pub fn clear_tokens() {
     TOKENS.write().clear();
 }
+
+/// Replace a token directly (used when loading from disk to bypass heavy default initialization).
+pub fn replace_token<F>(slot_id: CK_SLOT_ID, f: F)
+where
+    F: FnOnce(&mut Token),
+{
+    let mut tokens = TOKENS.write();
+    let mut token = Token::new(slot_id);
+    f(&mut token);
+    tokens.insert(slot_id, token);
+}
