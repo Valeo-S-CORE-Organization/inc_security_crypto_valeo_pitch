@@ -21,7 +21,7 @@ filegroup(
     srcs = glob(["**/*.rs"]),
 )
 
-_COMMON_DEPS = ["//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_lib"]
+_COMMON_DEPS = ["//score/cryptoki:cryptoki_lib"]
 
 _TESTS_WITH_COMMON = [
     "always_authenticate",
@@ -59,21 +59,21 @@ _TESTS_NO_COMMON = [
         "common/mod.rs",
     ],
     aliases = aliases(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal_dev = True,
         proc_macro_dev = True,
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
     proc_macro_deps = all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         proc_macro_dev = True,
     ),
     deps = _COMMON_DEPS + all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal = True,
     ) + all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal_dev = True,
     ),
 ) for name in _TESTS_WITH_COMMON]
@@ -82,21 +82,21 @@ _TESTS_NO_COMMON = [
     name = name,
     srcs = [name + ".rs"],
     aliases = aliases(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal_dev = True,
         proc_macro_dev = True,
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
     proc_macro_deps = all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         proc_macro_dev = True,
     ),
     deps = _COMMON_DEPS + all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal = True,
     ) + all_crate_deps(
-        package_name = "score/crypto/daemon/provider/pkcs11/cryptoki",
+        package_name = "score/cryptoki",
         normal_dev = True,
     ),
 ) for name in _TESTS_NO_COMMON]
