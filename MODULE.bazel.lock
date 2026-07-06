@@ -2820,6 +2820,57 @@
           }
         },
         "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [
+            "cargo_bazel_bootstrap"
+          ],
+          "explicitRootModuleDirectDevDeps": [],
+          "useAllRepos": "NO",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "apple_support+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ],
+          [
+            "bazel_features+",
+            "bazel_features_globals",
+            "bazel_features++version_extension+bazel_features_globals"
+          ],
+          [
+            "bazel_features+",
+            "bazel_features_version",
+            "bazel_features++version_extension+bazel_features_version"
+          ],
+          [
+            "rules_cc+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_cc+",
+            "cc_compatibility_proxy",
+            "rules_cc++compatibility_proxy+cc_compatibility_proxy"
+          ],
+          [
+            "rules_cc+",
+            "rules_cc",
+            "rules_cc+"
+          ],
+          [
+            "rules_cc++compatibility_proxy+cc_compatibility_proxy",
+            "rules_cc",
+            "rules_cc+"
+          ],
+          [
+            "rules_rust+",
+            "apple_support",
+            "apple_support+"
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
           "useAllRepos": "NO",
           "reproducible": false
         },

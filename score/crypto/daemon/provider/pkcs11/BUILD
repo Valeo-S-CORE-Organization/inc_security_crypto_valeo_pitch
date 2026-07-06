@@ -81,8 +81,8 @@ cc_library(
         "@score_baselibs//score/result",
     ] + select({
         ":use_rust_pkcs11": [
-            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
-            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
+            "//score/cryptoki:cryptoki_cdylib",
+            "//score/cryptoki:cryptoki_headers",
             "//third_party/openssl",
         ],
         "//conditions:default": ["//third_party/soft_hsm:libsofthsm_shared"],

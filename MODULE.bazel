@@ -514,8 +514,8 @@ bazel_dep(name = "score_crates", version = "0.0.7")
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate", isolate = True)
 crate.from_cargo(
     name = "crates",
-    cargo_lockfile = "//score/crypto/daemon/provider/pkcs11/cryptoki:Cargo.lock",
-    manifests = ["//score/crypto/daemon/provider/pkcs11/cryptoki:Cargo.toml"],
+    cargo_lockfile = "//score/cryptoki:Cargo.lock",
+    manifests = ["//score/cryptoki:Cargo.toml"],
     supported_platform_triples = [
         "aarch64-unknown-linux-gnu",
         "x86_64-unknown-linux-gnu",

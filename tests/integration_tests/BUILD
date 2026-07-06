@@ -34,8 +34,8 @@ cc_binary(
     }),
     deps = select({
         "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": [
-            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_cdylib",
-            "//score/crypto/daemon/provider/pkcs11/cryptoki:cryptoki_headers",
+            "//score/cryptoki:cryptoki_cdylib",
+            "//score/cryptoki:cryptoki_headers",
             "//third_party/openssl",
         ],
         "//conditions:default": [
