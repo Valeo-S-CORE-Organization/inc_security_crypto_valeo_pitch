@@ -45,7 +45,7 @@ impl HashedPin {
     /// Hash a PIN with Argon2id and a fresh random salt.
     pub fn new(pin: &[u8]) -> Self {
         let salt = SaltString::generate(&mut OsRng);
-        
+
         let weak_hashing = std::env::var("CRYPTOKI_WEAK_PIN_HASHING").is_ok_and(|v| v == "1");
         let params = if weak_hashing {
             argon2::Params::new(1024, 1, 1, Some(32)).expect("invalid test Argon2 params")

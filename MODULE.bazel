@@ -20,6 +20,7 @@ single_version_override(
     module_name = "rules_python",
     version = "1.5.4",
 )
+
 PYTHON_VERSION = "3.12"
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
@@ -41,6 +42,7 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 # *******************************************************************************
 # Constraint values for specifying platforms and toolchains
 # *******************************************************************************
+<<<<<<< HEAD
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "score_bazel_platforms", version = "0.1.1")
 
@@ -248,6 +250,8 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 # *******************************************************************************
 # Constraint values for specifying platforms and toolchains
 # *******************************************************************************
+=======
+>>>>>>> 2811e99 (checkpoint: working cryptoki state)
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "score_bazel_platforms", version = "0.1.2")
 
@@ -337,7 +341,7 @@ use_repo(
 
 bazel_dep(name = "rules_rust", version = "0.68.2-score")
 
-bazel_dep(name = "score_toolchains_rust", version = "0.9.1", dev_dependency = True)
+bazel_dep(name = "score_toolchains_rust", version = "0.7.0", dev_dependency = True)
 
 # *******************************************************************************
 # QNX IFS (Image File System) toolchain for building boot images
@@ -467,10 +471,16 @@ filegroup(
     urls = ["https://github.com/softhsm/SoftHSMv2/archive/refs/tags/2.7.0.tar.gz"],
 )
 
-# ===============================================================================
-# S C O R E   M O D U L E S
-# ===============================================================================
+# *******************************************************************************
+# Valeo - Cryptoki
+# *******************************************************************************
+git_override(
+    module_name = "rules_rust",
+    commit = "2b171a7376e69cb1207eced1f66904ce4ae0c819",
+    remote = "https://github.com/pawelrutkaq/rules_rust.git",
+)
 
+<<<<<<< HEAD
 # tooling
 bazel_dep(name = "score_tooling", version = "1.2.0")
 bazel_dep(name = "score_rust_policies", version = "0.0.5")
@@ -502,12 +512,26 @@ git_override(
 # Integration testing
 bazel_dep(name = "score_itf", version = "0.1.0", dev_dependency = True)
 # Register the Rust toolchains
+=======
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    extra_target_triples = [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-nto-qnx800",
+        "x86_64-pc-nto-qnx800",
+    ],
+    versions = ["nightly/2024-04-16"],
+)
+use_repo(rust, "rust_toolchains")
+
+>>>>>>> 2811e99 (checkpoint: working cryptoki state)
 register_toolchains("@rust_toolchains//:all")
 
 bazel_dep(name = "rules_shell", version = "0.8.0")
 
 bazel_dep(name = "score_rust_policies", version = "0.0.4", dev_dependency = True)
-bazel_dep(name = "score_toolchains_rust", version = "0.7.0", dev_dependency = True)
 
 bazel_dep(name = "score_crates", version = "0.0.7")
 
@@ -538,30 +562,24 @@ use_repo(crate, "crates")
 # tooling
 bazel_dep(name = "score_tooling", version = "1.1.2")
 bazel_dep(name = "aspect_rules_lint", version = "1.5.3")
-bazel_dep(name = "buildifier_prebuilt", version = "8.2.0.2")
+bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2")
 
 #docs-as-code
-bazel_dep(name = "score_docs_as_code", version = "4.0.3", dev_dependency = True)
-multiple_version_override(
-    module_name = "score_docs_as_code",
-    versions = [
-        "3.0.1",
-        "4.0.3",
-    ],
-)
+bazel_dep(name = "score_docs_as_code", version = "4.6.0")
+
+#process
+bazel_dep(name = "score_process", version = "1.6.0")
+bazel_dep(name = "score_platform", version = "0.6.0")
 
 # GoogleTest
 bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
 
 # s-core baselibs
 bazel_dep(name = "score_baselibs", version = "0.2.7")
+bazel_dep(name = "score_baselibs_rust", version = "0.1.2")
 
 # Integration testing
 bazel_dep(name = "score_itf", version = "0.1.0")
-bazel_dep(name = "score_baselibs_rust", version = "0.1.2")
-
-bazel_dep(name = "score_platform", version = "0.5.5", dev_dependency = True)
-
 bazel_dep(name = "score_python_basics", version = "0.3.4")
 bazel_dep(name = "score_logging", version = "0.2.0")
 single_version_override(

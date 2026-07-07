@@ -83,7 +83,6 @@ cc_library(
         ":use_rust_pkcs11": [
             "//score/cryptoki:cryptoki_cdylib",
             "//score/cryptoki:cryptoki_headers",
-            "//third_party/openssl",
         ],
         "//conditions:default": ["//third_party/soft_hsm:libsofthsm_shared"],
     }),

@@ -16,17 +16,13 @@
 //!   - Connecting to a token: C_Initialize → C_OpenSession → C_Login.
 //!   - Disconnecting from a token: C_Logout → C_CloseSession → C_Finalize.
 
-use serial_test::serial;
 use cryptoki::pkcs11::constants::*;
 use cryptoki::pkcs11::types::*;
 use cryptoki::pkcs11::{
-    C_Initialize,
-    C_OpenSession, C_CloseSession,
-    C_Login, C_Logout,
-    C_InitToken, C_InitPIN,
-    C_GetSessionInfo,
-    C_GenerateKey, C_EncryptInit, C_Encrypt,
+    C_CloseSession, C_Encrypt, C_EncryptInit, C_GenerateKey, C_GetSessionInfo, C_InitPIN, C_InitToken, C_Initialize,
+    C_Login, C_Logout, C_OpenSession,
 };
+use serial_test::serial;
 use std::ptr;
 use std::sync::Once;
 
@@ -134,7 +130,10 @@ fn prove_cpp_setup_bottleneck() {
 
         // 1. C_InitToken (Computes Argon2id hash for SO PIN)
         let t0 = Instant::now();
-        assert_eq!(C_InitToken(0, so_pin.as_ptr(), so_pin.len() as CK_ULONG, label.as_ptr()), CKR_OK);
+        assert_eq!(
+            C_InitToken(0, so_pin.as_ptr(), so_pin.len() as CK_ULONG, label.as_ptr()),
+            CKR_OK
+        );
         let d_init_token = t0.elapsed();
 
         let mut h: CK_SESSION_HANDLE = 0;
@@ -154,7 +153,10 @@ fn prove_cpp_setup_bottleneck() {
 
         // 4. C_Login User (Computes Argon2id hash to verify User PIN)
         let t3 = Instant::now();
-        assert_eq!(C_Login(h, CKU_USER, user_pin.as_ptr(), user_pin.len() as CK_ULONG), CKR_OK);
+        assert_eq!(
+            C_Login(h, CKU_USER, user_pin.as_ptr(), user_pin.len() as CK_ULONG),
+            CKR_OK
+        );
         let d_login_user = t3.elapsed();
 
         // 5. Generate Key & Encrypt (To contrast the heavy login vs lightweight crypto)
@@ -165,12 +167,23 @@ fn prove_cpp_setup_bottleneck() {
             pValue: key_len_bytes.as_ptr() as *mut _,
             ulValueLen: 8,
         }];
-        let mech_gen = CK_MECHANISM { mechanism: CKM_AES_KEY_GEN, pParameter: ptr::null_mut(), ulParameterLen: 0 };
+        let mech_gen = CK_MECHANISM {
+            mechanism: CKM_AES_KEY_GEN,
+            pParameter: ptr::null_mut(),
+            ulParameterLen: 0,
+        };
         let mut key_handle = 0;
-        assert_eq!(C_GenerateKey(h, &mech_gen, template.as_mut_ptr(), 1, &mut key_handle), CKR_OK);
+        assert_eq!(
+            C_GenerateKey(h, &mech_gen, template.as_mut_ptr(), 1, &mut key_handle),
+            CKR_OK
+        );
 
         let iv = [0u8; 16];
-        let mech_enc = CK_MECHANISM { mechanism: CKM_AES_CBC_PAD, pParameter: iv.as_ptr() as *mut _, ulParameterLen: 16 };
+        let mech_enc = CK_MECHANISM {
+            mechanism: CKM_AES_CBC_PAD,
+            pParameter: iv.as_ptr() as *mut _,
+            ulParameterLen: 16,
+        };
         assert_eq!(C_EncryptInit(h, &mech_enc, key_handle), CKR_OK);
 
         let plaintext = [0u8; 16];
@@ -178,7 +191,10 @@ fn prove_cpp_setup_bottleneck() {
         let mut ct_len = 32;
 
         let t4 = Instant::now();
-        assert_eq!(C_Encrypt(h, plaintext.as_ptr(), 16, ciphertext.as_mut_ptr(), &mut ct_len), CKR_OK);
+        assert_eq!(
+            C_Encrypt(h, plaintext.as_ptr(), 16, ciphertext.as_mut_ptr(), &mut ct_len),
+            CKR_OK
+        );
         let d_encrypt = t4.elapsed();
 
         C_CloseSession(h);

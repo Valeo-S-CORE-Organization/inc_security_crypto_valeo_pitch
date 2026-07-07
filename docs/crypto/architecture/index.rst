@@ -17,7 +17,6 @@
 Component Architecture
 ======================
 
-<<<<<<< HEAD
 .. document:: Crypto Architecture
    :id: doc__crypto_architecture
    :status: draft
@@ -29,8 +28,6 @@ Component Architecture
    :id: wp__cmpt_request_dummy
    :status: draft
 
-=======
->>>>>>> 0f08964 (skip SoftHSM token initialization when using Rust PKCS#11)
 Overview
 --------
 
