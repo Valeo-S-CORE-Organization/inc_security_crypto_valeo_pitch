@@ -391,7 +391,9 @@ fn persist_if_needed() {
                 Ok(stored) => objects.push(stored),
                 Err(_) => error!(context: "STORE", "serialize failed for object={}", obj.handle),
             },
-            Err(_) => warn!(context: "STORE", "no engine for slot={} skipping object={}", obj.slot_id, obj.handle),
+            Err(_) => {
+                warn!(context: "STORE", "no engine for slot={} skipping object={}", obj.slot_id, obj.handle)
+            },
         }
     }
 
@@ -432,7 +434,9 @@ pub fn load_persisted_objects() {
                     },
                     Err(_) => error!(context: "STORE", "deserialize failed handle={}", h),
                 },
-                Err(_) => warn!(context: "STORE", "no engine for slot={} skipping object={} on load", slot_id, h),
+                Err(_) => {
+                    warn!(context: "STORE", "no engine for slot={} skipping object={} on load", slot_id, h)
+                },
             }
         }
         // Ensure the handle counter is past all loaded handles to avoid collisions.

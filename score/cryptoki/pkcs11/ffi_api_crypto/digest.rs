@@ -24,8 +24,7 @@ pub unsafe extern "C" fn C_DigestInit(h_session: CK_SESSION_HANDLE, p_mechanism:
     }
     let mech_type = (*p_mechanism).mechanism;
     match mech_type {
-        CKM_MD5 | CKM_SHA_1 | CKM_SHA256 | CKM_SHA384 | CKM_SHA512 | CKM_SHA3_256 | CKM_SHA3_384 | CKM_SHA3_512 => {
-            /* valid */
+        CKM_MD5 | CKM_SHA_1 | CKM_SHA256 | CKM_SHA384 | CKM_SHA512 | CKM_SHA3_256 | CKM_SHA3_384 | CKM_SHA3_512 => { /* valid */
         },
         _ => return CKR_MECHANISM_INVALID,
     }
