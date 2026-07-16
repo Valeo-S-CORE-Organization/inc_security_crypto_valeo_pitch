@@ -95,7 +95,7 @@ int main()
     }
     auto& km = km_result.value();
 
-    auto slot_result = ctx->ResolveResource("HMAC_SHA256_IntegrationTestKey_SoftHSM", ResourceType::kKeySlot);
+    auto slot_result = ctx->ResolveResource("HMAC_SHA256_IntegrationTestKey", ResourceType::kKeySlot);
     if (!slot_result.has_value())
     {
         return Fail("ResolveResource for HMAC key failed");

@@ -68,28 +68,6 @@ int main(int argc, char** argv)
         score::mw::log::LogError() << "Warning: Could not parse config file (may not exist)";
     }
 
-    // Dynamic compatibility mode: when Rust PKCS#11 is enabled, remap key-slot
-    // provider references from legacy "SOFTHSM" to "SCORE_CRYPTO_PROVIDER" so clients
-    // can keep using the same slot/app-resource IDs.
-#ifdef USE_RUST_PKCS11
-    {
-        // Hack to modify slot entries since GetSlotEntries returns const
-        auto& slot_entries = const_cast<std::vector<score::crypto::daemon::config::KeyConfig::KeySlotEntry>&>(
-            config.GetKeyConfig().GetSlotEntries()
-        );
-        for (auto& slot : slot_entries)
-        {
-            for (auto& provider_name : slot.provider_names)
-            {
-                if (provider_name == "SOFTHSM")
-                {
-                    provider_name = "SCORE_CRYPTO_PROVIDER";
-                }
-            }
-        }
-    }
-#endif
-
     auto provider_manager = std::make_shared<score::crypto::daemon::provider::ProviderManager>(config);
 
     // Wire provider factories — each factory encapsulates construction and registration

@@ -36,14 +36,14 @@ void Pkcs11Config::PopulateDefaults()
     // Match score/crypto/provider default token identity.
     rustToken.tokenLabel = "ValeoCryptokiToken";
     rustToken.userPin = "1234";
-    rustToken.providerName = "SCORE_CRYPTO_PROVIDER";  // Used for key slot bindings
+    rustToken.providerName = "PKCS11_ENGINE";  // Used for key slot bindings
     rustToken.useHardCleanup = true;
     m_tokens.push_back(std::move(rustToken));
 #else
     Pkcs11TokenEntry softHsm{};
     softHsm.tokenLabel = "SoftHSM";
     softHsm.userPin = "1234";
-    softHsm.providerName = "SOFTHSM";
+    softHsm.providerName = "PKCS11_ENGINE";
     softHsm.useHardCleanup = true;
     m_tokens.push_back(std::move(softHsm));
 #endif
