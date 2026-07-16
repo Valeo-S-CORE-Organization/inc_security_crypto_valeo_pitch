@@ -204,6 +204,9 @@ class TestCryptoDaemon:
                 Path(
                     "third_party/soft_hsm/soft_hsm_cmake/lib/softhsm/libsofthsm2.so"
                 ): Path("/opt/crypto/lib/libsofthsm2.so"),
+                Path("score/cryptoki/libcryptoki.so"): Path(
+                    "/opt/crypto/lib/libcryptoki.so"
+                ),
                 Path("tests/test_vectors/config/integration_test_config.bin"): Path(
                     self.CRYPTO_CONFIG_PATH
                 ),
@@ -250,13 +253,19 @@ class TestCryptoDaemon:
         # Import the MAC test key so that KeySlotMacTest can load it from the
         # SoftHSM token at integration-test time.
         logger.info("Initialising SoftHSM token via init_softhsm_token")
+
+        # Dynamically select token parameters depending on whether Rust CryptoKi is compiled
+        is_rust_mode = Path("score/cryptoki/libcryptoki.so").exists()
+        token_label = "ValeoCryptokiToken" if is_rust_mode else self.SOFTHSM_TOKEN_LABEL
+        so_pin = "so-pin" if is_rust_mode else self.SOFTHSM_SO_PIN
+
         exit_code, output = docker.exec_run(
             f"sh -c 'LD_LIBRARY_PATH=/opt/crypto/lib:$LD_LIBRARY_PATH "
             f"/opt/crypto/bin/init_softhsm_token"
             f" --token-dir {self.SOFTHSM_TOKEN_DIR}"
             f" --config-path {self.SOFTHSM_CONF_PATH}"
-            f" --token-label {self.SOFTHSM_TOKEN_LABEL}"
-            f" --so-pin {self.SOFTHSM_SO_PIN}"
+            f" --token-label {token_label}"
+            f" --so-pin {so_pin}"
             f" --user-pin {self.SOFTHSM_USER_PIN}"
             f" --import-key-file /opt/crypto/tests/test_vectors/mac/key_aes_256.key"
             f" --import-key-label integration_test_hmac'"

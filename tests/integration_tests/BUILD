@@ -113,6 +113,7 @@ py_itf_test(
         ":score_demo",
         "//score/crypto/api/control_plane",
         "//score/crypto/daemon:crypto_daemon",
+        "//score/cryptoki:cryptoki_cdylib",
         "//tests/config:logging.json",
         "//third_party/grpc:libgrpc_shared",
         "//third_party/openssl:openssl_shared",
