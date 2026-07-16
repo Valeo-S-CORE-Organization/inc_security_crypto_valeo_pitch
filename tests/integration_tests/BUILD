@@ -26,8 +26,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "init_softhsm_token",
-    srcs = ["init_softhsm_token.cpp"],
+    name = "init_pkcs11_token",
+    srcs = ["init_pkcs11_token.cpp"],
     local_defines = select({
         "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": ["USE_RUST_PKCS11=1"],
         "//conditions:default": [],
@@ -107,7 +107,7 @@ py_itf_test(
     ],
     data = [
         ":control_client_app",
-        ":init_softhsm_token",
+        ":init_pkcs11_token",
         ":score_api_hash_example",
         ":score_api_mac_example",
         ":score_demo",

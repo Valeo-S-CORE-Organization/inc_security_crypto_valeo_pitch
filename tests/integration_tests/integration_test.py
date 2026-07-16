@@ -183,8 +183,8 @@ class TestCryptoDaemon:
                 Path("tests/integration_tests/control_client_app"): Path(
                     "/opt/crypto/bin/control_client_app"
                 ),
-                Path("tests/integration_tests/init_softhsm_token"): Path(
-                    "/opt/crypto/bin/init_softhsm_token"
+                Path("tests/integration_tests/init_pkcs11_token"): Path(
+                    "/opt/crypto/bin/init_pkcs11_token"
                 ),
                 Path("tests/integration_tests/score_api_hash_example"): Path(
                     "/opt/crypto/bin/score_api_hash_example"
@@ -252,7 +252,7 @@ class TestCryptoDaemon:
         # Initialise SoftHSM token using the purpose-built helper binary.
         # Import the MAC test key so that KeySlotMacTest can load it from the
         # SoftHSM token at integration-test time.
-        logger.info("Initialising SoftHSM token via init_softhsm_token")
+        logger.info("Initialising SoftHSM token via init_pkcs11_token")
 
         # Dynamically select token parameters depending on whether Rust CryptoKi is compiled
         is_rust_mode = Path("score/cryptoki/libcryptoki.so").exists()
@@ -261,7 +261,7 @@ class TestCryptoDaemon:
 
         exit_code, output = docker.exec_run(
             f"sh -c 'LD_LIBRARY_PATH=/opt/crypto/lib:$LD_LIBRARY_PATH "
-            f"/opt/crypto/bin/init_softhsm_token"
+            f"/opt/crypto/bin/init_pkcs11_token"
             f" --token-dir {self.SOFTHSM_TOKEN_DIR}"
             f" --config-path {self.SOFTHSM_CONF_PATH}"
             f" --token-label {token_label}"
@@ -271,9 +271,9 @@ class TestCryptoDaemon:
             f" --import-key-label integration_test_hmac'"
         )
         assert exit_code == 0, (
-            f"init_softhsm_token failed (exit {exit_code}):\n{output.decode()}"
+            f"init_pkcs11_token failed (exit {exit_code}):\n{output.decode()}"
         )
-        logger.info(f"init_softhsm_token output: {output.decode().strip()}")
+        logger.info(f"init_pkcs11_token output: {output.decode().strip()}")
 
     @pytest.fixture
     def daemon(self, docker):
