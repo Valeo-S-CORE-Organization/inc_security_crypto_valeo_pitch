@@ -51,22 +51,24 @@ score/                            ← Source code  ◄ main
 │       ├── objects/              ← Key/cert objects
 │       └── src/                  ← Entry point
 │
-└── crypto/
-    ├── api/
-    │   └── control_plane/        ← [LIB CTRL-PLANE]
-    │
-    ├── ipc/
-    │   └── grpc_adapter/         ← [IPC — gRPC]
-    │
-    └── daemon/
-        ├── control_plane/        ← [DAEMON CTRL-PLANE]
-        ├── mediator/             ← [MEDIATOR]
-        ├── data_manager/         ← [DATA MANAGER]
-        ├── key_management/       ← [KEY MANAGEMENT]
-        ├── config/               ← [CONFIG]
-        └── provider/
-            ├── score_provider/   ← [SW PROVIDER / OpenSSL]
-            └── pkcs11/           ← [HW PROVIDER / PKCS#11]
+├── crypto/
+│   ├── api/
+│   │   └── control_plane/        ← [LIB CTRL-PLANE]
+│   │
+│   ├── ipc/
+│   │   └── grpc_adapter/         ← [IPC — gRPC]
+│   │
+│   └── daemon/
+│       ├── control_plane/        ← [DAEMON CTRL-PLANE]
+│       ├── mediator/             ← [MEDIATOR]
+│       ├── data_manager/         ← [DATA MANAGER]
+│       ├── key_management/       ← [KEY MANAGEMENT]
+│       ├── config/               ← [CONFIG]
+│       └── provider/
+│           ├── score_provider/   ← [SW PROVIDER / OpenSSL]
+│           └── pkcs11/           ← [HW PROVIDER / PKCS#11]
+│
+└── cryptoki/                     ← [HW SECURE PROVIDER / PKCS#11 Rust Library]  ◄ Peer Package
 ```
 
 ---
@@ -177,7 +179,7 @@ made inside the container will not persist after a rebuild.
 
 # Valeo Cryptoki Integration Guide
 
-This document describes how the `@score/crypto/provider` Rust PKCS#11 module is integrated into the `score_crypto` daemon, replacing the default SoftHSM implementation.
+This document describes how the S-CORE Peer Package Rust PKCS#11 module (located under `//score/cryptoki`) is integrated into the `score_crypto` daemon, replacing the default SoftHSM implementation.
 
 ## Overview
 
@@ -188,7 +190,7 @@ The integration bridges a custom Rust-based PKCS#11 provider with the existing C
     *   Link `//score/cryptoki:cryptoki_cdylib` instead of `libsofthsm`.
     *   Inject the `USE_RUST_PKCS11=1` C++ preprocessor macro.
     *   Switch header includes from `<cryptoki.h>` to the Rust module's `<pkcs11.h>`.
-3.  **Runtime Provider Remapping**: When the `USE_RUST_PKCS11` macro is active, the daemon dynamically remaps key-slot provider references from the legacy `"SOFTHSM"` string to `"SCORE_CRYPTO_PROVIDER"`. This ensures existing configuration files and client code remain compatible without modification.
+3.  **Generic Provider Naming**: To achieve true, professional vendor neutrality, S-CORE registers both SoftHSM and your Rust library under the same abstract provider name: `"PKCS11_ENGINE"`. This allows standard, production-grade string-matching and label-matching to connect key slots natively, eliminating legacy hardcoded vendor brand names and any unsafe runtime memory cast overrides.
 
 ## Prerequisites
 
@@ -205,7 +207,7 @@ To build the main `crypto_daemon` and the integration tools for your local machi
 ```bash
 bazel build //score/crypto/daemon:crypto_daemon \
             //tests/integration_tests:cryptoki_demo_client \
-            //tests/integration_tests:init_softhsm_token \
+            //tests/integration_tests:init_pkcs11_token \
     --config=host_config_1 \
     --define use_rust_pkcs11=true \
     --experimental_isolated_extension_usages
@@ -228,13 +230,13 @@ bazel build //score/... //tests/... \
 The `cryptoki_demo_client` exercises both HASH (software) and MAC (hardware) operations against the Rust PKCS#11 token. To run it successfully on your host, you must first initialize the token and start the daemon.
 
 ### 1. Initialize the Token and Key
-Use the `init_softhsm_token` tool to initialize a local token store and import a test key. Since it's built with `--define use_rust_pkcs11=true`, it will talk directly to the Rust module rather than SoftHSM.
+Use the `init_pkcs11_token` tool to initialize a local token store and import a test key. Since it's built with `--define use_rust_pkcs11=true`, it will talk directly to the Rust module rather than SoftHSM.
 
 ```bash
 mkdir -p /tmp/rust_tokens
 export CRYPTOKI_STORE=/tmp/rust_tokens/token.json
 
-bazel run //tests/integration_tests:init_softhsm_token \
+bazel run //tests/integration_tests:init_pkcs11_token \
   --config=host_config_1 --define use_rust_pkcs11=true --experimental_isolated_extension_usages \
   -- \
   --token-dir /tmp/rust_tokens \
@@ -262,7 +264,7 @@ Execute the demo client in another terminal to perform cryptographic operations 
 
 ```bash
 export USE_RUST_PKCS11=1
-bazel run //tests/integration_tests: \
+bazel run //tests/integration_tests:cryptoki_demo_client \
   --config=host_config_1 --define use_rust_pkcs11=true --experimental_isolated_extension_usages
 ```
 
