@@ -1,28 +1,38 @@
 --- build/main.rs
 +++ build/main.rs
-@@ -130,2 +130,25 @@
+@@ -130,2 +130,30 @@
  
  fn main() {
 +    println!("cargo:rustc-cfg=openssl");
-+    println!("cargo:rustc-cfg=ossl101");
-+    println!("cargo:rustc-cfg=ossl102");
-+    println!("cargo:rustc-cfg=ossl102f");
-+    println!("cargo:rustc-cfg=ossl102h");
-+    println!("cargo:rustc-cfg=ossl110");
-+    println!("cargo:rustc-cfg=ossl110f");
-+    println!("cargo:rustc-cfg=ossl110g");
-+    println!("cargo:rustc-cfg=ossl110h");
-+    println!("cargo:rustc-cfg=ossl111");
-+    println!("cargo:rustc-cfg=ossl111b");
-+    println!("cargo:rustc-cfg=ossl111c");
-+    println!("cargo:rustc-cfg=ossl111d");
-+    println!("cargo:rustc-cfg=ossl300");
-+    println!("cargo:rustc-cfg=ossl310");
-+    println!("cargo:rustc-cfg=ossl320");
-+    println!("cargo:rustc-cfg=ossl330");
-+    println!("cargo:rustc-cfg=ossl340");
-+    
-+    println!("cargo:version_number=30400000"); // 3.4.0 (highest openssl-sys 0.9.116 officially supports)
++
++    // 1. Get S-CORE's compiled OpenSSL include directory from Bazel
++    let include_dir = std::env::var("DEP_OPENSSL_INCLUDE")
++        .expect("DEP_OPENSSL_INCLUDE environment variable not set");
++    let header_path = std::path::Path::new(&include_dir).join("openssl/opensslv.h");
++
++    // 2. Read the header file
++    let content = std::fs::read_to_string(&header_path)
++        .unwrap_or_else(|e| panic!("Failed to read OpenSSL header at {:?}: {}", header_path, e));
++
++    // 3. Parse OPENSSL_VERSION_STR (e.g. "3.6.1")
++    let version_str = content.lines()
++        .find(|l| l.contains("OPENSSL_VERSION_STR"))
++        .and_then(|l| l.split('"').nth(1))
++        .expect("Failed to find OPENSSL_VERSION_STR in opensslv.h");
++
++    // 4. Parse into major, minor, patch
++    let parts: Vec<u64> = version_str.split('.')
++        .map(|s| s.parse().expect("Failed to parse version component"))
++        .collect();
++    let version = (parts[0] << 28) | (parts[1] << 20) | (parts[2] << 12);
++
++    // 5. Call cfgs::get to dynamically retrieve the highest supported flags!
++    for cfg in cfgs::get(Some(version), None) {
++        println!("cargo:rustc-cfg={cfg}");
++    }
++
++    // 6. Emit the version number and exit immediately
++    println!("cargo:version_number={:x}", version);
 +    println!("cargo:conf=");
 +    return;
 +
