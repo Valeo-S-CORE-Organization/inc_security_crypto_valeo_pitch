@@ -1,8 +1,0 @@
---- Cargo.toml
-+++ Cargo.toml
-@@ -10,3 +10,3 @@
- version.workspace = true
- authors.workspace = true
--readme.workspace = true
-+readme = false
- edition.workspace = true
