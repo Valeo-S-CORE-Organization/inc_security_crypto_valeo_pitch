@@ -348,8 +348,3 @@ bazel_dep(name = "score_itf", version = "0.1.0", dev_dependency = True)
 
 bazel_dep(name = "score_python_basics", version = "0.3.4")
 bazel_dep(name = "score_logging", version = "0.2.0")
-single_version_override(
-    module_name = "score_logging",
-    patch_strip = 0,
-    patches = ["//third_party/patches:score_logging.patch"],
-)
