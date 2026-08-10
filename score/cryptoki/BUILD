@@ -13,7 +13,6 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library")
 
-package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "src",
@@ -57,6 +56,7 @@ rust_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
+    visibility = ["//visibility:public"],
     deps = DEPS,
 )
 
@@ -66,6 +66,7 @@ rust_shared_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
+    visibility = ["//visibility:public"],
     deps = DEPS,
 )
 

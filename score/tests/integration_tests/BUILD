@@ -15,19 +15,12 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
 load("@score_itf//:defs.bzl", "py_itf_test")
 
 cc_binary(
-<<<<<<< HEAD:score/tests/integration_tests/BUILD
-    name = "init_softhsm_token",
-    srcs = ["init_softhsm_token.cpp"],
-    deps = [
-        "//third_party/soft_hsm:softhsm_shared",
-    ],
-=======
     name = "control_client_app",
     srcs = ["control_client_app.cpp"],
     dynamic_deps = ["//third_party/grpc:libgrpc_shared"],
     deps = [
-        "//score/crypto/api:operations",
-        "//score/crypto/api/control_plane:control_plane_impl",
+        "//score/crypto/src/api:operations",
+        "//score/crypto/src/api/control_plane:control_plane_impl",
         "@googletest//:gtest",
     ],
 )
@@ -36,11 +29,11 @@ cc_binary(
     name = "init_pkcs11_token",
     srcs = ["init_pkcs11_token.cpp"],
     local_defines = select({
-        "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": ["USE_RUST_PKCS11=1"],
+        "//score/crypto/src/backend:use_rust_pkcs11_active": ["USE_RUST_PKCS11=1"],
         "//conditions:default": [],
     }),
     deps = select({
-        "//score/crypto/daemon/provider/pkcs11:use_rust_pkcs11": [
+        "//score/crypto/src/backend:use_rust_pkcs11_active": [
             "//score/cryptoki:cryptoki_cdylib",
             "//score/cryptoki:cryptoki_headers",
             "//third_party/openssl",
@@ -49,7 +42,6 @@ cc_binary(
             "//third_party/soft_hsm:libsofthsm_shared",
         ],
     }),
->>>>>>> a55e6c0 (Test: Rename init_softhsm_token to generic init_pkcs11_token):tests/integration_tests/BUILD
 )
 
 cc_binary(
@@ -117,13 +109,8 @@ py_itf_test(
         "--log-level=WARNING",
     ],
     data = [
-<<<<<<< HEAD:score/tests/integration_tests/BUILD
-        ":hash_performance_test",
-        ":init_softhsm_token",
-=======
         ":control_client_app",
         ":init_pkcs11_token",
->>>>>>> a55e6c0 (Test: Rename init_softhsm_token to generic init_pkcs11_token):tests/integration_tests/BUILD
         ":score_api_hash_example",
         ":score_api_mac_example",
         ":score_demo",

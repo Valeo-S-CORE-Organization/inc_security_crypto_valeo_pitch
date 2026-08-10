@@ -14,7 +14,6 @@
 load("@crates//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
-package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "rust_test_sources",
@@ -65,6 +64,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",
         proc_macro_dev = True,
@@ -88,6 +88,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",
         proc_macro_dev = True,
