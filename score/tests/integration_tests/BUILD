@@ -29,19 +29,12 @@ cc_binary(
     name = "init_pkcs11_token",
     srcs = ["init_pkcs11_token.cpp"],
     local_defines = select({
-        "//score/crypto/src/backend:use_rust_pkcs11_active": ["USE_RUST_PKCS11=1"],
+        "//score/crypto/src/backend:rust_cryptoki_selected": ["USE_RUST_PKCS11=1"],
         "//conditions:default": [],
     }),
-    deps = select({
-        "//score/crypto/src/backend:use_rust_pkcs11_active": [
-            "//score/cryptoki:cryptoki_cdylib",
-            "//score/cryptoki:cryptoki_headers",
-            "//third_party/openssl",
-        ],
-        "//conditions:default": [
-            "//third_party/soft_hsm:libsofthsm_shared",
-        ],
-    }),
+    deps = [
+        "//score/crypto/src/backend:active_pkcs11_backend",
+    ],
 )
 
 cc_binary(
