@@ -64,6 +64,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",
@@ -88,6 +89,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
+    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",

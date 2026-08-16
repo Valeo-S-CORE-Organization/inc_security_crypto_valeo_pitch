@@ -40,7 +40,7 @@ DEPS = [
     "@crates//:toml",
     "@crates//:zeroize",
     "@crates//:openssl",
-    "//third_party/openssl:openssl",
+    "//third_party/openssl:openssl_shared",
 ]
 
 # Shared C/C++ linker flags required by score_log_bridge
@@ -56,6 +56,7 @@ rust_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
+    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     deps = DEPS,
 )
@@ -66,8 +67,24 @@ rust_shared_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
+    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     deps = DEPS,
+)
+
+cc_library(
+    name = "cryptoki_cdylib_wrapped",
+    hdrs = [
+        "cpp/pkcs11.h",
+        "cpp/pkcs11_cpp.hpp",
+    ],
+    includes = ["cpp"],
+    linkstatic = False,
+    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cryptoki_cdylib",
+    ],
 )
 
 cc_library(

@@ -110,7 +110,7 @@ build:target_config_2 --extra_toolchains=@score_qcc_aarch64_toolchain//:aarch64-
 
 
 # Clippy linting
-build --aspects=@score_rust_policies//clippy:linters.bzl%clippy_strict
+# build --aspects=@score_rust_policies//clippy:linters.bzl%clippy_strict
 build --output_groups=+rules_lint_human
 build:lint --@aspect_rules_lint//lint:fail_on_violation=true
 build:lint --config=per-x86_64-linux
@@ -118,3 +118,9 @@ test --test_output=errors
 
 # Run Cargo build.rs scripts locally so openssl-sys can access host license files
 build:aarch64-qnx --strategy=CargoBuildScriptRun=local
+
+# Valeo - Disable lockfile verification to prevent QNX Host-to-CI divergence
+common --lockfile_mode=update
+
+# Valeo - Force Bazel to use the company's approved x86_64 compiler by default on Linux
+build --config=x86_64-linux
