@@ -56,7 +56,6 @@ rust_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
-    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     deps = DEPS,
 )
@@ -67,7 +66,6 @@ rust_shared_library(
     crate_name = "cryptoki",
     crate_root = "lib.rs",
     rustc_flags = CPP_LINKER_FLAGS,
-    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     deps = DEPS,
 )
@@ -80,7 +78,6 @@ cc_library(
     ],
     includes = ["cpp"],
     linkstatic = False,
-    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
     visibility = ["//visibility:public"],
     deps = [
         ":cryptoki_cdylib",

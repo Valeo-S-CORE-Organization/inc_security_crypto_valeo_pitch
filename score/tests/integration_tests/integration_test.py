@@ -193,6 +193,9 @@ class TestCryptoDaemon:
             Path("score/tests/integration_tests/score_demo"): Path(
                 "/opt/crypto/bin/score_demo"
             ),
+            Path("score/tests/integration_tests/hash_performance_test"): Path(
+                "/opt/crypto/bin/hash_performance_test"
+            ),
             Path("third_party/grpc/libgrpc++.so.1"): Path(
                 "/opt/crypto/lib/libgrpc++.so.1"
             ),

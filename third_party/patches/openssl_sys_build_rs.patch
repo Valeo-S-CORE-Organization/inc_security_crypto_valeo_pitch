@@ -1,7 +1,7 @@
---- build/main.rs
-+++ build/main.rs
-@@ -130,2 +130,37 @@
-
+diff -urN a/build/main.rs b/build/main.rs
+--- a/build/main.rs
++++ b/build/main.rs
+@@ -131,1 +131,43 @@
  fn main() {
 +    println!("cargo:rustc-cfg=openssl");
 +
@@ -45,5 +45,3 @@
 +    println!("cargo:version_number=30500000"); // 3.5.0 (highest version openssl-sys 0.9.116 supports for OpenSSL 3.6.1 fallback)
 +    println!("cargo:conf=");
 +    return;
-+
-     let target = env::var("TARGET").unwrap();

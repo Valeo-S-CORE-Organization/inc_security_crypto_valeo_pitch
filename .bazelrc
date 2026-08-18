@@ -118,8 +118,6 @@ test --test_output=errors
 
 # Run Cargo build.rs scripts locally so openssl-sys can access host license files
 build:aarch64-qnx --strategy=CargoBuildScriptRun=local
-
-# Valeo - Disable lockfile verification to prevent QNX Host-to-CI divergence
 common --lockfile_mode=update
 
 # Valeo - Force Bazel to use the company's approved x86_64 compiler by default on Linux

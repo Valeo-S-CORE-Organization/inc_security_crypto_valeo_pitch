@@ -20,7 +20,10 @@ filegroup(
     srcs = glob(["**/*.rs"]),
 )
 
-_COMMON_DEPS = ["//score/cryptoki:cryptoki_lib"]
+_COMMON_DEPS = [
+    "//score/cryptoki:cryptoki_lib",
+    "//third_party/openssl:openssl_shared",
+]
 
 _TESTS_WITH_COMMON = [
     "always_authenticate",
@@ -51,6 +54,14 @@ _TESTS_NO_COMMON = [
     "storage_atomic_writes",
 ]
 
+_CPP_LINKER_FLAGS = [
+    "-Clink-arg=-lstdc++",
+    "-Clink-arg=-lm",
+    "-Clink-arg=-lc",
+    "-Clink-arg=-lssl",
+    "-Clink-arg=-lcrypto",
+]
+
 [rust_test(
     name = name,
     srcs = [
@@ -64,7 +75,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
-    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
+    rustc_flags = _CPP_LINKER_FLAGS,
     visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",
@@ -89,7 +100,7 @@ _TESTS_NO_COMMON = [
     ),
     crate_root = name + ".rs",
     env = {"RUST_TEST_THREADS": "1"},
-    target_compatible_with = ["@score_bazel_platforms//version:gcc_12.2.0"],
+    rustc_flags = _CPP_LINKER_FLAGS,
     visibility = ["//visibility:public"],
     proc_macro_deps = all_crate_deps(
         package_name = "score/cryptoki",

@@ -107,6 +107,7 @@ py_itf_test(
         ":score_api_hash_example",
         ":score_api_mac_example",
         ":score_demo",
+        ":hash_performance_test",
         "//score/crypto/src/api/control_plane",
         "//score/crypto/src/daemon:crypto_daemon",
         "//score/tests/config:logging.json",
