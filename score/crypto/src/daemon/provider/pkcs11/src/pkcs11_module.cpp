@@ -156,7 +156,11 @@ Expected<std::monostate, score::crypto::daemon::common::DaemonErrorCode> ModuleG
     }
 
     m_functionList = functionList;
+#if USE_RUST_PKCS11
+    const CK_RV rv = m_functionList->C_Initialize(static_cast<CK_C_INITIALIZE_ARGS_PTR>(initArgs));
+#else
     const CK_RV rv = m_functionList->C_Initialize(static_cast<CK_VOID_PTR>(initArgs));
+#endif
     if (rv == CKR_CRYPTOKI_ALREADY_INITIALIZED)
     {
         // Library was already initialised by another Pkcs11Module instance in this process.
