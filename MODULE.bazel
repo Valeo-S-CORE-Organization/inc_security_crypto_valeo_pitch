@@ -126,13 +126,7 @@ use_repo(
 # Rust toolchains
 # *******************************************************************************
 
-git_override(
-    module_name = "rules_rust",
-    commit = "2b171a7376e69cb1207eced1f66904ce4ae0c819",
-    remote = "https://github.com/pawelrutkaq/rules_rust.git",
-)
-
-bazel_dep(name = "rules_rust")
+bazel_dep(name = "rules_rust", version = "0.68.2-score")
 
 bazel_dep(name = "score_toolchains_rust", version = "0.9.1", dev_dependency = True)
 
