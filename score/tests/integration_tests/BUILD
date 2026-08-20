@@ -28,10 +28,6 @@ cc_binary(
 cc_binary(
     name = "init_pkcs11_token",
     srcs = ["init_pkcs11_token.cpp"],
-    local_defines = select({
-        "//score/crypto/src/backend:rust_cryptoki_selected": ["USE_RUST_PKCS11=1"],
-        "//conditions:default": [],
-    }),
     deps = [
         "//score/crypto/src/backend:active_pkcs11_backend",
     ],
