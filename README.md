@@ -213,11 +213,11 @@ bazel build //score/crypto/src/daemon:crypto_daemon \
 
 ### Cross-Compiling for QNX (Target)
 
-To build the daemon and tests for QNX (`aarch64-qnx`), use the `target_config_2` configuration. The workspace is configured to correctly map both target and host Ferrocene toolchains to ensure procedural macros build correctly, and automatically disables incompatible shared memory modules.
+To build the daemon and tests for QNX (`aarch64-qnx`), use the `aarch64-qnx` configuration preset. The workspace is configured to correctly map both target and host Ferrocene toolchains to ensure procedural macros build correctly, and automatically disables incompatible shared memory modules.
 
 ```bash
 bazel build //score/... \
-    --config=target_config_2 \
+    --config=aarch64-qnx \
     --//score/crypto/src/backend:pkcs11_backend=//score/cryptoki:cryptoki_cdylib_wrapped \
     --experimental_isolated_extension_usages
 ```
@@ -267,7 +267,7 @@ bazel run //score/tests/integration_tests:score_demo \
 
 ## Troubleshooting
 
-*   **Toolchain Errors**: If you encounter errors mentioning `rules_rust` or missing toolchains, ensure you are including `--config=host_config_1` or `--config=target_config_2` in your Bazel command. This is strictly required to activate the Ferrocene compiler capable of building the module.
+*   **Toolchain Errors**: If you encounter errors mentioning `rules_rust` or missing toolchains, ensure you are including `--config=x86_64-linux` or `--config=aarch64-qnx` / `--config=x86_64-qnx` in your Bazel command. This is strictly required to activate the Ferrocene compiler capable of building the module.
 *   **Missing Symbols / Header Errors**: If the C++ compilation fails looking for `<cryptoki.h>`, ensure you have included `--//score/crypto/src/backend:pkcs11_backend=//score/cryptoki:cryptoki_cdylib_wrapped`.
 *   **LoadKey Failed**: If the client fails with `[FAIL] LoadKey failed`, ensure the token was initialized correctly in Step 1 and that the `CRYPTOKI_STORE` environment variable is set for the daemon before running it.
 *   **QNX Build Missing Headers**: If QNX fails to compile `typed_memory.h`, ensure `--@score_baselibs//score/memory/shared/flags:use_typedshmd=false` is correctly set in your `.bazelrc` for `shared_qnx`.

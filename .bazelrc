@@ -85,12 +85,6 @@ test:x86_64-qnx --test_lang_filters=cc,rust
 test:aarch64-qnx --test_timeout=180,900,2700,10800 # Increase default test timeout by factor 3
 
 # -------------------------------------------------------------------------------
-# Different toolchain configuration for x86_64-qnx
-# -------------------------------------------------------------------------------
-build:target_config_1 --config=x86_64-qnx
-build:target_config_1 --extra_toolchains=@score_qcc_x86_64_toolchain//:x86_64-qnx-sdp_8.0.0
-
-# -------------------------------------------------------------------------------
 # Config dedicated to target platform CPU:aarch64 and OS:QNX
 # -------------------------------------------------------------------------------
 build:aarch64-qnx --config=shared_qnx
@@ -101,13 +95,6 @@ build:aarch64-qnx --extra_toolchains=@score_qnx_aarch64_ifs_toolchain//:ifs-aarc
 test:aarch64-qnx --run_under=@score_qnx_unit_tests//src:run_under_qnx
 test:aarch64-qnx --test_lang_filters=cc,rust
 test:aarch64-qnx --test_timeout=180,900,2700,10800 # Increase default test timeout by factor 3
-
-# -------------------------------------------------------------------------------
-# Different toolchain configuration for aarch64-qnx
-# -------------------------------------------------------------------------------
-build:target_config_2 --config=aarch64-qnx
-build:target_config_2 --extra_toolchains=@score_qcc_aarch64_toolchain//:aarch64-qnx-sdp_8.0.0
-
 
 # Clippy linting
 # build --aspects=@score_rust_policies//clippy:linters.bzl%clippy_strict
