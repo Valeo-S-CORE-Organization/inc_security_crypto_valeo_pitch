@@ -346,7 +346,7 @@ bazel_dep(name = "score_itf", version = "0.1.0", dev_dependency = True)
 # Provide the tools from the devcontainer to Bazel
 bazel_dep(name = "score_devcontainer", version = "1.10.0")
 
-# Valeo - Patch score_baselibs_rust stable compiler feature crash on-the-fly
+# Patch score_baselibs_rust stable compiler feature crash on-the-fly
 archive_override(
     module_name = "score_baselibs_rust",
     patch_strip = 1,
@@ -357,13 +357,11 @@ archive_override(
     urls = ["https://github.com/eclipse-score/baselibs_rust/archive/refs/tags/v0.1.2.tar.gz"],
 )
 
-# Valeo - Patch score_logging stable compiler feature crash on-the-fly
-archive_override(
+# Temporarily track the upstream main branch containing our merged FFI fix
+git_override(
     module_name = "score_logging",
-    patch_strip = 1,
-    patches = [
-        "//third_party/patches:score_logging_feature.patch",
-    ],
-    strip_prefix = "logging-0.2.0",
-    urls = ["https://github.com/eclipse-score/logging/archive/refs/tags/v0.2.0.tar.gz"],
+    remote = "https://github.com/eclipse-score/logging.git",
+    branch = "main",
 )
+
+
