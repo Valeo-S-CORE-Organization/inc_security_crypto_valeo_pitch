@@ -348,15 +348,10 @@ bazel_dep(name = "score_itf", version = "0.5.0", dev_dependency = True)
 # Provide the tools from the devcontainer to Bazel
 bazel_dep(name = "score_devcontainer", version = "1.11.0")
 
-# Patch score_baselibs stable compiler feature crash on-the-fly
-archive_override(
+# Force score_baselibs version to v0.2.10 to block transitive C++ refactoring crashes
+single_version_override(
     module_name = "score_baselibs",
-    patch_strip = 1,
-    patches = [
-        "//third_party/patches:score_baselibs_feature.patch",
-    ],
-    strip_prefix = "baselibs-0.2.10",
-    urls = ["https://github.com/eclipse-score/baselibs/archive/refs/tags/v0.2.10.tar.gz"],
+    version = "0.2.10",
 )
 
 # Temporarily track the upstream main branch containing our merged FFI fix
