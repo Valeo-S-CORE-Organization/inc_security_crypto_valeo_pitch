@@ -39,8 +39,7 @@ DEPS = [
     "@crates//:tempfile",
     "@crates//:toml",
     "@crates//:zeroize",
-    "@crates//:openssl",
-    "//third_party/openssl:openssl_shared",
+    "@score_crates//:openssl",
 ]
 
 # Shared C/C++ linker flags required by score_log_bridge

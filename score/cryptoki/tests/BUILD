@@ -22,7 +22,6 @@ filegroup(
 
 _COMMON_DEPS = [
     "//score/cryptoki:cryptoki_lib",
-    "//third_party/openssl:openssl_shared",
 ]
 
 _TESTS_WITH_COMMON = [
@@ -73,8 +72,6 @@ _CPP_LINKER_FLAGS = select({
 }) + [
     "-Clink-arg=-lm",
     "-Clink-arg=-lc",
-    "-Clink-arg=-lssl",
-    "-Clink-arg=-lcrypto",
 ]
 
 [rust_test(

@@ -14,6 +14,31 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "configure_make")
 
+# config settings for selecting on OS + CPU combinations
+config_setting(
+    name = "is_qnx_aarch64",
+    constraint_values = [
+        "@platforms//os:qnx",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+config_setting(
+    name = "is_qnx_x86_64",
+    constraint_values = [
+        "@platforms//os:qnx",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "is_linux_aarch64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
 # OpenSSL build using rules_foreign_cc
 # Configure options reference for OpenSSL 3.6.1:
 # https://github.com/openssl/openssl/blob/openssl-3.6.1/INSTALL.md
@@ -23,9 +48,9 @@ configure_make(
     configure_command = "Configure",  # OpenSSL uses Configure, not configure
     configure_in_place = False,  # Avoid path conflicts with QCC
     configure_options = select({
-        "//platforms:is_qnx_aarch64": ["qnx-aarch64"],  #Patched openssl main.conf
-        "//platforms:is_qnx_x86_64": ["qnx-x86_64"],  #Patched openssl main.conf
-        "//platforms:is_linux_aarch64": ["linux-aarch64"],
+        ":is_qnx_aarch64": ["qnx-aarch64"],  #Patched openssl main.conf
+        ":is_qnx_x86_64": ["qnx-x86_64"],  #Patched openssl main.conf
+        ":is_linux_aarch64": ["linux-aarch64"],
         "//conditions:default": [],
     }) + [
         "shared",  # Build shared libraries (libcrypto.so, libssl.so)
@@ -88,12 +113,12 @@ configure_make(
         "--libdir=lib",
     ],
     env = select({
-        "//platforms:is_qnx_aarch64": {
+        ":is_qnx_aarch64": {
             # Override toolchain paths to use absolute paths instead of /proc/self/cwd
             "QNX_HOST": "$${PWD}/external/score_bazel_cpp_toolchains++gcc+score_qcc_aarch64_toolchain_pkg/host/linux/x86_64",
             "QNX_TARGET": "$${PWD}/external/score_bazel_cpp_toolchains++gcc+score_qcc_aarch64_toolchain_pkg/target/qnx",
         },
-        "//platforms:is_qnx_x86_64": {
+        ":is_qnx_x86_64": {
             "QNX_HOST": "$${PWD}/external/score_bazel_cpp_toolchains++gcc+score_qcc_x86_64_toolchain_pkg/host/linux/x86_64",
             "QNX_TARGET": "$${PWD}/external/score_bazel_cpp_toolchains++gcc+score_qcc_x86_64_toolchain_pkg/target/qnx",
         },
@@ -114,7 +139,7 @@ configure_make(
         "install_dev",
     ],
     visibility = [
-        "//third_party/openssl:__subpackages__",
+        "//visibility:public",
     ],
 )
 
@@ -153,5 +178,37 @@ filegroup(
         ":openssl_libcrypto_so_extract",
         ":openssl_libssl_so_extract",
     ],
-    visibility = ["//:__subpackages__"],
+    visibility = ["//visibility:public"],
+)
+
+# ===============================================================================
+# S I N G L E   S O U R C E   O F   T R U T H   (FFI Synchronization)
+# ===============================================================================
+
+# Generates openssl_build_info.txt containing the version & disabled features.
+# This file is propagated hermetically to @score_crates to configure the Rust 
+# openssl-sys patch, solving the circular dependency (Issue #183) and 
+# the coverage linking crash (Issue #200) simultaneously.
+genrule(
+    name = "openssl_build_info",
+    srcs = [":openssl_make"],
+    outs = ["openssl_build_info.txt"],
+    cmd = """
+    set -e
+    # 1. Locate the generated opensslv.h and configuration.h headers dynamically inside the sandbox
+    VERSION_FILE=$$(find $(locations :openssl_make) -path "*/include/openssl/opensslv.h" | head -n 1)
+    CONF_FILE=$$(find $(locations :openssl_make) -path "*/include/openssl/configuration.h" | head -n 1)
+    
+    if [ -z "$$VERSION_FILE" ] || [ -z "$$CONF_FILE" ]; then
+        echo "ERROR: OpenSSL generated headers not found in sandbox!" >&2
+        exit 1
+    fi
+    
+    # 2. Extract and write the OpenSSL version dynamically (e.g., "3.6.1")
+    grep -oE 'define OPENSSL_VERSION_STR\\s+"[0-9.]+"' "$$VERSION_FILE" | awk '{print $$3}' | tr -d '"' > $@
+    
+    # 3. Extract and append all active OPENSSL_NO_* feature flags as a comma-separated string
+    grep -oE 'OPENSSL_NO_[A-Z0-9_]+' "$$CONF_FILE" | sort -u | paste -sd, >> $@
+    """,
+    visibility = ["//visibility:public"],
 )

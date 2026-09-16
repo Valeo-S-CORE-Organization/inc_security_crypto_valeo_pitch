@@ -34,7 +34,7 @@ cc_library(
 cc_library(
     name = "openssl_detail_headers",
     hdrs = ["detail/openssl_algorithm_info.hpp"],
-    implementation_deps = ["//third_party/openssl:openssl_shared"],
+    implementation_deps = ["@score_openssl//:openssl_shared"],
     target_compatible_with = select({
         "//score/crypto/src/backend:openssl_backend_active": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -82,7 +82,7 @@ cc_library(
         "provider_openssl.cpp",
     ],
     implementation_deps = [
-        "//third_party/openssl:openssl_shared",
+        "@score_openssl//:openssl_shared",
     ],
     includes = ["."],
     linkstatic = True,
