@@ -34,7 +34,7 @@ jobs:
             bazel-target: "test //score/... --config=x86_64-linux"
             upload-name: "score_security_crypto linux x86_64 test results"
           - name: Linux aarch64, default backend
-            bazel-target: "build //score/... --config=aarch64-linux -- -//score/cryptoki/..."
+            bazel-target: "build //score/... --config=aarch64-linux"
             upload-name: "NO UPLOAD OF TEST RESULTS CONFIGURED"
           - name: Linux x86_64, pkcs11 provider
             bazel-target: "test //score/... --config=x86_64-linux --//score/crypto/src/backend:score_crypto_score_backend_enabled=False"
