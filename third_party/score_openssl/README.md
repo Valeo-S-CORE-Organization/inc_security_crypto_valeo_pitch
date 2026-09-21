@@ -76,6 +76,6 @@ Extracting OpenSSL compilation into a standalone leaf-node module (`@score_opens
 
 ### Option C: Linking Pre-Built QNX SDP OpenSSL Binaries
 *   **Approach**: Link directly against pre-compiled OpenSSL libraries shipped inside the QNX Software Development Platform (SDP).
-*   **Why Discarded**: QNX SDP binaries do not expose the exact `OPENSSL_NO_*` feature set required by our security policies, leading to ABI mismatch risks during Rust FFI compilation.
+*   **Status / Exploration Alternative**: This is currently under investigation as a platform-specific alternative for QNX targets. However, because QNX SDP binaries only support QNX execution and do not provide Linux host/target capabilities, compiling from the source tarball remains our primary unified baseline to guarantee identical, deterministic feature configurations (`OPENSSL_NO_*` gates) and perfect FFI contract matching across both Linux and QNX.
 
 *(Note: If the platform strategy later transitions to standardized OS/BCR modules across all target platforms, `@score_openssl` can be evaluated for consolidation into `@score_crates`.)*
