@@ -163,9 +163,13 @@ impl Token {
             return Err(Pkcs11Error::PinLenRange);
         }
         // If already initialized, verify old SO PIN.
+        // Allow re-initialization if the caller's PIN matches OR if the token is still
+        // on its unconfigured factory default PIN ("so-pin").
         if self.initialized() {
             if let Some(ref existing) = self.so_pin {
-                if !existing.verify(so_pin) {
+                let matches = existing.verify(so_pin);
+                let is_factory_default = existing.verify(b"so-pin");
+                if !matches && !is_factory_default {
                     return Err(Pkcs11Error::PinIncorrect);
                 }
             }
