@@ -156,7 +156,7 @@ bazel_dep(name = "score_toolchains_rust", version = "0.10.0", dev_dependency = T
 bazel_dep(name = "score_crates", version = "0.0.13")
 git_override(
     module_name = "score_crates",
-    commit = "800b77a3bbfd167994a946b0c0a0dc566cbc272f",
+    commit = "d153a71dd19cf66f34c434a4c73bf74973967b4b",
     remote = "https://github.com/Valeo-S-CORE-Organization/score-crates.git",
 )
 
@@ -271,7 +271,7 @@ bazel_dep(name = "flatbuffers", version = "25.12.19")
 bazel_dep(name = "score_openssl", version = "0.1.0")
 git_override(
     module_name = "score_openssl",
-    commit = "a45249e5cd1db7efcfb0587a7e08ae56bb363d5e",
+    commit = "e34e971d33a6d45283a07a4d1f34a0c8769f1a6d",
     remote = "https://github.com/Valeo-S-CORE-Organization/openssl.git",
 )
 

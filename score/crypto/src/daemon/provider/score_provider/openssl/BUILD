@@ -56,7 +56,7 @@ cc_library(
     visibility = ["//score/crypto/src/daemon/provider:__subpackages__"],
     deps = [
         "//score/crypto/src/api/types:certificate_types",
-        "//third_party/openssl:openssl_shared",
+        "@score_openssl//:openssl",
     ],
 )
 
@@ -65,7 +65,7 @@ cc_library(
     srcs = ["cert_management/openssl_cert_parser.cpp"],
     implementation_deps = [
         ":openssl_cert_utils",
-        "//third_party/openssl:openssl_shared",
+        "@score_openssl//:openssl",
     ],
     target_compatible_with = select({
         "//score/crypto/src/backend:openssl_backend_active": [],
@@ -92,7 +92,7 @@ cc_test(
         ":openssl_cert_management_headers",
         ":openssl_cert_parser_library",
         "//score/crypto/src/daemon/cert_management:cert_management_headers",
-        "//third_party/openssl:openssl_shared",
+        "@score_openssl//:openssl",
         "@googletest//:gtest_main",
     ],
 )
