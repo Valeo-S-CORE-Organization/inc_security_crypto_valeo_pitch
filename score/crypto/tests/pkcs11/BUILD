@@ -13,14 +13,33 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
+# Lightweight environment setup helper
+cc_library(
+    name = "pkcs11_test_env_setup",
+    testonly = True,
+    hdrs = ["pkcs11_test_env_setup.hpp"],
+    includes = ["."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//score/tests/utility",
+        "@googletest//:gtest",
+    ],
+)
+
 # Vendor-neutral PKCS#11 test fixture supporting interchangeable backends
 # (SoftHSM2, Rust Cryptoki, or dynamic loader) via active_pkcs11_backend.
 cc_library(
     name = "pkcs11_test_fixture",
+    testonly = True,
     hdrs = ["pkcs11_test_fixture.hpp"],
     includes = ["."],
+    target_compatible_with = select({
+        "//score/crypto/src/backend:pkcs11_backend_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     visibility = ["//:__subpackages__"],
     deps = [
+        ":pkcs11_test_env_setup",
         "//score/crypto/src/backend:active_pkcs11_backend",
         "@googletest//:gtest",
     ],

@@ -38,13 +38,13 @@
 #ifndef SCORE_CRYPTO_TESTS_PKCS11_PKCS11_TEST_FIXTURE_HPP
 #define SCORE_CRYPTO_TESTS_PKCS11_PKCS11_TEST_FIXTURE_HPP
 
+#include "score/crypto/tests/pkcs11/pkcs11_test_env_setup.hpp"
+
 #include <gtest/gtest.h>
 #include <pkcs11.h>
 
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -55,6 +55,21 @@ namespace tests::pkcs11
 class Pkcs11TestFixture : public ::testing::Test
 {
   public:
+    // -------------------------------------------------------------------------
+    // Default PKCS#11 configuration constants & accessors
+    // -------------------------------------------------------------------------
+    static constexpr const char* kDefaultTokenLabel = "TestToken";
+    static constexpr const char* kDefaultUserPin = "1234";
+    static constexpr const char* kDefaultSoPin = "1234";
+    static constexpr const char* kDefaultProviderName = "PKCS11_TEST";
+    static constexpr uint16_t kDefaultProviderId = 1U;
+
+    [[nodiscard]] static const char* GetTokenLabel() noexcept { return kDefaultTokenLabel; }
+    [[nodiscard]] static const char* GetUserPin() noexcept { return kDefaultUserPin; }
+    [[nodiscard]] static const char* GetSoPin() noexcept { return kDefaultSoPin; }
+    [[nodiscard]] static const char* GetProviderName() noexcept { return kDefaultProviderName; }
+    [[nodiscard]] static uint16_t GetProviderId() noexcept { return kDefaultProviderId; }
+
     // -------------------------------------------------------------------------
     // Public helpers callable from derived test bodies
     // -------------------------------------------------------------------------
@@ -143,31 +158,10 @@ class Pkcs11TestFixture : public ::testing::Test
 
     void SetUp() override
     {
-        const char* tmpdir = std::getenv("TEST_TMPDIR");
-        std::string base = (tmpdir != nullptr) ? tmpdir : "/tmp";
+        const std::string test_dir = env::UniqueTestDirectory("pkcs11_fixture");
 
-        static unsigned int s_test_count = 0;
-        std::string test_id = std::to_string(++s_test_count);
-        std::string test_dir = base + "/pkcs11_fixture_" + test_id;
-
-        // --- Prepare SoftHSM2 configuration ---
-        std::string softhsm_token_dir = test_dir + "/softhsm_tokens";
-        std::string softhsm_conf_path = test_dir + "/softhsm2.conf";
-        std::filesystem::create_directories(softhsm_token_dir);
-
-        {
-            std::ofstream cfg(softhsm_conf_path);
-            cfg << "directories.tokendir = " << softhsm_token_dir << "\n";
-            cfg << "objectstore.backend = file\n";
-            cfg << "log.level = INFO\n";
-        }
-        ::setenv("SOFTHSM2_CONF", softhsm_conf_path.c_str(), 1);
-
-        // --- Prepare Rust Cryptoki storage ---
-        std::string cryptoki_token_dir = test_dir + "/cryptoki_tokens";
-        std::string cryptoki_store_path = cryptoki_token_dir + "/token.json";
-        std::filesystem::create_directories(cryptoki_token_dir);
-        ::setenv("CRYPTOKI_STORE", cryptoki_store_path.c_str(), 1);
+        // Abstracted backend-specific filesystem and environment setup
+        ASSERT_TRUE(env::PrepareBackendEnvironments(test_dir));
 
         // --- C_GetFunctionList ---
         CK_RV rv = C_GetFunctionList(&function_list);
@@ -176,9 +170,14 @@ class Pkcs11TestFixture : public ::testing::Test
 
         // --- C_Initialize ---
         rv = function_list->C_Initialize(nullptr);
-        // CKR_CRYPTOKI_ALREADY_INITIALIZED is fine if library was loaded in prior test in same process
-        ASSERT_TRUE((rv == CKR_OK) || (rv == CKR_CRYPTOKI_ALREADY_INITIALIZED))
-            << "C_Initialize failed: " << rv;
+        // If already initialized by a prior test in the same process, finalize and re-initialize
+        // to guarantee the newly prepared isolated token environment is loaded cleanly.
+        if (rv == CKR_CRYPTOKI_ALREADY_INITIALIZED)
+        {
+            function_list->C_Finalize(nullptr);
+            rv = function_list->C_Initialize(nullptr);
+        }
+        ASSERT_EQ(rv, CKR_OK) << "C_Initialize failed: " << rv;
 
         // --- Discover first available slot (may be uninitialized) ---
         CK_ULONG slot_count = 0;
@@ -191,41 +190,62 @@ class Pkcs11TestFixture : public ::testing::Test
         ASSERT_EQ(rv, CKR_OK) << "C_GetSlotList failed: " << rv;
         slot_id = slots[0];
 
-        // --- C_InitToken ---
-        std::string label = "TestToken";
-        label.resize(32, ' ');  // PKCS#11 standard mandates 32-character padded label buffer
+        // --- Check if token is already initialized (e.g. pre-initialized hardware token) ---
+        CK_TOKEN_INFO token_info{};
+        rv = function_list->C_GetTokenInfo(slot_id, &token_info);
+        ASSERT_EQ(rv, CKR_OK) << "C_GetTokenInfo failed: " << rv;
 
-        CK_UTF8CHAR so_pin[] = "1234";
-        CK_UTF8CHAR user_pin[] = "1234";
+        const bool is_initialized = (token_info.flags & CKF_TOKEN_INITIALIZED) != 0U;
+        if (!is_initialized)
+        {
+            // --- C_InitToken (only for fresh / uninitialized tokens) ---
+            std::string label = kDefaultTokenLabel;
+            label.resize(32, ' ');  // PKCS#11 standard mandates 32-character padded label buffer
 
-        rv = function_list->C_InitToken(slot_id,
-                                        so_pin,
-                                        static_cast<CK_ULONG>(sizeof(so_pin) - 1),
-                                        reinterpret_cast<CK_UTF8CHAR_PTR>(const_cast<char*>(label.c_str())));
-        ASSERT_EQ(rv, CKR_OK) << "C_InitToken failed: " << rv;
+            auto* so_pin = reinterpret_cast<CK_UTF8CHAR_PTR>(const_cast<char*>(kDefaultSoPin));
+            auto so_pin_len = static_cast<CK_ULONG>(std::strlen(kDefaultSoPin));
 
-        // After InitToken a provider may re-assign or expose the initialized slot.
-        // Re-query to get the slot that now has a present token.
-        slot_id = ResolveInitializedSlot();
-        ASSERT_NE(slot_id, static_cast<CK_SLOT_ID>(CK_UNAVAILABLE_INFORMATION))
-            << "Could not find initialized token slot after C_InitToken";
+            rv = function_list->C_InitToken(slot_id,
+                                            so_pin,
+                                            so_pin_len,
+                                            reinterpret_cast<CK_UTF8CHAR_PTR>(const_cast<char*>(label.c_str())));
+            ASSERT_EQ(rv, CKR_OK) << "C_InitToken failed: " << rv;
 
-        // --- Open a RW session ---
-        rv = function_list->C_OpenSession(slot_id, CKF_SERIAL_SESSION | CKF_RW_SESSION, nullptr, nullptr, &session);
-        ASSERT_EQ(rv, CKR_OK) << "C_OpenSession failed: " << rv;
+            // After InitToken a provider may re-assign or expose the initialized slot.
+            // Re-query to get the slot that now has a present token.
+            slot_id = ResolveInitializedSlot();
+            ASSERT_NE(slot_id, static_cast<CK_SLOT_ID>(CK_UNAVAILABLE_INFORMATION))
+                << "Could not find initialized token slot after C_InitToken";
 
-        // --- SO login -> set user PIN ---
-        rv = function_list->C_Login(session, CKU_SO, so_pin, static_cast<CK_ULONG>(sizeof(so_pin) - 1));
-        ASSERT_EQ(rv, CKR_OK) << "C_Login (SO) failed: " << rv;
+            // --- Open a RW session ---
+            rv = function_list->C_OpenSession(slot_id, CKF_SERIAL_SESSION | CKF_RW_SESSION, nullptr, nullptr, &session);
+            ASSERT_EQ(rv, CKR_OK) << "C_OpenSession failed: " << rv;
 
-        rv = function_list->C_InitPIN(session, user_pin, static_cast<CK_ULONG>(sizeof(user_pin) - 1));
-        ASSERT_EQ(rv, CKR_OK) << "C_InitPIN failed: " << rv;
+            // --- SO login -> set user PIN ---
+            rv = function_list->C_Login(session, CKU_SO, so_pin, so_pin_len);
+            ASSERT_EQ(rv, CKR_OK) << "C_Login (SO) failed: " << rv;
 
-        rv = function_list->C_Logout(session);
-        ASSERT_EQ(rv, CKR_OK) << "C_Logout (SO) failed: " << rv;
+            auto* user_pin = reinterpret_cast<CK_UTF8CHAR_PTR>(const_cast<char*>(kDefaultUserPin));
+            auto user_pin_len = static_cast<CK_ULONG>(std::strlen(kDefaultUserPin));
+
+            rv = function_list->C_InitPIN(session, user_pin, user_pin_len);
+            ASSERT_EQ(rv, CKR_OK) << "C_InitPIN failed: " << rv;
+
+            rv = function_list->C_Logout(session);
+            ASSERT_EQ(rv, CKR_OK) << "C_Logout (SO) failed: " << rv;
+        }
+        else
+        {
+            // Token is already pre-initialized: open session directly
+            rv = function_list->C_OpenSession(slot_id, CKF_SERIAL_SESSION | CKF_RW_SESSION, nullptr, nullptr, &session);
+            ASSERT_EQ(rv, CKR_OK) << "C_OpenSession failed: " << rv;
+        }
 
         // --- User login ---
-        rv = function_list->C_Login(session, CKU_USER, user_pin, static_cast<CK_ULONG>(sizeof(user_pin) - 1));
+        auto* user_pin = reinterpret_cast<CK_UTF8CHAR_PTR>(const_cast<char*>(kDefaultUserPin));
+        auto user_pin_len = static_cast<CK_ULONG>(std::strlen(kDefaultUserPin));
+
+        rv = function_list->C_Login(session, CKU_USER, user_pin, user_pin_len);
         ASSERT_EQ(rv, CKR_OK) << "C_Login (User) failed: " << rv;
     }
 
@@ -241,8 +261,7 @@ class Pkcs11TestFixture : public ::testing::Test
             function_list->C_Finalize(nullptr);
             function_list = nullptr;
         }
-        ::unsetenv("SOFTHSM2_CONF");
-        ::unsetenv("CRYPTOKI_STORE");
+        env::CleanupBackendEnvironments();
     }
 
   private:
