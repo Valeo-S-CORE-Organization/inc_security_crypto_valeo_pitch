@@ -32,7 +32,7 @@ cp score/tests/config/logging.json /opt/crypto/etc
 ./bazel-bin/score/tests/integration_tests/init_pkcs11_token \
   --token-dir /tmp/softhsm_tokens \
   --config-path /tmp/softhsm2.conf \
-  --token-label SoftHSM \
+  --token-label PKCS11_TOKEN \
   --so-pin 12345678 \
   --user-pin 1234 \
   --import-key-file /opt/crypto/share/test_vectors/mac/key_aes_256.key \
@@ -43,7 +43,8 @@ cp score/tests/config/logging.json /opt/crypto/etc
 
 ```
 export CRYPTO_CONFIG_FILE=/opt/crypto/etc/integration_test_config.bin
-export SOFTHSM2_CONF=/tmp/softhsm2.conf
+export SOFTHSM2_CONF=/tmp/softhsm2.conf                             # If using SoftHSM2
+export CRYPTOKI_STORE=/tmp/cryptoki_tokens/token.json               # If using Rust Cryptoki
 export MW_LOG_CONFIG_FILE=/opt/crypto/etc/logging.json
 
 ./bazel-bin/score/crypto/src/daemon/crypto_daemon
