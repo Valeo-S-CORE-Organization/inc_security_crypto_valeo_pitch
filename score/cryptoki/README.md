@@ -70,9 +70,7 @@ export CRYPTOKI_STORE=/tmp/rust_tokens/token.json
 bazel run //score/tests/integration_tests:init_pkcs11_token \
   --//score/crypto/src/backend:pkcs11_backend=//score/cryptoki:cryptoki_cdylib_wrapped --experimental_isolated_extension_usages \
   -- \
-  --token-dir /tmp/rust_tokens \
-  --config-path /tmp/rust_tokens/softhsm2.conf \
-  --token-label ValeoCryptokiToken \
+  --token-label PKCS11_TOKEN \
   --so-pin so-pin \
   --user-pin 1234 \
   --import-key-file $PWD/score/tests/test_vectors/mac/key_aes_256.key \
