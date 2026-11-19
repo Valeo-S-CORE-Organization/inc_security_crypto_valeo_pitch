@@ -69,7 +69,12 @@ _FLAKY_TESTS = [
 ]
 
 _CPP_LINKER_FLAGS = select({
-    "@platforms//os:qnx": ["-Clink-arg=-lc++"],   # QNX uses libc++
+    # QNX uses libc++. The trailing -lcrypto is needed because the static libs are passed as
+    # "-lcrypto -lssl", so libssl's references to libcrypto (e.g. ASYNC_WAIT_CTX_*) stay unresolved.
+    "@platforms//os:qnx": [
+        "-Clink-arg=-lc++",
+        "-Clink-arg=-lcrypto",
+    ],
     "//conditions:default": ["-Clink-arg=-lstdc++"],
 }) + [
     "-Clink-arg=-lm",
