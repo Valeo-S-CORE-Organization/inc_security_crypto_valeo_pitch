@@ -105,6 +105,14 @@ genrule(
     visibility = ["//visibility:public"],
 )
 
+# Header-only target for SoftHSM pkcs11 headers (no static .a archive)
+cc_library(
+    name = "soft_hsm_headers",
+    hdrs = [":extract_pkcs11_headers"],
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
 # Softhsm pkcs11 static library for linking and header consumption
 cc_library(
     name = "soft_hsm",

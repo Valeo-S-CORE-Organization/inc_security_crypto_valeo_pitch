@@ -11,7 +11,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 # ============================================================================
@@ -119,22 +120,109 @@ cc_library(
 # PKCS#11 Backend
 # ============================================================================
 
-# Label flag allowing command-line override of the PKCS#11 implementation.
-# Example override:
-#   bazel build //score/crypto/src/daemon:crypto_daemon \
-#       --//score/crypto/src/backend:pkcs11_backend=//external/vendor_hsm:backend
-label_flag(
-    name = "pkcs11_backend",
-    build_setting_default = "//third_party/soft_hsm:soft_hsm",
+# ============================================================================
+# Centralized String Flag Union (Issue #182 & Issue #348)
+# ============================================================================
+
+# 1. Provider Enum: Single Source of Truth for PKCS#11 backend choice
+string_flag(
+    name = "pkcs11_provider",
+    build_setting_default = "softhsm",
+    values = [
+        "softhsm",
+        "cryptoki",
+    ],
     visibility = ["//visibility:public"],
 )
 
-# Label flag allowing command-line override of the shared PKCS#11 implementation
-# when dynamic linking is enabled (--@score_openssl//:use_dynamic_openssl=true).
-# Default is SoftHSM's shared library target.
-label_flag(
-    name = "pkcs11_shared_backend",
-    build_setting_default = "//third_party/soft_hsm:softhsm_shared",
+config_setting(
+    name = "pkcs11_provider_softhsm",
+    flag_values = {":pkcs11_provider": "softhsm"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "pkcs11_provider_cryptoki",
+    flag_values = {":pkcs11_provider": "cryptoki"},
+    visibility = ["//visibility:public"],
+)
+
+# Legacy alias for USE_RUST_PKCS11 in backend/pkcs11/BUILD (removed when PR #420 merges):
+alias(
+    name = "rust_cryptoki_selected",
+    actual = ":pkcs11_provider_cryptoki",
+    visibility = ["//visibility:public"],
+)
+
+# 2. Link Type Enum: Independent link strategy selector (Issue #348)
+string_flag(
+    name = "pkcs11_link_type",
+    build_setting_default = "static",
+    values = [
+        "static",
+        "dynamic",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "pkcs11_link_static",
+    flag_values = {":pkcs11_link_type": "static"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "pkcs11_link_dynamic",
+    flag_values = {":pkcs11_link_type": "dynamic"},
+    visibility = ["//visibility:public"],
+)
+
+# ============================================================================
+# Dynamic Linking Condition Selectors
+# ============================================================================
+
+# Dynamic PKCS#11 is added to the daemon if:
+# 1. PKCS#11 link type is dynamic, AND
+# 2. PKCS#11 backend is enabled.
+selects.config_setting_group(
+    name = "dynamic_pkcs11_in_daemon",
+    match_all = [
+        ":pkcs11_link_dynamic",
+        ":pkcs11_backend_enabled",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Dynamic OpenSSL Case A: User explicitly passed --@score_openssl//:use_dynamic_openssl=true
+# AND OpenSSL backend is active in the daemon.
+selects.config_setting_group(
+    name = "dynamic_openssl_via_flag",
+    match_all = [
+        "@score_openssl//:dynamic_openssl_enabled",
+        ":openssl_backend_active",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Dynamic OpenSSL Case B (Guardrail):
+# Dynamic PKCS#11 is active AND OpenSSL backend is active in the daemon.
+# (Prevents two static OpenSSL instances in memory).
+selects.config_setting_group(
+    name = "dynamic_openssl_forced_by_pkcs11",
+    match_all = [
+        ":pkcs11_link_dynamic",
+        ":openssl_backend_active",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Master switch: OpenSSL shared is linked into the daemon if EITHER Case A OR Case B is true.
+selects.config_setting_group(
+    name = "dynamic_openssl_in_daemon",
+    match_any = [
+        ":dynamic_openssl_via_flag",
+        ":dynamic_openssl_forced_by_pkcs11",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -150,28 +238,71 @@ cc_library(
     visibility = ["//:__subpackages__"],
 )
 
-# PKCS#11 backend: selected library + fixed config parser.
-# Only provider_pkcs11_factory should consume this (via implementation_deps).
+# ============================================================================
+# Synchronized Dual-Channel PKCS#11 Routers
+# ============================================================================
+
+# Composite setting groups for mutually exclusive provider + link_type pairs:
+selects.config_setting_group(
+    name = "pkcs11_static_cryptoki",
+    match_all = [
+        ":pkcs11_link_static",
+        ":pkcs11_provider_cryptoki",
+    ],
+)
+
+selects.config_setting_group(
+    name = "pkcs11_static_softhsm",
+    match_all = [
+        ":pkcs11_link_static",
+        ":pkcs11_provider_softhsm",
+    ],
+)
+
+selects.config_setting_group(
+    name = "pkcs11_dynamic_cryptoki",
+    match_all = [
+        ":pkcs11_link_dynamic",
+        ":pkcs11_provider_cryptoki",
+    ],
+)
+
+selects.config_setting_group(
+    name = "pkcs11_dynamic_softhsm",
+    match_all = [
+        ":pkcs11_link_dynamic",
+        ":pkcs11_provider_softhsm",
+    ],
+)
+
+# Compilation & deps Target for PKCS#11 backend:
+# - Static SoftHSM: links soft_hsm static archive (.a)
+# - Dynamic SoftHSM: links soft_hsm_headers (headers only; .so is in dynamic_deps)
+# - Static Cryptoki: links cryptoki_static_wrapped (.a)
+# - Dynamic Cryptoki: links cryptoki_cdylib_wrapped (.so dynamically via linkstatic=False)
 cc_library(
     name = "active_pkcs11_backend",
     visibility = ["//:__subpackages__"],
     deps = select({
         ":pkcs11_backend_enabled": [
-            ":pkcs11_backend",
             "//score/crypto/src/backend/pkcs11:pkcs11_config_parser",
         ],
+        "//conditions:default": [],
+    }) + select({
+        ":pkcs11_static_softhsm": ["//third_party/soft_hsm:soft_hsm"],
+        ":pkcs11_dynamic_softhsm": ["//third_party/soft_hsm:soft_hsm_headers"],
+        ":pkcs11_static_cryptoki": ["//score/cryptoki:cryptoki_static_wrapped"],
+        ":pkcs11_dynamic_cryptoki": ["//score/cryptoki:cryptoki_cdylib_wrapped"],
         "//conditions:default": [],
     }),
 )
 
-# ============================================================================
-# Valeo Custom Compile Toggles
-# ============================================================================
-
-config_setting(
-    name = "rust_cryptoki_selected",
-    flag_values = {
-        ":pkcs11_backend": "//score/cryptoki:cryptoki_cdylib_wrapped",
-    },
+# Active shared PKCS#11 library for test container deployments (libraries attribute)
+alias(
+    name = "active_pkcs11_shared_backend",
+    actual = select({
+        ":pkcs11_provider_cryptoki": "//score/cryptoki:cryptoki_cdylib",
+        "//conditions:default": "//third_party/soft_hsm:softhsm_shared",
+    }),
     visibility = ["//visibility:public"],
 )
