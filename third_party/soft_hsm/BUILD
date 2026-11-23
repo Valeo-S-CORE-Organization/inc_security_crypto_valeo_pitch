@@ -14,6 +14,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_shared_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
+# Normalise a toolchain-exported SDP path to an absolute path under the execroot.
+# Handles "/proc/self/cwd/<rel>" (current score_bazel_cpp_toolchains), plain "<rel>"
+# (execroot relative) and absolute paths (left untouched).
+_QNX_SDP_ENV_FIXUP = select({
+    "//platforms:is_qnx": "export QNX_HOST=\"$$(cd $$EXT_BUILD_ROOT && realpath -ms -- \"$${QNX_HOST#/proc/self/cwd/}\")\";" +
+                          " export QNX_TARGET=\"$$(cd $$EXT_BUILD_ROOT && realpath -ms -- \"$${QNX_TARGET#/proc/self/cwd/}\")\";",
+    "//conditions:default": "",
+})
+
 _SOFTHSM_CACHE_ENTRIES = {
     "BUILD_TESTS": "OFF",  # Disable test suite compilation
     "WITH_CRYPTO_BACKEND": "openssl",  # Use OpenSSL as crypto backend (matches openssl_shared dependency)
@@ -61,22 +70,10 @@ _SOFTHSM_DYNAMIC_CACHE_ENTRIES = dict(_SOFTHSM_CACHE_ENTRIES, OPENSSL_USE_STATIC
 # which avoids the libtool issues encountered with the autotools (configure_make) approach.
 cmake(
     name = "soft_hsm_cmake",
+    tool_prefix = _QNX_SDP_ENV_FIXUP,
     cache_entries = select({
         "@score_openssl//:dynamic_openssl_enabled": _SOFTHSM_DYNAMIC_CACHE_ENTRIES,
         "//conditions:default": _SOFTHSM_STATIC_CACHE_ENTRIES,
-    }),
-    env = select({
-        "//platforms:is_qnx_aarch64": {
-            # EXT_BUILD_ROOT is captured at the start of the build script (before any cd),
-            # so it reliably points to the execroot regardless of working directory changes.
-            "QNX_HOST": "$${EXT_BUILD_ROOT}/external/score_bazel_cpp_toolchains++gcc+score_qcc_aarch64_toolchain_pkg/host/linux/x86_64",
-            "QNX_TARGET": "$${EXT_BUILD_ROOT}/external/score_bazel_cpp_toolchains++gcc+score_qcc_aarch64_toolchain_pkg/target/qnx",
-        },
-        "//platforms:is_qnx_x86_64": {
-            "QNX_HOST": "$${EXT_BUILD_ROOT}/external/score_bazel_cpp_toolchains++gcc+score_qcc_x86_64_toolchain_pkg/host/linux/x86_64",
-            "QNX_TARGET": "$${EXT_BUILD_ROOT}/external/score_bazel_cpp_toolchains++gcc+score_qcc_x86_64_toolchain_pkg/target/qnx",
-        },
-        "//conditions:default": {},
     }),
     lib_source = "@softhsm_source//:all",
     out_lib_dir = "lib/softhsm",
