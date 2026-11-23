@@ -20,7 +20,7 @@ _SOFTHSM_CACHE_ENTRIES = {
     "OPENSSL_ROOT_DIR": "$${EXT_BUILD_DEPS}",  # Root path for OpenSSL headers/libs provided by Bazel deps
     "ENABLE_GOST": "OFF",  # Disable GOST (not in SCORE requirements)
     "ENABLE_EDDSA": "OFF",  # Disable EdDSA/Ed25519/Ed448 (not in SCORE requirements)
-    "ENABLE_ECC": "ON",  # Enable ECC for ECDSA/ECDH (feat_req__sec_crypt__sig_algo_ecdsa, feat_req__sec_crypt__asym_algo_ecdh)
+    "ENABLE_ECC": "ON",  # Enable ECC for ECDSA/ECDH (feat_req__crypto__sig_algo_ecdsa, feat_req__crypto__asym_algo_ecdh)
     "ENABLE_P11_KIT": "OFF",  # Disable p11-kit integration (desktop feature, not needed in embedded)
     "ENABLE_STATIC": "ON",  # Enable static build
     "CMAKE_POSITION_INDEPENDENT_CODE": "ON",  # Position-independent code for shared library creation

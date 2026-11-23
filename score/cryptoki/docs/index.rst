@@ -29,4 +29,4 @@ Cryptoki
    :status: invalid
    :safety: QM
    :security: YES
-   :belongs_to: feat__security_crypto
+   :belongs_to: feat__crypto

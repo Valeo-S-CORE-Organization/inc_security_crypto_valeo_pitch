@@ -12,7 +12,7 @@
    # SPDX-License-Identifier: Apache-2.0
    # *******************************************************************************
 
-.. _feature_safety_wp_template:
+.. _crypto_feature_safety_wp:
 
 Feature Safety Work Products List
 #################################

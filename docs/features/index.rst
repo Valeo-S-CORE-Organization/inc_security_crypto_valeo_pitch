@@ -15,7 +15,7 @@
 Crypto
 ######
 
-Feature description can be found here :need:`feat__security_crypto`.
+Feature description can be found here :need:`feat__crypto`.
 
 .. toctree::
    :maxdepth: 1

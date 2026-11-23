@@ -43,9 +43,9 @@ Functional requirements
    :safety: ASIL_B
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter, comp__ipc_protocol
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall be suitable for use in an ASIL-B scenario.
 
@@ -57,9 +57,9 @@ Functional requirements
    :safety: ASIL_B
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall be allow proven WCET for all call. A stalled QM server shall never indefinitely
    block an ASIL-B client thread.
@@ -72,9 +72,9 @@ Functional requirements
    :safety: ASIL_B
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall be resilient to crash or connection loss. If one of the participating processes
    dies or the connection is lost in any other means the users of the IPC shall be notified
@@ -88,9 +88,9 @@ Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The server shall be able to identify the calling identity via an OS-enforced mechanism,
    not a client-supplied value.
@@ -103,9 +103,9 @@ Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall not impose a threading model on the server. The server must be free to choose
    single-thread, fixed pool, or per-request threads.
@@ -118,9 +118,9 @@ Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall support multiple concurrent calls from within a single client process.
 
@@ -132,9 +132,9 @@ Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall support multiple concurrent calls from multiple client processes.
 
@@ -146,9 +146,9 @@ Functional requirements
    :safety: QM
    :status: invalid
    :satisfied_by:
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    HINT: This requirement is currently marked as invalid because inter-VM communication is
    not yet supported. It is expected to be implemented in a future version.
@@ -165,9 +165,9 @@ Functional requirements
    :safety: QM
    :status: invalid
    :satisfied_by:
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    HINT: This requirement is currently marked as invalid because C++/Rust interoperability is
    not yet supported. It is expected to be implemented in a future version.
@@ -184,9 +184,9 @@ Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_protocol
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall support payload-agnostic communication, allowing the transfer of different types
    of payload data without the need for changes to the IPC mechanism itself.
@@ -202,9 +202,9 @@ Non-Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC usage shall require minimal configuration and be fully configurable programmatically.
 
@@ -216,9 +216,9 @@ Non-Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall support a one-to-one communication model and shall not rely on broadcast or
    fan-out mechanisms.
@@ -231,8 +231,8 @@ Non-Functional requirements
    :safety: QM
    :status: valid
    :satisfied_by: comp__ipc_message_passing_adapter
-   :derived_from: feat_req__sec_crypt__no_key_exposure[version==1],
-      feat_req__sec_crypt__os_protection[version==1],
-      feat_req__sec_crypt__access_control[version==1],
+   :derived_from: feat_req__crypto__no_key_exposure[version==1],
+      feat_req__crypto__os_protection[version==1],
+      feat_req__crypto__access_control[version==1],
 
    The IPC shall provide low-latency communication between client and server processes.

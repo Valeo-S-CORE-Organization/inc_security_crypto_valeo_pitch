@@ -12,13 +12,13 @@
    # SPDX-License-Identifier: Apache-2.0
    # *******************************************************************************
 
-.. _feature_security_planning_template:
+.. _crypto_feature_security_planning:
 
 Feature Security Work Products List
 ###################################
 
 .. document:: Crypto Security WPs
-   :id: doc__feature_example_security_planning_wp
+   :id: doc__crypto_security_wp
    :version: 1
    :status: draft
    :safety: ASIL_B

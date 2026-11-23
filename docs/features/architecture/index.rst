@@ -12,7 +12,7 @@
    # SPDX-License-Identifier: Apache-2.0
    # *******************************************************************************
 
-.. _feature_architecture_example:
+.. _crypto_feature_architecture:
 
 Feature Architecture
 ====================
@@ -109,4 +109,4 @@ Used Components
 
 The components used by the feature are defined in the `components` section of the module documentation.
 
-See :ref:`component_template` for an example component.
+See :ref:`crypto_component` for an example component.

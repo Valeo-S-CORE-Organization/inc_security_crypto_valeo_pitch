@@ -30,7 +30,7 @@ Certificate Management Architecture
     :security: YES
     :safety: QM
     :status: valid
-    :belongs_to: feat__security_crypto
+    :belongs_to: feat__crypto
 
 Purpose
 -------

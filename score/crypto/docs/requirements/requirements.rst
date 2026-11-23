@@ -16,7 +16,7 @@ Crypto Requirements
 ###################
 
 .. document:: Crypto Requirements
-   :id: doc__crypto_requirements
+   :id: doc__crypto_crypto_requirements
    :version: 1
    :status: draft
    :safety: QM
@@ -34,7 +34,7 @@ deployed system.
    :id: comp_req__crypto__hash_algorithms
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing_algo_sha2
+   :derived_from: feat_req__crypto__hashing_algo_sha2
    :security: YES
    :safety: QM
    :status: valid
@@ -47,7 +47,7 @@ deployed system.
    :id: comp_req__crypto__hash_streaming
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -60,7 +60,7 @@ deployed system.
    :id: comp_req__crypto__hash_single_shot
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -74,7 +74,7 @@ deployed system.
    :id: comp_req__crypto__hash_digest_size
    :version: 1
    :reqtype: Interface
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -88,7 +88,7 @@ deployed system.
    :id: comp_req__crypto__hash_output_buffer
    :version: 1
    :reqtype: Interface
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -101,7 +101,7 @@ deployed system.
    :id: comp_req__crypto__hash_output_buffer_retry
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -115,7 +115,7 @@ deployed system.
    :id: comp_req__crypto__hash_unsupported_algorithm
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -129,7 +129,7 @@ deployed system.
    :id: comp_req__crypto__hash_provider_parity
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid
@@ -145,7 +145,7 @@ Provider Selection
    :id: comp_req__crypto__provider_fallback
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__sw_fallback
+   :derived_from: feat_req__crypto__sw_fallback
    :security: YES
    :safety: QM
    :status: valid
@@ -162,7 +162,7 @@ Hash Context Lifecycle
    :id: comp_req__crypto__hash_context_reset
    :version: 1
    :reqtype: Functional
-   :derived_from: feat_req__sec_crypt__hashing
+   :derived_from: feat_req__crypto__hashing
    :security: YES
    :safety: QM
    :status: valid

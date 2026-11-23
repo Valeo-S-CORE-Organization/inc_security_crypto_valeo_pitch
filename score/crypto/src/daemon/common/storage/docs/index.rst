@@ -21,7 +21,7 @@ Common Storage
    :status: valid
    :safety: QM
    :security: YES
-   :belongs_to: feat__security_crypto
+   :belongs_to: feat__crypto
 
 The common storage subcomponent provides file I/O and deployment-descriptor
 utilities shared by daemon components. Its architecture documents the atomic

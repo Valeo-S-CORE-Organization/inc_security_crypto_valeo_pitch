@@ -16,7 +16,7 @@ Crypto Documentation
 ====================
 
 This repository provides the cryptographic services of the Eclipse S-CORE
-:need:`feat__security_crypto`.
+:need:`feat__crypto`.
 The Crypto module offers applications a common interface for key management,
 symmetric and asymmetric cryptography, hashing, digital signatures, certificate
 handling, and post-quantum cryptography, with support for software and

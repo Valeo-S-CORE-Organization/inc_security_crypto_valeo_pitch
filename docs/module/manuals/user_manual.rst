@@ -12,13 +12,13 @@
    # SPDX-License-Identifier: Apache-2.0
    # *******************************************************************************
 
-.. _user_manual:
+.. _crypto_user_manual:
 
 User Manual
 ###########
 
-.. document:: User Manual <module name>
-   :id: doc__user_manual
+.. document:: Crypto User Manual
+   :id: doc__crypto_user_manual
    :status: draft
    :version: 1
    :safety: QM
@@ -32,7 +32,7 @@ User Manual
 Overview
 ========
 
-This user manual provides comprehensive guidance for using the [Your Module Name] module from an end customer perspective.
+This user manual provides comprehensive guidance for using the Crypto module from an end customer perspective.
 It covers installation, configuration, basic usage, and best practices for integrating this module
 into your project.
 

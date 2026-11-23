@@ -251,6 +251,11 @@ bazel_dep(name = "score_docs_as_code", version = "9.1.0")
 #process
 bazel_dep(name = "score_process_description", version = "2.2.5")
 bazel_dep(name = "score_platform", version = "0.7.6")
+git_override(
+    module_name = "score_platform",
+    commit = "05665bfc08112b64321a79a0eabc2e5fe664a4c5",  # 0.7.6 + feature renaming to crypto
+    remote = "https://github.com/eclipse-score/score.git",
+)
 
 # score baselibs
 bazel_dep(name = "score_baselibs", version = "0.2.18")

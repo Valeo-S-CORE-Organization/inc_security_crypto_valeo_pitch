@@ -17,8 +17,8 @@ Security Manual
 
 .. note:: Document header
 
-.. document:: [Your Module Name] Security Manual
-   :id: doc__mod_temp_module_name_security_manual
+.. document:: Crypto Security Manual
+   :id: doc__crypto_security_manual
    :version: 1
    :status: draft
    :safety: ASIL_B

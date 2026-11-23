@@ -19,7 +19,7 @@ Design Decisions
   :id: dec_rec__crypto__send_notify_ipc_interaction
   :version: 1
   :status: accepted
-  :context: doc__crypto_architecture
+  :context: doc__crypto_crypto_architecture
   :decision: Use Send for non-blocking request submission and Notify for the operation result or a negative server-side submission result.
   :affects: comp__ipc_message_passing_adapter
 
@@ -160,7 +160,7 @@ request ID is available.
   :id: dec_rec__crypto__ipc_request_work_admission
   :version: 1
   :status: accepted
-  :context: doc__crypto_architecture
+  :context: doc__crypto_crypto_architecture
   :decision: Do not queue request operations in the daemon. Return kProviderBusy when no worker is idle, and let the Crypto API handle it.
   :affects: comp__ipc_message_passing_adapter
 
@@ -206,7 +206,7 @@ once full, the daemon still needs to return ``kProviderBusy``.
   :id: dec_rec__crypto__ipc_fixed_worker_executor
   :version: 1
   :status: accepted
-  :context: doc__crypto_architecture
+  :context: doc__crypto_crypto_architecture
   :decision: Use a purpose-built FixedWorkerWorkItemExecutor to implement the adapter's admission, worker initialization, startup reporting, and restart requirements without an additional scheduler around a generic thread pool.
   :affects: comp__ipc_message_passing_adapter
 

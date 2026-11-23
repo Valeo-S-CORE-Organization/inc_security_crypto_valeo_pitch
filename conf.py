@@ -21,7 +21,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Crypto Project"
-project_url = "https://eclipse-score.github.io/inc_security_crypto"
+project_url = "https://eclipse-score.github.io/crypto"
 version = "0.1"
 root_doc = "index"
 

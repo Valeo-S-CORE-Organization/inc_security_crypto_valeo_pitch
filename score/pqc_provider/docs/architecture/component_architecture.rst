@@ -75,7 +75,7 @@ A component can optional also consist of lower level components to further struc
    :security: YES
    :safety: QM
    :status: valid
-   :belongs_to: feat__security_crypto
+   :belongs_to: feat__crypto
 
 .. comp_arc_sta:: PQC Provider Static View
    :id: comp_arc_sta__pqc_provider__sv

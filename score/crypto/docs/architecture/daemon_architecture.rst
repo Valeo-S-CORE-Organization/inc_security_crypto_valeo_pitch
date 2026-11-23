@@ -29,7 +29,7 @@ Crypto Daemon Component Architecture
    :status: valid
    :safety: QM
    :security: YES
-   :belongs_to: feat__security_crypto
+   :belongs_to: feat__crypto
    :consists_of: comp__crypto_key_management, comp__crypto_cert_management,
                  comp__crypto_data_manager, comp__crypto_common_storage
 

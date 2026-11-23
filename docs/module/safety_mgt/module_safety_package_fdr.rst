@@ -17,8 +17,8 @@ Safety Package Formal Review Report
 
 .. note:: Document header
 
-.. document:: [Your Module Name] Safety Package Formal Review
-  :id: doc__mod_temp_module_name_safety_package_fdr
+.. document:: Crypto Safety Package Formal Review
+  :id: doc__crypto_safety_package_fdr
   :version: 1
   :status: draft
   :safety: ASIL_B

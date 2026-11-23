@@ -12,7 +12,7 @@
    # SPDX-License-Identifier: Apache-2.0
    # *******************************************************************************
 
-.. _component_template:
+.. _crypto_component:
 
 Crypto
 #######
@@ -20,7 +20,7 @@ Crypto
 .. note:: Document header
 
 .. document:: Crypto Component
-   :id: doc__crypto
+   :id: doc__crypto_crypto
    :version: 1
    :status: draft
    :safety: ASIL_B

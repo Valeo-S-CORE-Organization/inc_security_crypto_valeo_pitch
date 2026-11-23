@@ -17,8 +17,8 @@ Safety Plan
 
 .. note:: Document header
 
-.. document:: [Your Module Name] Safety Plan
-  :id: doc__mod_temp_module_name_safety_plan
+.. document:: Crypto Safety Plan
+  :id: doc__crypto_safety_plan
   :version: 1
   :status: draft
   :safety: ASIL_B
@@ -35,7 +35,7 @@ Safety Plan
     - Adjust ``safety`` and ``tags`` according to your needs
 
 :note: The module safety plan shall be continuously maintained during the project.
-       Deviations to the module safety plan should be documented :ref:`here <module_name_safety_package_deviations>`
+       Deviations to the module safety plan should be documented :ref:`here <crypto_safety_package_deviations>`
 
 Functional Safety Management Context
 ====================================
@@ -101,17 +101,17 @@ Module Work products List
         * - :need:`wp__fdr_reports` (module Safety Plan)
           - :need:`gd_chklst__safety_plan`
           - :ndf:`copy('status', need_id='gd_chklst__safety_plan')`
-          - :need:`doc__mod_temp_module_name_safety_plan_fdr`
+          - :need:`doc__crypto_safety_plan_fdr`
 
         * - :need:`wp__fdr_reports` (module Safety Package)
           - :need:`gd_chklst__safety_package`
           - :ndf:`copy('status', need_id='gd_chklst__safety_package')`
-          - :need:`doc__mod_temp_module_name_safety_package_fdr`
+          - :need:`doc__crypto_safety_package_fdr`
 
         * - :need:`wp__fdr_reports` (module's Safety Analyses & DFA)
           - :need:`gd_chklst__safety_analysis`
           - :ndf:`copy('status', need_id='gd_chklst__safety_analysis')`
-          - :need:`doc__mod_temp_module_name_safety_analysis_fdr`
+          - :need:`doc__crypto_safety_analysis_fdr`
 
         * - :need:`wp__audit_report`
           - performed by external experts
@@ -121,7 +121,7 @@ Module Work products List
         * - :need:`wp__module_safety_manual`
           - :need:`gd_temp__safety_manual`
           - :ndf:`copy('status', need_id='gd_temp__safety_manual')`
-          - :need:`doc__mod_temp_module_name_safety_manual`
+          - :need:`doc__crypto_safety_manual`
 
         * - :need:`wp__verification_module_ver_report`
           - :need:`gd_temp__mod_ver_report`
@@ -131,7 +131,7 @@ Module Work products List
         * - :need:`wp__module_sw_release_note`
           - :need:`gd_temp__rel_mod_rel_note`
           - :ndf:`copy('status', need_id='gd_temp__rel_mod_rel_note')`
-          - :need:`doc__mod_temp_module_name_release_note`
+          - :need:`doc__crypto_release_note`
 
 Crypto Component Work products List
 ------------------------------------
@@ -147,12 +147,12 @@ Crypto Component Work products List
         * - :need:`wp__requirements_comp`
           - :need:`gd_temp__req_comp_req`
           - :ndf:`copy('status', need_id='gd_temp__req_comp_req')`
-          - :need:`doc__crypto_requirements`
+          - :need:`doc__crypto_crypto_requirements`
 
         * - :need:`wp__requirements_comp_aou`
           - :need:`gd_temp__req_aou_req`
           - :ndf:`copy('status', need_id='gd_temp__req_aou_req')`
-          - :need:`doc__crypto_requirements`
+          - :need:`doc__crypto_crypto_requirements`
 
         * - :need:`wp__requirements_inspect`
           - :need:`gd_chklst__req_inspection`
@@ -330,7 +330,7 @@ Component Architecture Status
   :colwidths: 25,25,25
   :sort: title
 
-.. _module_name_safety_package_deviations:
+.. _crypto_safety_package_deviations:
 
 Deviations from Module Safety Plan
 ----------------------------------

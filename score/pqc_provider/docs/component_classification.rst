@@ -28,7 +28,7 @@ Component Classification
 
 | Classification of ``pqc_provider``
 |
-| GitHub: ``https://github.com/eclipse-score/inc_security_crypto/tree/main/score/t.b.d``
+| GitHub: ``https://github.com/eclipse-score/crypto/tree/main/score/t.b.d``
 |
 | Additional documentation considered:
 | - ``docs/index.rst``

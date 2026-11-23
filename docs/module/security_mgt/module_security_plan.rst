@@ -17,8 +17,8 @@ Security Plan
 
 .. note:: Document header
 
-.. document:: [Your Module Name] Security Plan
-  :id: doc__mod_temp_module_name_security_plan
+.. document:: Crypto Security Plan
+  :id: doc__crypto_security_plan
   :version: 1
   :status: draft
   :safety: ASIL_B

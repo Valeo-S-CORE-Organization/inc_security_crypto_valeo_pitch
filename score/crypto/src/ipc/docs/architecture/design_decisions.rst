@@ -22,7 +22,7 @@ Selection of LoLa Message Passing as IPC
   :id: dec_rec__crypto__lola_message_passing_ipc
   :version: 1
   :status: accepted
-  :context: doc__crypto_architecture
+  :context: doc__crypto_crypto_architecture
   :decision: Use LoLa Message Passing, implemented with the score::message_passing API, as the crypto daemon control-plane IPC transport.
   :affects: comp__ipc_message_passing_adapter
 
