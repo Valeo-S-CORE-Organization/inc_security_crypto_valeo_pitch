@@ -22,7 +22,8 @@ filegroup(
 
 _COMMON_DEPS = [
     "//score/cryptoki:cryptoki_lib",
-    "//third_party/openssl:openssl_shared",
+    "@score_crates//:libc",
+    "@score_crates//:serde_json",
 ]
 
 _TESTS_WITH_COMMON = [
@@ -68,13 +69,16 @@ _FLAKY_TESTS = [
 ]
 
 _CPP_LINKER_FLAGS = select({
-    "@platforms//os:qnx": ["-Clink-arg=-lc++"],   # QNX uses libc++
+    # QNX uses libc++. The trailing -lcrypto is needed because the static libs are passed as
+    # "-lcrypto -lssl", so libssl's references to libcrypto (e.g. ASYNC_WAIT_CTX_*) stay unresolved.
+    "@platforms//os:qnx": [
+        "-Clink-arg=-lc++",
+        "-Clink-arg=-lcrypto",
+    ],
     "//conditions:default": ["-Clink-arg=-lstdc++"],
 }) + [
     "-Clink-arg=-lm",
     "-Clink-arg=-lc",
-    "-Clink-arg=-lssl",
-    "-Clink-arg=-lcrypto",
 ]
 
 [rust_test(
@@ -100,9 +104,6 @@ _CPP_LINKER_FLAGS = select({
     ),
     deps = _COMMON_DEPS + all_crate_deps(
         package_name = "score/cryptoki",
-        normal = True,
-    ) + all_crate_deps(
-        package_name = "score/cryptoki",
         normal_dev = True,
     ),
 ) for name in _TESTS_WITH_COMMON]
@@ -126,9 +127,6 @@ _CPP_LINKER_FLAGS = select({
         proc_macro_dev = True,
     ),
     deps = _COMMON_DEPS + all_crate_deps(
-        package_name = "score/cryptoki",
-        normal = True,
-    ) + all_crate_deps(
         package_name = "score/cryptoki",
         normal_dev = True,
     ),
