@@ -14,12 +14,12 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_KEY_MANAGEMENT_INTERFACES_I_KEY_FACTORY_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_KEY_MANAGEMENT_INTERFACES_I_KEY_FACTORY_HPP
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/key_management/interfaces/i_key_handler.hpp"
 #include "score/crypto/src/daemon/key_management/interfaces/key_slot_config.hpp"
 #include "score/crypto/src/daemon/key_management/interfaces/key_types.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <cstddef>
 #include <memory>

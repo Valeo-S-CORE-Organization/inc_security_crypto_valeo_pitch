@@ -71,7 +71,6 @@ cc_library(
         "i_mediator.hpp",
         "src/mediator_impl.hpp",
     ],
-    includes = ["."],
     visibility = ["//:__subpackages__"],
     deps = [
         ":context_algorithm",

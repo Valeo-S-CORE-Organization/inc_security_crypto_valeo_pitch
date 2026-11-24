@@ -14,14 +14,14 @@
 /// @file score_api_key_import_export_test.cpp
 /// @brief End-to-end integration tests for raw and DER EC public-key import and export.
 
-#include "score/crypto/src/api/config/key_management_context_config.hpp"
-#include "score/crypto/src/api/config/key_operation_params.hpp"
-#include "score/crypto/src/api/contexts/i_key_management_context.hpp"
-#include "score/crypto/src/api/crypto_stack_factory.hpp"
-#include "score/crypto/src/api/i_crypto_context.hpp"
-#include "score/crypto/src/api/i_crypto_stack.hpp"
-#include "score/crypto/src/api/types/common.hpp"
-#include "score/crypto/src/api/types/key.hpp"
+#include "score/crypto/config/key_management_context_config.hpp"
+#include "score/crypto/config/key_operation_params.hpp"
+#include "score/crypto/contexts/i_key_management_context.hpp"
+#include "score/crypto/crypto_stack_factory.hpp"
+#include "score/crypto/i_crypto_context.hpp"
+#include "score/crypto/i_crypto_stack.hpp"
+#include "score/crypto/types/common.hpp"
+#include "score/crypto/types/key.hpp"
 #include "score/result/result.h"
 #include "score/tests/utility/test_utility.hpp"
 

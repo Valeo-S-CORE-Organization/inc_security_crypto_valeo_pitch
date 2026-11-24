@@ -17,11 +17,11 @@
 /// The test is parameterized: GetParam()==true  → tasks run in parallel threads
 ///                             GetParam()==false → tasks run sequentially (no threads).
 
-#include "score/crypto/src/api/config/hash_context_config.hpp"
-#include "score/crypto/src/api/contexts/i_hash_context.hpp"
-#include "score/crypto/src/api/crypto_stack_factory.hpp"
-#include "score/crypto/src/api/i_crypto_context.hpp"
-#include "score/crypto/src/api/i_crypto_stack.hpp"
+#include "score/crypto/config/hash_context_config.hpp"
+#include "score/crypto/contexts/i_hash_context.hpp"
+#include "score/crypto/crypto_stack_factory.hpp"
+#include "score/crypto/i_crypto_context.hpp"
+#include "score/crypto/i_crypto_stack.hpp"
 #include "score/tests/utility/test_utility.hpp"
 
 #include <gtest/gtest.h>

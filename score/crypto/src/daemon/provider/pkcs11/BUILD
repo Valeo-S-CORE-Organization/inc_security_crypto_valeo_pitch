@@ -35,7 +35,6 @@ cc_library(
         "pkcs11_provider_factory.hpp",
         "pkcs11_session_guard.hpp",
     ],
-    includes = ["."],
     target_compatible_with = select({
         "//score/crypto/src/backend:pkcs11_backend_enabled": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -70,7 +69,6 @@ cc_library(
     implementation_deps = [
         "//score/crypto/src/backend:active_pkcs11_backend",  # Selected PKCS#11 backend
     ],
-    includes = ["."],
     linkstatic = True,
     target_compatible_with = select({
         "//score/crypto/src/backend:pkcs11_backend_enabled": [],

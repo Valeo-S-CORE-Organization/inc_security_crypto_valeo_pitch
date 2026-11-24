@@ -26,7 +26,7 @@
 #include <variant>
 #include <vector>
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/span.hpp"
 
 namespace score::crypto::daemon::common

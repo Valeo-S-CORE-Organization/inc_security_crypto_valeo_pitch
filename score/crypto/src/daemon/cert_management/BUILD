@@ -115,7 +115,7 @@ cc_library(
         ":cert_management_headers",
         ":cert_management_runtime_headers",
         ":cert_management_daemon_headers",
-        "//score/crypto/src/api/types:certificate_types",
+        "//score/crypto/types:certificate_types",
         "//score/crypto/src/daemon/common",
     ],
 )
@@ -137,8 +137,8 @@ cc_library(
     ],
     linkstatic = True,
     deps = [
-        "//score/crypto/src/api/types:certificate_types",
-        "//score/crypto/src/api/types:common_types",
+        "//score/crypto/types:certificate_types",
+        "//score/crypto/types:common_types",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
     ],
@@ -166,8 +166,8 @@ cc_library(
     linkstatic = True,
     deps = [
         ":cert_management_headers",
-        "//score/crypto/src/api/types:certificate_types",
-        "//score/crypto/src/api/types:common_types",
+        "//score/crypto/types:certificate_types",
+        "//score/crypto/types:common_types",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/data_manager",
@@ -189,8 +189,8 @@ cc_library(
     linkstatic = True,
     deps = [
         ":cert_management_headers",
-        "//score/crypto/src/api/types:certificate_types",
-        "//score/crypto/src/api/types:common_types",
+        "//score/crypto/types:certificate_types",
+        "//score/crypto/types:common_types",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/common/storage:deployment_iface",
@@ -241,8 +241,8 @@ cc_library(
     deps = [
         ":cert_management_headers",
         ":cert_management_runtime_headers",
-        "//score/crypto/src/api/types:certificate_types",
-        "//score/crypto/src/api/types:common_types",
+        "//score/crypto/types:certificate_types",
+        "//score/crypto/types:common_types",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/config:config_types",

@@ -14,7 +14,7 @@
 #ifndef SCORE_CRYPTO_API_DATA_PLANE_I_SHM_REGION_REGISTRY_HPP
 #define SCORE_CRYPTO_API_DATA_PLANE_I_SHM_REGION_REGISTRY_HPP
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/span.hpp"
 

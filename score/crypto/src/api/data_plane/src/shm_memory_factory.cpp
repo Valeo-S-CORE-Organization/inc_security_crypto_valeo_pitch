@@ -13,7 +13,7 @@
 
 #include "score/crypto/src/api/data_plane/shm_memory_factory.hpp"
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/api/data_plane/i_shm_region_registry.hpp"
 #include "score/crypto/src/api/data_plane/src/shm_rw_memory.hpp"
 #include "score/crypto/src/daemon/common/actors.hpp"

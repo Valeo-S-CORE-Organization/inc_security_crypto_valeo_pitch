@@ -37,17 +37,17 @@
 ///       output is the vector byte for byte. See the reference.md beside each
 ///       vector set.
 
-#include "score/crypto/src/api/config/cipher_context_config.hpp"
-#include "score/crypto/src/api/config/key_management_context_config.hpp"
-#include "score/crypto/src/api/config/key_operation_params.hpp"
-#include "score/crypto/src/api/config/random_context_config.hpp"
-#include "score/crypto/src/api/contexts/i_cipher_context.hpp"
-#include "score/crypto/src/api/contexts/i_key_management_context.hpp"
-#include "score/crypto/src/api/contexts/i_random_context.hpp"
-#include "score/crypto/src/api/crypto_stack_factory.hpp"
-#include "score/crypto/src/api/i_crypto_context.hpp"
-#include "score/crypto/src/api/i_crypto_stack.hpp"
-#include "score/crypto/src/api/types/common.hpp"
+#include "score/crypto/config/cipher_context_config.hpp"
+#include "score/crypto/config/key_management_context_config.hpp"
+#include "score/crypto/config/key_operation_params.hpp"
+#include "score/crypto/config/random_context_config.hpp"
+#include "score/crypto/contexts/i_cipher_context.hpp"
+#include "score/crypto/contexts/i_key_management_context.hpp"
+#include "score/crypto/contexts/i_random_context.hpp"
+#include "score/crypto/crypto_stack_factory.hpp"
+#include "score/crypto/i_crypto_context.hpp"
+#include "score/crypto/i_crypto_stack.hpp"
+#include "score/crypto/types/common.hpp"
 #include "score/tests/utility/test_utility.hpp"
 
 #include <gtest/gtest.h>

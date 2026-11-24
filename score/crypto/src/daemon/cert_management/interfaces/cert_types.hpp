@@ -14,10 +14,10 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_INTERFACES_CERT_TYPES_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_INTERFACES_CERT_TYPES_HPP
 
-#include "score/crypto/src/api/types/certificate.hpp"
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
+#include "score/crypto/types/certificate.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <array>
 #include <climits>

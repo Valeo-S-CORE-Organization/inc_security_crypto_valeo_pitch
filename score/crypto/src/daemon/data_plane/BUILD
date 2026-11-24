@@ -18,8 +18,8 @@ cc_library(
     hdrs = ["i_shm_factory.hpp"],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/data_manager",

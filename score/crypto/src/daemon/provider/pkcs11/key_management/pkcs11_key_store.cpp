@@ -13,7 +13,6 @@
 
 #include "score/crypto/src/daemon/provider/pkcs11/key_management/pkcs11_key_store.hpp"
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
@@ -21,6 +20,7 @@
 #include "score/crypto/src/daemon/provider/pkcs11/key_management/resolved_key.hpp"
 #include "score/crypto/src/daemon/provider/pkcs11/pkcs11_module.hpp"
 #include "score/crypto/src/daemon/provider/pkcs11/pkcs11_provider.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include "score/mw/log/logging.h"
 

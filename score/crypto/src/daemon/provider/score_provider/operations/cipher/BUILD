@@ -32,7 +32,7 @@ cc_library(
         "//score/crypto/src/daemon/provider/handler:cipher_handler_operations",
         "//score/crypto/src/daemon/provider/handler:handler_headers",
         "//score/crypto/src/daemon/provider/handler:handler_utils_impl",
-        "//score/crypto/src/api/common:crypto_common",
+        "//score/crypto/common:crypto_common",
     ],
 )
 

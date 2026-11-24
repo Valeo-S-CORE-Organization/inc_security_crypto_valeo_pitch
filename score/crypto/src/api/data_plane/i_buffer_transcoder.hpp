@@ -11,12 +11,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-#ifndef SCORE_CRYPTO_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP
-#define SCORE_CRYPTO_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP
+#ifndef SCORE_CRYPTO_SRC_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP
+#define SCORE_CRYPTO_SRC_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP
 
 /// @file i_buffer_transcoder.hpp
 /// @brief INTERNAL header — not part of the public crypto API.
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/api/data_plane/i_shm_region_registry.hpp"
 
 #include "score/crypto/src/daemon/control_plane/control_protocol.h"
@@ -200,4 +200,4 @@ class IBufferTranscoder
 
 }  // namespace score
 
-#endif  // SCORE_CRYPTO_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP
+#endif  // SCORE_CRYPTO_SRC_API_DATA_PLANE_I_BUFFER_TRANSCODER_HPP

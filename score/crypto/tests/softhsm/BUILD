@@ -17,7 +17,6 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 cc_library(
     name = "softhsm_test_fixture",
     hdrs = ["softhsm_test_fixture.hpp"],
-    includes = ["."],
     visibility = ["//:__subpackages__"],
     deps = [
         "//third_party/soft_hsm:soft_hsm",

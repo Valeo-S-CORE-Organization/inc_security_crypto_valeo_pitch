@@ -11,16 +11,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-#include "score/crypto/src/api/config/key_management_context_config.hpp"
-#include "score/crypto/src/api/config/sign_context_config.hpp"
-#include "score/crypto/src/api/config/verify_signature_context_config.hpp"
-#include "score/crypto/src/api/contexts/i_key_management_context.hpp"
-#include "score/crypto/src/api/contexts/i_sign_context.hpp"
-#include "score/crypto/src/api/contexts/i_verify_signature_context.hpp"
-#include "score/crypto/src/api/crypto_stack_factory.hpp"
-#include "score/crypto/src/api/i_crypto_context.hpp"
-#include "score/crypto/src/api/i_crypto_stack.hpp"
-#include "score/crypto/src/api/types/common.hpp"
+#include "score/crypto/config/key_management_context_config.hpp"
+#include "score/crypto/config/sign_context_config.hpp"
+#include "score/crypto/config/verify_signature_context_config.hpp"
+#include "score/crypto/contexts/i_key_management_context.hpp"
+#include "score/crypto/contexts/i_sign_context.hpp"
+#include "score/crypto/contexts/i_verify_signature_context.hpp"
+#include "score/crypto/crypto_stack_factory.hpp"
+#include "score/crypto/i_crypto_context.hpp"
+#include "score/crypto/i_crypto_stack.hpp"
+#include "score/crypto/types/common.hpp"
 #include "score/span.hpp"
 #include "score/tests/utility/test_utility.hpp"
 

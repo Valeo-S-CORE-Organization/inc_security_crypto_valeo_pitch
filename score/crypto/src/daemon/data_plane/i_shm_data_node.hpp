@@ -14,7 +14,7 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_DATA_PLANE_I_SHM_DATA_NODE_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_DATA_PLANE_I_SHM_DATA_NODE_HPP
 
-#include "score/crypto/src/api/common/fixed_capacity_string.hpp"
+#include "score/crypto/common/fixed_capacity_string.hpp"
 #include "score/crypto/src/daemon/data_manager/data_node.hpp"
 #include "score/crypto/src/daemon/mediator/mediator_operations.hpp"
 #include "score/memory/shared/i_shared_memory_resource.h"

@@ -23,8 +23,8 @@
 #include "score/crypto/src/daemon/common/context_types.hpp"
 #include "score/crypto/src/daemon/common/context_mode.hpp"
 
-#include "score/crypto/src/api/types/common.hpp"
-#include "score/crypto/src/api/types/key.hpp"
+#include "score/crypto/types/common.hpp"
+#include "score/crypto/types/key.hpp"
 
 #include <gtest/gtest.h>
 

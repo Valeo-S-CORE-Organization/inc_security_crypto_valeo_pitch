@@ -14,12 +14,12 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_INTERFACES_I_CERT_SLOT_MANAGER_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_INTERFACES_I_CERT_SLOT_MANAGER_HPP
 
-#include "score/crypto/src/api/types/certificate.hpp"
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/daemon/cert_management/interfaces/cert_object.hpp"
 #include "score/crypto/src/daemon/cert_management/interfaces/cert_types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/data_manager/data_node.hpp"
+#include "score/crypto/types/certificate.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <cstdint>
 #include <memory>

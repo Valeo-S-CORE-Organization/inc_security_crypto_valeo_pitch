@@ -13,7 +13,7 @@
 
 #include "score/crypto/src/ipc/message_passing_adapter/server/session/work_item.h"
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/control_plane/control_protocol.h"

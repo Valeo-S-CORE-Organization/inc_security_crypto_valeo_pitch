@@ -14,9 +14,9 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_COMMON_CONTEXT_TYPES_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_COMMON_CONTEXT_TYPES_HPP
 
-#include "score/crypto/src/api/types/common.hpp"
-#include "score/crypto/src/api/types/key.hpp"
 #include "score/crypto/src/daemon/common/context_mode.hpp"
+#include "score/crypto/types/common.hpp"
+#include "score/crypto/types/key.hpp"
 
 #include <cstdint>
 #include <optional>

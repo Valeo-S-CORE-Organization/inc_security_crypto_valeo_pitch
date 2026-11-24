@@ -32,7 +32,7 @@ cc_library(
     visibility = ["//:__subpackages__"],
     linkstatic = True,
     deps = [
-        "//score/crypto/src/api/common:crypto_common",
+        "//score/crypto/common:crypto_common",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "@score_baselibs//score/mw/log",

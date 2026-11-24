@@ -14,8 +14,8 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_PROVIDER_SCORE_PROVIDER_OPENSSL_DETAIL_OPENSSL_CERT_UTILS_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_PROVIDER_SCORE_PROVIDER_OPENSSL_DETAIL_OPENSSL_CERT_UTILS_HPP
 
-#include "score/crypto/src/api/types/certificate.hpp"
-#include "score/crypto/src/api/types/common.hpp"
+#include "score/crypto/types/certificate.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <openssl/x509.h>
 

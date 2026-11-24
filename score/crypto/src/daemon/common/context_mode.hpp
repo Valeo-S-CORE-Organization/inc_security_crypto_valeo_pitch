@@ -14,10 +14,10 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_COMMON_CONTEXT_MODE_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_COMMON_CONTEXT_MODE_HPP
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <cstddef>
 #include <cstdint>

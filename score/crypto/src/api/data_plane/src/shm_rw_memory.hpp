@@ -14,8 +14,8 @@
 #ifndef SCORE_CRYPTO_API_DATA_PLANE_SRC_SHM_RW_MEMORY_HPP
 #define SCORE_CRYPTO_API_DATA_PLANE_SRC_SHM_RW_MEMORY_HPP
 
-#include "score/crypto/src/api/common/error_domain.hpp"
-#include "score/crypto/src/api/common/i_memory.hpp"
+#include "score/crypto/common/error_domain.hpp"
+#include "score/crypto/common/i_memory.hpp"
 #include "score/crypto/src/api/data_plane/i_shm_region_registry.hpp"
 
 #include <cstddef>

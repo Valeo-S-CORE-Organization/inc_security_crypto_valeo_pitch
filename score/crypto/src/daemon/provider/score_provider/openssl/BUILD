@@ -80,7 +80,7 @@ cc_library(
     }),
     visibility = ["//score/crypto/src/daemon/provider:__subpackages__"],
     deps = [
-        "//score/crypto/src/api/types:certificate_types",
+        "//score/crypto/types:certificate_types",
         "@score_openssl//:openssl",
     ],
 )
@@ -153,7 +153,6 @@ cc_library(
         "operations/verify/openssl_rsa_pss_verify_handler.hpp",
         "provider_openssl.hpp",
     ],
-    includes = ["."],
     target_compatible_with = select({
         "//score/crypto/src/backend:openssl_backend_active": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -207,7 +206,6 @@ cc_library(
     implementation_deps = [
         "@score_openssl//:openssl",
     ],
-    includes = ["."],
     linkstatic = True,
     target_compatible_with = select({
         "//score/crypto/src/backend:openssl_backend_active": [],
@@ -285,8 +283,8 @@ cc_test(
     }),
     deps = [
         ":provider_openssl_library",
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/config",
         "//score/crypto/src/daemon/data_manager",

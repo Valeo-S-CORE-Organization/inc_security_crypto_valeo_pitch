@@ -28,15 +28,15 @@ cc_library(
     ],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
         "//score/crypto/src/common:common_types",
         "@score_baselibs//score/result",
     ],
 )
 
 # Header-only algorithm catalog. Internal to the daemon: clients name algorithms
-# by string, so score/crypto/src/api must not depend on it.
+# by string, so score/crypto must not depend on it.
 cc_library(
     name = "algorithm_catalog",
     hdrs = ["algorithm_catalog.hpp"],
@@ -110,7 +110,7 @@ cc_test(
     srcs = ["context_types_test.cpp"],
     deps = [
         ":common",
-        "//score/crypto/src/api/common:crypto_common",
+        "//score/crypto/common:crypto_common",
         "@googletest//:gtest_main",
     ],
 )

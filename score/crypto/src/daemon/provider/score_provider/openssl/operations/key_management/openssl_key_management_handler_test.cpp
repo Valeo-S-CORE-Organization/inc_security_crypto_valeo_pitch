@@ -20,9 +20,7 @@
 /// handler dispatch flow without mocks.
 
 #include "score/crypto/src/daemon/provider/score_provider/openssl/operations/key_management/openssl_key_management_handler.hpp"
-#include "score/crypto/src/api/common/error_domain.hpp"
-#include "score/crypto/src/api/types/common.hpp"
-#include "score/crypto/src/api/types/key.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/daemon/common/actors.hpp"
 #include "score/crypto/src/daemon/config/src/flatbuffer_config_parser.hpp"
 #include "score/crypto/src/daemon/data_manager/data_manager.hpp"
@@ -35,6 +33,8 @@
 #include "score/crypto/src/daemon/provider/executors/key_mgmt_executor.hpp"
 #include "score/crypto/src/daemon/provider/handler/handler_init_params.hpp"
 #include "score/crypto/src/daemon/provider/score_provider/openssl/key_management/openssl_key_factory.hpp"
+#include "score/crypto/types/common.hpp"
+#include "score/crypto/types/key.hpp"
 
 #include <gtest/gtest.h>
 #include <cstdint>

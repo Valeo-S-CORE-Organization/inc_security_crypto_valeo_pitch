@@ -19,7 +19,7 @@
 #include <optional>
 #include <string_view>
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/common/types.hpp"
 
 #include "score/crypto/src/api/control_plane/i_connection.hpp"

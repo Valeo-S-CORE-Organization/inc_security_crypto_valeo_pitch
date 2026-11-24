@@ -12,8 +12,8 @@
  ********************************************************************************/
 
 #include "score/crypto/src/daemon/cert_management/query/cert_object_response_builder.hpp"
-#include "score/crypto/src/api/types/certificate.hpp"
 #include "score/crypto/src/daemon/cert_management/core/cert_management_service.hpp"
+#include "score/crypto/types/certificate.hpp"
 
 #include <cstdint>
 #include <utility>

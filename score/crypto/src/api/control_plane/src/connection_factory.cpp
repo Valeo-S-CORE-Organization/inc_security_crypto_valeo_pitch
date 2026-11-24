@@ -19,7 +19,7 @@
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/ipc/message_passing_adapter/ipc_config.h"
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/api/control_plane/connection_factory.hpp"
 #include "score/crypto/src/api/control_plane/i_connection.hpp"
 #include "score/crypto/src/api/control_plane/src/control_plane_connection_registry.hpp"

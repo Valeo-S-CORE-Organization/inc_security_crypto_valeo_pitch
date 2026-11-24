@@ -32,9 +32,9 @@ cc_library(
     ],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
-        "//score/crypto/src/api/config:context_configs",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
+        "//score/crypto/config:context_configs",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/common:algorithm_catalog",
@@ -70,15 +70,14 @@ cc_library(
         # root/
         "key_management_module.hpp",
     ],
-    includes = ["."],
     visibility = [
         "//:__subpackages__",
     ],
     deps = [
         ":key_handler_iface",
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
-        "//score/crypto/src/api/config:context_configs",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
+        "//score/crypto/config:context_configs",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/control_plane:request_handler_hdr",
         "//score/crypto/src/daemon/data_manager",
@@ -106,13 +105,12 @@ cc_library(
         # root/
         "key_management_module.cpp",
     ],
-    includes = ["."],
     linkstatic = True,
     visibility = ["//:__subpackages__"],
     deps = [
         ":key_management_headers",
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
         "//score/crypto/src/daemon/common",
         "//score/crypto/src/daemon/common/storage:file_io",
         "//score/crypto/src/daemon/common/storage:kv_deployment",

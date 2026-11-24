@@ -13,7 +13,7 @@
 #ifndef SCORE_CRYPTO_IPC_PROTOCOL_I_CONTROL_CODEC_H
 #define SCORE_CRYPTO_IPC_PROTOCOL_I_CONTROL_CODEC_H
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/control_plane/control_protocol.h"
 #include "score/span.hpp"

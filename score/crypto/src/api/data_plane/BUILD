@@ -38,8 +38,8 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//score/crypto/src/api/common:crypto_common",
-        "//score/crypto/src/api/types:types",
+        "//score/crypto/common:crypto_common",
+        "//score/crypto/types:types",
         "//score/crypto/src/api/control_plane",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/common",

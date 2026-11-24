@@ -20,7 +20,6 @@
 #include <string_view>
 #include <vector>
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/daemon/common/actors.hpp"
 #include "score/crypto/src/daemon/common/algorithm_catalog.hpp"
 #include "score/crypto/src/daemon/common/algorithm_info.hpp"
@@ -34,6 +33,7 @@
 #include "score/crypto/src/daemon/provider/handler/operations/verify_handler_operations.hpp"
 #include "score/crypto/src/daemon/provider/i_provider.hpp"
 #include "score/crypto/src/daemon/provider/score_provider/openssl/provider_openssl.hpp"
+#include "score/crypto/types/common.hpp"
 
 namespace common = score::crypto::daemon::common;
 namespace key_management = score::crypto::daemon::key_management;

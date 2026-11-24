@@ -48,7 +48,7 @@ cc_binary(
         "//conditions:default": [],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -69,7 +69,7 @@ cc_binary(
         "//conditions:default": [],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -80,7 +80,7 @@ cc_binary(
     srcs = ["hash_performance_test.cpp"],
     data = ["//score/tests/test_vectors/hash:hash_test_vectors"],
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -100,7 +100,7 @@ cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -119,7 +119,7 @@ cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -137,7 +137,7 @@ cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
         "@score_baselibs//score/serialization/strategies:hex_string_to_bytes",
@@ -157,7 +157,7 @@ cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -174,7 +174,7 @@ cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
         "@googletest//:gtest",
     ],
@@ -194,7 +194,7 @@ cc_binary(
         "//conditions:default": [],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "@googletest//:gtest",
     ],
 )
@@ -214,7 +214,7 @@ cc_binary(
         "//conditions:default": [],
     }),
     deps = [
-        "//score/crypto/src/api:crypto_stack",
+        "//score/crypto:crypto_stack",
         "//score/tests/utility",
     ],
 )

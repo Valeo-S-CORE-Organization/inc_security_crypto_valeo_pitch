@@ -13,7 +13,6 @@
 #include "score/crypto/src/daemon/provider/pkcs11/operations/mac/pkcs11_mac_handler.hpp"
 #include "score/crypto/src/daemon/common/context_mode.hpp"
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
@@ -26,6 +25,7 @@
 #include "score/crypto/src/daemon/provider/pkcs11/operations/mac/pkcs11_mac_executor.hpp"
 #include "score/crypto/src/daemon/provider/pkcs11/pkcs11_module.hpp"
 #include "score/crypto/src/daemon/provider/pkcs11/pkcs11_provider.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include "score/mw/log/logging.h"
 

@@ -24,13 +24,13 @@
 ///   3. Provider switching via ProviderType - code path identical
 ///   4. RAII pattern ensures automatic key zeroization on cleanup
 
-#include "score/crypto/src/api/common/error_domain.hpp"
-#include "score/crypto/src/api/config/mac_context_config.hpp"
-#include "score/crypto/src/api/contexts/i_mac_context.hpp"
-#include "score/crypto/src/api/crypto_stack_factory.hpp"
-#include "score/crypto/src/api/i_crypto_context.hpp"
-#include "score/crypto/src/api/i_crypto_stack.hpp"
-#include "score/crypto/src/api/types/common.hpp"
+#include "score/crypto/common/error_domain.hpp"
+#include "score/crypto/config/mac_context_config.hpp"
+#include "score/crypto/contexts/i_mac_context.hpp"
+#include "score/crypto/crypto_stack_factory.hpp"
+#include "score/crypto/i_crypto_context.hpp"
+#include "score/crypto/i_crypto_stack.hpp"
+#include "score/crypto/types/common.hpp"
 #include "score/result/result.h"
 #include "score/tests/utility/test_utility.hpp"
 

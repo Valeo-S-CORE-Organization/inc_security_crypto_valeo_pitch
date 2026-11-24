@@ -13,7 +13,7 @@
 
 #include "score/crypto/src/api/data_plane/src/buffer_shm_transcoder.hpp"
 
-#include "score/crypto/src/api/common/error_domain.hpp"
+#include "score/crypto/common/error_domain.hpp"
 
 #include "score/crypto/src/daemon/common/types.hpp"
 

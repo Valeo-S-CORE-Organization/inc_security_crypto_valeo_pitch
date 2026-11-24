@@ -14,9 +14,9 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_KEY_MANAGEMENT_INTERFACES_KEY_SLOT_CONFIG_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_KEY_MANAGEMENT_INTERFACES_KEY_SLOT_CONFIG_HPP
 
-#include "score/crypto/src/api/types/common.hpp"
-#include "score/crypto/src/api/types/key.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
+#include "score/crypto/types/common.hpp"
+#include "score/crypto/types/key.hpp"
 
 #include <cstdint>
 #include <string>

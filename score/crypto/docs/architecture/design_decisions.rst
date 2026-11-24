@@ -474,7 +474,7 @@ and the IPC protocol is unchanged. On top of it:
   ``GetAlgorithmDescriptor()`` and ``GetAlgorithmCategory()`` expose the
   properties of a known algorithm. The catalog is internal to the daemon
   (``//score/crypto/src/daemon/common:algorithm_catalog``; nothing under
-  ``score/crypto/src/api`` depends on it): clients only send names, so adding
+  ``score/crypto`` depends on it): clients only send names, so adding
   a row rebuilds the daemon and its providers, not the applications.
 * Every algorithm the daemon accepts is a catalog row. ECDSA has one row per
   curve (P-256, P-384, P-521) and SHA-2 digest (SHA-224 to SHA-512), twelve in

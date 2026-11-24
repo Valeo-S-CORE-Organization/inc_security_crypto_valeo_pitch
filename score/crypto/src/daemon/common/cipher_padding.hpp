@@ -14,8 +14,8 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_COMMON_CIPHER_PADDING_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_COMMON_CIPHER_PADDING_HPP
 
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/daemon/common/types.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <cstddef>
 #include <cstdint>

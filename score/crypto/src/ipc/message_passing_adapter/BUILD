@@ -42,7 +42,7 @@ cc_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//score/crypto/src/ipc/protocol:protocol",
-        "//score/crypto/src/api/common:crypto_common",
+        "//score/crypto/common:crypto_common",
         "//score/crypto/src/api/control_plane:control_plane_hdr",
         "//score/crypto/src/common:common_types",
         "//score/crypto/src/daemon/control_plane",

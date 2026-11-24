@@ -14,7 +14,7 @@
 #ifndef SCORE_CRYPTO_API_DATA_PLANE_SRC_POOL_ALLOCATOR_HPP
 #define SCORE_CRYPTO_API_DATA_PLANE_SRC_POOL_ALLOCATOR_HPP
 
-#include "score/crypto/src/api/common/i_memory.hpp"
+#include "score/crypto/common/i_memory.hpp"
 #include "score/crypto/src/api/data_plane/i_pool_allocator.hpp"
 #include "score/crypto/src/api/data_plane/i_read_write_memory_factory.hpp"
 #include "score/crypto/src/api/data_plane/src/allocation_error.hpp"

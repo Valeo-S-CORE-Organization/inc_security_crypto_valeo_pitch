@@ -14,8 +14,6 @@
 #ifndef SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_TRUSTSTORE_TRUST_STORE_MANAGER_HPP
 #define SCORE_CRYPTO_SRC_DAEMON_CERT_MANAGEMENT_TRUSTSTORE_TRUST_STORE_MANAGER_HPP
 
-#include "score/crypto/src/api/types/certificate.hpp"
-#include "score/crypto/src/api/types/common.hpp"
 #include "score/crypto/src/common/types.hpp"
 #include "score/crypto/src/daemon/cert_management/interfaces/cert_object.hpp"
 #include "score/crypto/src/daemon/cert_management/interfaces/cert_slot_config.hpp"
@@ -29,6 +27,8 @@
 #include "score/crypto/src/daemon/cert_management/truststore/trust_store_handler.hpp"
 #include "score/crypto/src/daemon/common/daemon_error.hpp"
 #include "score/crypto/src/daemon/data_manager/data_node.hpp"
+#include "score/crypto/types/certificate.hpp"
+#include "score/crypto/types/common.hpp"
 
 #include <array>
 #include <cstdint>
